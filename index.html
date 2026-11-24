@@ -139,6 +139,32 @@
       animation: diceTumble 0.45s ease-in-out;
     }
 
+    /* 資源獲得時の対応タイル（ヘクス）明滅アニメーション */
+    @keyframes hexProduceFlash {
+      0%, 100% {
+        filter: brightness(1);
+        stroke: #fde047;
+        stroke-width: 2.8;
+      }
+      50% {
+        filter: brightness(1.48) drop-shadow(0 0 10px #facc15);
+        stroke: #ffffff;
+        stroke-width: 4.5;
+      }
+    }
+    .hex-gain-flash {
+      animation: hexProduceFlash 0.75s ease-in-out 6;
+    }
+
+    /* 獲得資源バナー登場アニメーション */
+    @keyframes gainBannerPop {
+      0% { opacity: 0; transform: translateY(-6px) scale(0.98); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .gain-banner-pop {
+      animation: gainBannerPop 0.28s ease-out forwards;
+    }
+
     /* 手札カードの扇状ホバー効果 */
     .hand-card {
       transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
@@ -183,7 +209,7 @@
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
         </div>
         <span id="buildVersionBadge" class="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-          v2.7
+          v2.10
         </span>
       </div>
 
@@ -369,6 +395,11 @@
               ✕ キャンセル
             </button>
           </div>
+        </div>
+
+        <!-- 資源獲得時の視覚的サマリーバナー -->
+        <div id="diceGainBanner" class="hidden px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-950/95 via-amber-950/95 to-emerald-950/95 border-b border-amber-400/60 flex flex-wrap items-center justify-between gap-2 z-10 gain-banner-pop">
+          <div id="diceGainBannerContent" class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs font-bold text-parchment-50"></div>
         </div>
 
         <!-- インタラクティブ SVG ボード（ピンチズーム・ドラッグ移動対応） -->
@@ -1017,9 +1048,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
     class SecretVault {
       #hands = new Map();     // uid -> { resources: {wood,brick,sheep,wheat,ore}, devCards: [] }
       #devDeck = [];          // シャッフル済み発展カード山札（外部直接参照不可）
+      #stealNotices = new Map(); // uid -> 当事者限定の強奪通知（他プレイヤーには非公開）
 
       reset(playerUids) {
         this.#hands.clear();
+        this.#stealNotices.clear();
         playerUids.forEach(uid => {
           this.#hands.set(uid, {
             resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
@@ -1077,10 +1110,18 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       // 本人専用のクローンデータのみ返す
       getOwnPrivateView(uid) {
         const h = this.#hands.get(uid);
-        if (!h) return { resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 }, devCards: [] };
+        const notice = this.#stealNotices.get(uid) || null;
+        if (!h) {
+          return {
+            resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
+            devCards: [],
+            lastStealNotice: notice ? { ...notice } : null
+          };
+        }
         return {
           resources: { ...h.resources },
-          devCards: h.devCards.map(c => ({ ...c }))
+          devCards: h.devCards.map(c => ({ ...c })),
+          lastStealNotice: notice ? { ...notice } : null
         };
       }
 
@@ -1091,6 +1132,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0, ...(privateView.resources || {}) },
           devCards: Array.isArray(privateView.devCards) ? privateView.devCards.map(c => ({ ...c })) : []
         });
+        if (privateView.lastStealNotice) {
+          this.#stealNotices.set(uid, { ...privateView.lastStealNotice });
+        }
       }
 
       spendResources(uid, cost) {
@@ -1139,6 +1183,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const chosen = pool[Math.floor(Math.random() * pool.length)];
         victim.resources[chosen] -= 1;
         thief.resources[chosen] += 1;
+
+        // 奪った当人と奪われた当人のみに秘匿通知を保存（他プレイヤーには送信・通知しない）
+        const noticeId = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        this.#stealNotices.set(thiefUid, { id: noticeId, role: 'thief', otherUid: victimUid, resource: chosen });
+        this.#stealNotices.set(victimUid, { id: noticeId, role: 'victim', otherUid: thiefUid, resource: chosen });
         return chosen;
       }
 
@@ -1158,10 +1207,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         return totalCollected;
       }
 
-      // CPUのスマート手札選択（バースト時の半数破棄用）
+      // CPUのスマート手札選択（バースト時の半数破棄用・破棄内訳を返す）
       smartCpuDiscard(uid, discardCount) {
         const h = this.#hands.get(uid);
-        if (!h) return;
+        const discarded = {};
+        if (!h) return discarded;
         let remaining = discardCount;
         while (remaining > 0) {
           // 最も多く抱えている資源から優先的に手放す
@@ -1175,8 +1225,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           });
           if (!maxKey) break;
           h.resources[maxKey] -= 1;
+          discarded[maxKey] = (discarded[maxKey] || 0) + 1;
           remaining--;
         }
+        return discarded;
       }
 
       // CPU内部思考用（外部には公開せずVault内部で評価値のみ計算）
@@ -1711,6 +1763,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           pendingDiscards: {},
           stealVictims: [],
           pendingTrade: null,
+          lastDiceGainEvent: null,
+          lastDiscardEvents: [],
           dice: [null, null],
           devCardPlayedThisTurn: false,
           deckCount: secretVault.getDeckCount(),
@@ -1738,6 +1792,14 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       nowStr() {
         const d = new Date();
         return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
+
+      formatResourceDelta(deltaObj) {
+        if (!deltaObj) return '';
+        return RESOURCE_KEYS
+          .filter(k => (deltaObj[k] || 0) > 0)
+          .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${deltaObj[k]}`)
+          .join('・');
       }
 
       addLog(text) {
@@ -2190,6 +2252,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
         // 7が出た場合：8枚以上のプレイヤーは半数破棄し、手番プレイヤーが盗賊を移動
         if (sum === 7) {
+          st.lastDiceGainEvent = null;
+          st.lastDiscardEvents = [];
           sound.playRobber();
           analytics.recordDiceRollExpectation(st, uid, {}, {});
 
@@ -2201,11 +2265,18 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               if (!st.players[pUid].isCpu) {
                 pendingHumans[pUid] = discardAmt;
               } else {
-                secretVault.smartCpuDiscard(pUid, discardAmt);
+                const discardedMap = secretVault.smartCpuDiscard(pUid, discardAmt);
                 if (analytics.statsByUid[pUid]) {
                   analytics.statsByUid[pUid].burstDiscarded += discardAmt;
                 }
-                this.addLog(`⚠️ ${st.players[pUid].name} は手札が8枚以上のため ${discardAmt} 枚破棄しました。`);
+                st.lastDiscardEvents.push({
+                  uid: pUid,
+                  name: st.players[pUid].name,
+                  discarded: discardedMap,
+                  total: discardAmt
+                });
+                const detailStr = this.formatResourceDelta(discardedMap);
+                this.addLog(`⚠️ ${st.players[pUid].name} が7のバーストで【${detailStr}】（計${discardAmt}枚）を破棄しました。`);
               }
             }
           });
@@ -2230,7 +2301,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
 
         // 7以外の出目：該当数字タイルの隣接建物へ資源を配分
+        st.lastDiscardEvents = [];
         const actualGainsByUid = {};
+        const hexGainsByUid = {};
         const blockedLossesByUid = {};
 
         st.board.hexes.forEach(hex => {
@@ -2250,12 +2323,23 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             return;
           }
 
+          const perPlayerOnHex = {};
           hex.vertexIds.forEach(vid => {
             const bld = st.board.buildings[vid];
             if (!bld) return;
             const mult = bld.type === 'city' ? 2 : 1;
             if (!actualGainsByUid[bld.ownerUid]) actualGainsByUid[bld.ownerUid] = {};
             actualGainsByUid[bld.ownerUid][hex.resource] = (actualGainsByUid[bld.ownerUid][hex.resource] || 0) + mult;
+            perPlayerOnHex[bld.ownerUid] = (perPlayerOnHex[bld.ownerUid] || 0) + mult;
+          });
+
+          Object.entries(perPlayerOnHex).forEach(([gainUid, amt]) => {
+            if (!hexGainsByUid[gainUid]) hexGainsByUid[gainUid] = [];
+            hexGainsByUid[gainUid].push({
+              hexId: hex.id,
+              resource: hex.resource,
+              amount: amt
+            });
           });
         });
 
@@ -2265,6 +2349,15 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           const items = Object.entries(delta).map(([k, v]) => `${RESOURCES[k].label}×${v}`).join('・');
           gainSummaries.push(`${st.players[gainUid].name}(${items})`);
         });
+
+        st.lastDiceGainEvent = Object.keys(actualGainsByUid).length > 0
+          ? {
+              rollId: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+              diceSum: sum,
+              gainsByUid: actualGainsByUid,
+              hexGainsByUid
+            }
+          : null;
 
         analytics.recordDiceRollExpectation(st, uid, actualGainsByUid, blockedLossesByUid);
 
@@ -2294,8 +2387,19 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (analytics.statsByUid[uid]) {
           analytics.statsByUid[uid].burstDiscarded += requiredAmt;
         }
+        st.lastDiscardEvents = st.lastDiscardEvents || [];
+        st.lastDiscardEvents.push({
+          uid,
+          name: st.players[uid].name,
+          discarded: { ...discardPick },
+          total: requiredAmt
+        });
         delete st.pendingDiscards[uid];
-        this.addLog(`⚠️ ${st.players[uid].name} が資源を ${requiredAmt} 枚破棄しました。`);
+        const detailStr = this.formatResourceDelta(discardPick);
+        this.addLog(`⚠️ ${st.players[uid].name} が7のバーストで【${detailStr}】（計${requiredAmt}枚）を破棄しました。`);
+        if (uid === this.localUid) {
+          appUI.showToast(`破棄した資源: ${detailStr}（計${requiredAmt}枚）`, 'info');
+        }
         this.syncPublicCountsFromVault();
 
         if (Object.keys(st.pendingDiscards).length === 0) {
@@ -2326,10 +2430,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
         if (victims.length === 0) {
           this.submitStealTarget(uid, null);
-        } else if (victims.length === 1 || st.players[uid].isCpu) {
+        } else if (st.players[uid].isCpu) {
           const sortedVictims = [...victims].sort((a, b) => st.players[b].publicVP - st.players[a].publicVP);
           this.submitStealTarget(uid, sortedVictims[0]);
         } else {
+          // 人間プレイヤーの場合は隣接する対象から奪う相手を選択させる
           st.phase = 'STEAL_SELECT';
           st.stealVictims = victims;
           this.syncAfterHostAction();
@@ -2348,15 +2453,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (!st || st.activeUid !== thiefUid) return;
 
         if (chosenVictimUid) {
-          const stolenRes = secretVault.stealRandomResource(thiefUid, chosenVictimUid);
+          secretVault.stealRandomResource(thiefUid, chosenVictimUid);
           if (analytics.statsByUid[thiefUid]) analytics.statsByUid[thiefUid].robberStolenGained += 1;
           if (analytics.statsByUid[chosenVictimUid]) analytics.statsByUid[chosenVictimUid].robberStolenLost += 1;
           this.addLog(`🦹 ${st.players[thiefUid].name} が盗賊を移動し、${st.players[chosenVictimUid].name} から資源を1枚奪いました！`);
-          if (stolenRes && thiefUid === this.localUid) {
-            appUI.showToast(`${st.players[chosenVictimUid].name} から【${RESOURCES[stolenRes].label}】を1枚奪いました！`, 'success');
-          }
         } else {
-          this.addLog(`🦹 ${st.players[thiefUid].name} が盗賊を移動しました。`);
+          this.addLog(`🦹 ${st.players[thiefUid].name} が盗賊を移動しました（奪える相手なし）。`);
         }
 
         st.stealVictims = [];
@@ -2523,21 +2625,37 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           }
         };
 
-        if (card.type === 'year_of_plenty') {
-          if (extraPayload) {
-            executeUse(extraPayload);
-          } else if (actorUid === this.localUid) {
+        if (card.type === 'year_of_plenty' && !extraPayload) {
+          if (actorUid === this.localUid) {
             appUI.openYearOfPlentyModal((res1, res2) => executeUse({ res1, res2 }));
           }
-        } else if (card.type === 'monopoly') {
-          if (extraPayload) {
-            executeUse(extraPayload);
-          } else if (actorUid === this.localUid) {
+          return;
+        }
+        if (card.type === 'monopoly' && !extraPayload) {
+          if (actorUid === this.localUid) {
             appUI.openMonopolyModal((chosenRes) => executeUse({ chosenRes }));
           }
-        } else {
-          executeUse(null);
+          return;
         }
+
+        executeUse(extraPayload);
+      }
+
+      evaluateCpuTradeDecision(cpuUid, offer, request) {
+        if (!secretVault.hasResources(cpuUid, request)) return 'declined';
+        const offerTotal = RESOURCE_KEYS.reduce((s, k) => s + (offer[k] || 0), 0);
+        const reqTotal = RESOURCE_KEYS.reduce((s, k) => s + (request[k] || 0), 0);
+        const cpuHand = secretVault.evaluateCpuNeeds(cpuUid).resources;
+        const givesAwayLastNeeded = RESOURCE_KEYS.some(
+          k => (request[k] || 0) > 0 && cpuHand[k] - request[k] === 0 && offerTotal <= reqTotal
+        );
+        const receivesScarce = RESOURCE_KEYS.some(
+          k => (offer[k] || 0) > 0 && cpuHand[k] === 0
+        );
+        if (!givesAwayLastNeeded && (receivesScarce || offerTotal >= reqTotal)) {
+          return 'accepted';
+        }
+        return 'declined';
       }
 
       proposeDomesticTrade(actorUid = this.localUid, explicitOffer = null, explicitRequest = null) {
@@ -2560,110 +2678,114 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           return;
         }
 
-        // オンライン対戦中は他の人間プレイヤーへ先に交渉を提示
-        if (this.mode === 'online') {
-          const eligibleHumanUids = st.turnOrder.filter(u =>
-            u !== actorUid && !st.players[u].isCpu && secretVault.hasResources(u, request)
-          );
-          if (eligibleHumanUids.length > 0) {
-            st.pendingTrade = {
-              fromUid: actorUid,
-              offer,
-              request,
-              candidateUids: eligibleHumanUids
-            };
-            if (actorUid === this.localUid) appUI.closeModal('tradeModal');
-            this.addLog(`🤝 ${st.players[actorUid].name} が資源交渉を提案しました。`);
-            this.syncAfterHostAction();
-            if (eligibleHumanUids.includes(this.localUid)) {
-              appUI.openTradeOfferResponseModal(st.pendingTrade);
-            }
-            return;
+        const responses = {};
+        st.turnOrder.forEach(u => {
+          if (u === actorUid) return;
+          if (st.players[u].isCpu) {
+            responses[u] = this.evaluateCpuTradeDecision(u, offer, request);
+          } else {
+            responses[u] = secretVault.hasResources(u, request) ? 'pending' : 'insufficient';
           }
-        }
+        });
 
-        // CPUとの取引評価へフォールバック
-        this.evaluateCpuDomesticTrade(actorUid, offer, request);
+        st.pendingTrade = {
+          id: `trade_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          fromUid: actorUid,
+          offer,
+          request,
+          responses
+        };
+
+        this.addLog(`🤝 ${st.players[actorUid].name} が全プレイヤーに資源交渉を提示しました。`);
+        this.syncAfterHostAction();
+
+        if (actorUid === this.localUid) {
+          appUI.closeModal('tradeModal');
+          appUI.openTradeStatusModal(st.pendingTrade);
+        } else if (responses[this.localUid] === 'pending') {
+          appUI.openTradeOfferResponseModal(st.pendingTrade);
+        }
       }
 
-      respondToTradeOffer(responderUid, accepted) {
+      respondToTradeOffer(responderUid, decision) {
         if (this.mode === 'online' && !onlineManager.isHost && responderUid === this.localUid) {
-          onlineManager.sendActionToHost({ type: 'RESPOND_TRADE', accepted });
+          onlineManager.sendActionToHost({ type: 'RESPOND_TRADE', decision });
           return;
         }
         const st = this.publicState;
         const trade = st?.pendingTrade;
-        if (!trade || !trade.candidateUids.includes(responderUid)) return;
+        if (!trade || !trade.responses || !(responderUid in trade.responses)) return;
 
-        if (accepted && secretVault.hasResources(trade.fromUid, trade.offer) && secretVault.hasResources(responderUid, trade.request)) {
-          secretVault.spendResources(trade.fromUid, trade.offer);
-          secretVault.addResources(responderUid, trade.offer);
-          secretVault.spendResources(responderUid, trade.request);
-          secretVault.addResources(trade.fromUid, trade.request);
-          analytics.statsByUid[trade.fromUid].domesticTrades += 1;
-          analytics.statsByUid[responderUid].domesticTrades += 1;
-          sound.playChime();
-          this.addLog(`🤝 ${st.players[trade.fromUid].name} と ${st.players[responderUid].name} の間で資源交渉が成立しました！`);
-          st.pendingTrade = null;
-          this.syncPublicCountsFromVault();
-          this.syncAfterHostAction();
-          return;
+        const normalized = (decision === 'accepted' || decision === true) ? 'accepted' : 'declined';
+        if (normalized === 'accepted' && !secretVault.hasResources(responderUid, trade.request)) {
+          trade.responses[responderUid] = 'insufficient';
+        } else {
+          trade.responses[responderUid] = normalized;
         }
 
-        // 辞退した場合は残りの対人候補またはCPUへ回す
-        trade.candidateUids = trade.candidateUids.filter(u => u !== responderUid);
-        if (trade.candidateUids.length > 0) {
-          this.syncAfterHostAction();
-          if (trade.candidateUids.includes(this.localUid)) {
-            appUI.openTradeOfferResponseModal(trade);
-          }
-        } else {
-          const { fromUid, offer, request } = trade;
-          st.pendingTrade = null;
-          this.evaluateCpuDomesticTrade(fromUid, offer, request);
+        this.addLog(
+          normalized === 'accepted'
+            ? `✅ ${st.players[responderUid].name} が交渉を許可しました。`
+            : `❌ ${st.players[responderUid].name} が交渉を見送りました。`
+        );
+        this.syncAfterHostAction();
+
+        if (trade.fromUid === this.localUid) {
+          appUI.openTradeStatusModal(trade);
         }
       }
 
-      evaluateCpuDomesticTrade(actorUid, offer, request) {
-        const st = this.publicState;
-        const offerTotal = RESOURCE_KEYS.reduce((s, k) => s + offer[k], 0);
-        const reqTotal = RESOURCE_KEYS.reduce((s, k) => s + request[k], 0);
-
-        let acceptedCpuUid = null;
-        for (const uid of st.turnOrder) {
-          if (uid === actorUid || !st.players[uid].isCpu) continue;
-          if (!secretVault.hasResources(uid, request)) continue;
-
-          const cpuHand = secretVault.evaluateCpuNeeds(uid).resources;
-          const givesAwayLastNeeded = RESOURCE_KEYS.some(k => request[k] > 0 && cpuHand[k] - request[k] === 0 && offerTotal <= reqTotal);
-          const receivesScarce = RESOURCE_KEYS.some(k => offer[k] > 0 && cpuHand[k] === 0);
-
-          if (!givesAwayLastNeeded && (receivesScarce || offerTotal >= reqTotal)) {
-            acceptedCpuUid = uid;
-            break;
-          }
+      finalizeDomesticTrade(proposerUid, partnerUid) {
+        if (this.mode === 'online' && !onlineManager.isHost && proposerUid === this.localUid) {
+          onlineManager.sendActionToHost({ type: 'FINALIZE_TRADE', partnerUid });
+          return;
         }
+        const st = this.publicState;
+        const trade = st?.pendingTrade;
+        if (!trade || trade.fromUid !== proposerUid) return;
+        if (trade.responses?.[partnerUid] !== 'accepted') return;
 
-        if (!acceptedCpuUid) {
-          this.addLog(`🤝 ${st.players[actorUid].name} の交渉提案は成立しませんでした。`);
-          if (actorUid === this.localUid) {
-            appUI.showToast('どのプレイヤーも今回の交換条件には応じませんでした。', 'warn');
+        if (!secretVault.hasResources(proposerUid, trade.offer) || !secretVault.hasResources(partnerUid, trade.request)) {
+          if (proposerUid === this.localUid) {
+            appUI.showToast('どちらかの資源が不足しているため交換を完了できません。', 'warn');
           }
-          this.syncAfterHostAction();
           return;
         }
 
-        secretVault.spendResources(actorUid, offer);
-        secretVault.addResources(acceptedCpuUid, offer);
-        secretVault.spendResources(acceptedCpuUid, request);
-        secretVault.addResources(actorUid, request);
-        analytics.statsByUid[actorUid].domesticTrades += 1;
-        analytics.statsByUid[acceptedCpuUid].domesticTrades += 1;
+        secretVault.spendResources(proposerUid, trade.offer);
+        secretVault.addResources(partnerUid, trade.offer);
+        secretVault.spendResources(partnerUid, trade.request);
+        secretVault.addResources(proposerUid, trade.request);
+
+        if (analytics.statsByUid[proposerUid]) analytics.statsByUid[proposerUid].domesticTrades += 1;
+        if (analytics.statsByUid[partnerUid]) analytics.statsByUid[partnerUid].domesticTrades += 1;
 
         sound.playChime();
-        this.addLog(`🤝 ${st.players[actorUid].name} と ${st.players[acceptedCpuUid].name} の間で資源交渉が成立しました！`);
+        this.addLog(`🤝 ${st.players[proposerUid].name} と ${st.players[partnerUid].name} の間で資源交渉が成立しました！`);
+        st.pendingTrade = null;
         this.syncPublicCountsFromVault();
-        if (actorUid === this.localUid) appUI.closeModal('tradeModal');
+        if (proposerUid === this.localUid) {
+          appUI.activeInteractiveType = null;
+          appUI.closeModal('interactiveModal');
+        }
+        this.syncAfterHostAction();
+      }
+
+      cancelDomesticTrade(proposerUid) {
+        if (this.mode === 'online' && !onlineManager.isHost && proposerUid === this.localUid) {
+          onlineManager.sendActionToHost({ type: 'CANCEL_TRADE' });
+          return;
+        }
+        const st = this.publicState;
+        const trade = st?.pendingTrade;
+        if (!trade || trade.fromUid !== proposerUid) return;
+
+        this.addLog(`🤝 ${st.players[proposerUid].name} が資源交渉を取り下げました。`);
+        st.pendingTrade = null;
+        if (proposerUid === this.localUid) {
+          appUI.activeInteractiveType = null;
+          appUI.closeModal('interactiveModal');
+        }
         this.syncAfterHostAction();
       }
 
@@ -2748,6 +2870,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         st.activeUid = st.turnOrder[nextIdx];
         st.phase = 'ROLL';
         st.devCardPlayedThisTurn = false;
+        st.lastDiceGainEvent = null;
+        st.lastDiscardEvents = [];
         this.placementMode = null;
         this.prepareTurnState();
       }
@@ -3464,7 +3588,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         } else if (msg.type === 'DOMESTIC_TRADE') {
           gameController.proposeDomesticTrade(actorUid, msg.offer, msg.request);
         } else if (msg.type === 'RESPOND_TRADE') {
-          gameController.respondToTradeOffer(actorUid, Boolean(msg.accepted));
+          gameController.respondToTradeOffer(actorUid, msg.decision || (msg.accepted ? 'accepted' : 'declined'));
+        } else if (msg.type === 'FINALIZE_TRADE') {
+          gameController.finalizeDomesticTrade(actorUid, msg.partnerUid);
+        } else if (msg.type === 'CANCEL_TRADE') {
+          gameController.cancelDomesticTrade(actorUid);
         } else if (msg.type === 'DISCARD_RESOURCES') {
           gameController.submitDiscardForPlayer(actorUid, msg.discardPick || {});
         } else if (msg.type === 'STEAL_TARGET') {
@@ -3694,8 +3822,16 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             appUI.openStealTargetModal(gameController.publicState.stealVictims, (chosenUid) => {
               gameController.submitStealTarget(this.localUid, chosenUid);
             });
-          } else if (gameController.publicState.pendingTrade && Array.isArray(gameController.publicState.pendingTrade.candidateUids) && gameController.publicState.pendingTrade.candidateUids.includes(this.localUid)) {
-            appUI.openTradeOfferResponseModal(gameController.publicState.pendingTrade);
+          } else if (gameController.publicState.pendingTrade) {
+            const pTrade = gameController.publicState.pendingTrade;
+            if (pTrade.fromUid === this.localUid) {
+              appUI.openTradeStatusModal(pTrade);
+            } else if (pTrade.responses?.[this.localUid] === 'pending') {
+              appUI.openTradeOfferResponseModal(pTrade);
+            }
+          } else if (!gameController.publicState.pendingTrade && (appUI.activeInteractiveType === 'trade_status' || appUI.activeInteractiveType === 'trade_response')) {
+            appUI.activeInteractiveType = null;
+            appUI.closeModal('interactiveModal');
           } else if (gameController.publicState.status === 'finished' && gameController.publicState.winnerUid) {
             appUI.showVictoryModal(gameController.publicState.winnerUid);
           }
@@ -3717,6 +3853,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.selectedMaritimeReceive = 'brick';
         this.domesticOffer = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 };
         this.domesticRequest = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 };
+        this.lastTriggeredRollId = null;
+        this.lastTriggeredStealId = null;
+        this.activeGainHighlightUntil = 0;
+        this.gainHighlightTimer = null;
+        this.activeInteractiveType = null;
         this.boardZoom = 1;
         this.boardPanX = 0;
         this.boardPanY = 0;
@@ -3943,14 +4084,122 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       renderAll() {
         const st = gameController.publicState;
         if (!st) return;
+
+        // 新しいサイコロ資源獲得イベントの検知と明滅タイマー起動
+        const gainEv = st.lastDiceGainEvent;
+        if (gainEv && gainEv.rollId && gainEv.rollId !== this.lastTriggeredRollId) {
+          this.lastTriggeredRollId = gainEv.rollId;
+          const myGains = gainEv.gainsByUid?.[gameController.localUid];
+          if (myGains && Object.keys(myGains).length > 0) {
+            this.activeGainHighlightUntil = Date.now() + 4500;
+            const summaryTxt = RESOURCE_KEYS
+              .filter(k => myGains[k] > 0)
+              .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label} +${myGains[k]}枚`)
+              .join(' / ');
+            this.showToast(`📦 資源獲得: ${summaryTxt}`, 'success');
+            if (this.gainHighlightTimer) clearTimeout(this.gainHighlightTimer);
+            this.gainHighlightTimer = setTimeout(() => {
+              if (gameController.publicState) {
+                this.renderBoardSvg(gameController.publicState);
+                this.renderPrivateHand(gameController.publicState);
+              }
+            }, 4600);
+          }
+        }
+
+        // 盗賊強奪イベントの秘匿通知（奪った側・奪われた側当人のみに表示し、他プレイヤーには通知しない）
+        const myPrivForNotice = secretVault.getOwnPrivateView(gameController.localUid);
+        const stealNotice = myPrivForNotice.lastStealNotice;
+        if (stealNotice && stealNotice.id && stealNotice.id !== this.lastTriggeredStealId) {
+          this.lastTriggeredStealId = stealNotice.id;
+          const resMeta = RESOURCES[stealNotice.resource];
+          if (resMeta) {
+            const otherName = st.players[stealNotice.otherUid]?.name || '相手';
+            if (stealNotice.role === 'thief') {
+              this.showToast(`🦹 ${otherName} から【${resMeta.emoji}${resMeta.label}】を1枚奪いました！`, 'success');
+            } else if (stealNotice.role === 'victim') {
+              this.showToast(`🦹 ${otherName} に【${resMeta.emoji}${resMeta.label}】を1枚奪われました！`, 'warn');
+            }
+          }
+        }
+
+        // 盗賊強奪相手選択フェーズ中のモーダル自動表示保証
+        if (st.phase === 'STEAL_SELECT' && st.activeUid === gameController.localUid && Array.isArray(st.stealVictims) && st.stealVictims.length > 0) {
+          if (this.activeInteractiveType !== 'steal_select') {
+            this.openStealTargetModal(st.stealVictims, (chosenUid) => {
+              gameController.submitStealTarget(gameController.localUid, chosenUid);
+            });
+          }
+        }
+
         this.renderPlayersBar(st);
         this.renderGuidanceBanner(st);
+        this.renderDiceGainBanner(st);
         this.renderBoardSvg(st);
         this.renderDiceAndTurnControls(st);
         this.renderActionButtons(st);
         this.renderLogs(st);
         this.renderPrivateHand(st);
         this.renderMobileDock(st);
+      }
+
+      renderDiceGainBanner(st) {
+        const banner = document.getElementById('diceGainBanner');
+        const content = document.getElementById('diceGainBannerContent');
+        if (!banner || !content) return;
+
+        // 7が出た際のバースト破棄カード明示バナー
+        const discardEvents = Array.isArray(st.lastDiscardEvents) ? st.lastDiscardEvents : [];
+        if (discardEvents.length > 0) {
+          const itemsHtml = discardEvents.map(ev => {
+            const pColor = st.players[ev.uid]?.palette?.hex || '#f59e0b';
+            const resBadges = RESOURCE_KEYS
+              .filter(k => (ev.discarded?.[k] || 0) > 0)
+              .map(k => `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-rose-950/90 border border-rose-400/50 text-rose-100 font-extrabold">${RESOURCES[k].emoji}${RESOURCES[k].label}×${ev.discarded[k]}</span>`)
+              .join(' ');
+            return `
+              <span class="inline-flex flex-wrap items-center gap-1 px-2 py-0.5 rounded-lg bg-mahogany-950/95 border border-rose-400/60 text-parchment-100">
+                <span class="w-2.5 h-2.5 rounded-full" style="background:${pColor}"></span>
+                <span>${ev.name}:</span>
+                ${resBadges}
+              </span>
+            `;
+          }).join('');
+
+          banner.className = 'px-3 sm:px-4 py-2 bg-gradient-to-r from-rose-950/95 via-amber-950/95 to-rose-950/95 border-b border-rose-400/60 flex flex-wrap items-center justify-between gap-2 z-10 gain-banner-pop';
+          content.innerHTML = `
+            <span class="text-rose-200 flex items-center gap-1">⚠️ 7のバーストで破棄された資源:</span>
+            <div class="flex flex-wrap items-center gap-1.5">${itemsHtml}</div>
+          `;
+          banner.classList.remove('hidden');
+          return;
+        }
+
+        const gainEv = st.lastDiceGainEvent;
+        const myGains = gainEv?.gainsByUid?.[gameController.localUid];
+        if (!gainEv || !myGains || Object.keys(myGains).length === 0) {
+          banner.classList.add('hidden');
+          return;
+        }
+
+        banner.className = 'px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-950/95 via-amber-950/95 to-emerald-950/95 border-b border-amber-400/60 flex flex-wrap items-center justify-between gap-2 z-10 gain-banner-pop';
+        const badgesHtml = RESOURCE_KEYS
+          .filter(k => (myGains[k] || 0) > 0)
+          .map(k => {
+            const r = RESOURCES[k];
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-mahogany-950/90 border border-amber-400/70 text-amber-100 shadow-sm">
+              <span>${r.emoji}</span>
+              <span>${r.label}</span>
+              <span class="text-emerald-300 font-extrabold">+${myGains[k]}枚</span>
+            </span>`;
+          })
+          .join('');
+
+        content.innerHTML = `
+          <span class="text-amber-300 flex items-center gap-1">✨ 出目【${gainEv.diceSum}】の獲得資源:</span>
+          <div class="flex flex-wrap items-center gap-1.5">${badgesHtml}</div>
+        `;
+        banner.classList.remove('hidden');
       }
 
       renderPlayersBar(st) {
@@ -4046,6 +4295,14 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           el.textContent = isMyTurn
             ? '🦹 盗賊を移動するタイル（ヘクス）をタップしてください'
             : `🦹 ${activeP.name} が盗賊の移動先を選んでいます...`;
+          cancelWrap.classList.add('hidden');
+          return;
+        }
+
+        if (st.phase === 'STEAL_SELECT') {
+          el.textContent = isMyTurn
+            ? '🦹 資源を1枚奪うプレイヤーを選択してください'
+            : `🦹 ${activeP.name} が資源を奪う相手を選んでいます...`;
           cancelWrap.classList.add('hidden');
           return;
         }
@@ -4155,21 +4412,29 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         });
 
         // 2. 六角形タイル & 数字チップ
+        const isGainFlashing = st.lastDiceGainEvent && Date.now() < this.activeGainHighlightUntil;
+        const myHexGainsList = isGainFlashing ? (st.lastDiceGainEvent.hexGainsByUid?.[gameController.localUid] || []) : [];
+        const myHexGainMap = new Map(myHexGainsList.map(item => [item.hexId, item]));
+
         (board.hexes || []).forEach(hex => {
           const pts = hex.vertexIds.map(vid => {
             const v = board.vertices[vid];
             return `${v.x.toFixed(1)},${v.y.toFixed(1)}`;
           }).join(' ');
 
+          const gainInfo = myHexGainMap.get(hex.id);
           const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
           poly.setAttribute('points', pts);
           poly.setAttribute('fill', `url(#grad-${hex.resource})`);
-          poly.setAttribute('stroke', '#e8d5a7');
-          poly.setAttribute('stroke-width', '2.2');
+          poly.setAttribute('stroke', gainInfo ? '#fde047' : '#e8d5a7');
+          poly.setAttribute('stroke-width', gainInfo ? '3.5' : '2.2');
+          const polyClasses = [];
+          if (gainInfo) polyClasses.push('hex-gain-flash');
           if (canMoveRobber && hex.id !== board.robberHexId) {
-            poly.setAttribute('class', 'cursor-pointer hover:brightness-125');
+            polyClasses.push('cursor-pointer', 'hover:brightness-125');
             poly.addEventListener('click', () => gameController.onHexClick(hex.id));
           }
+          if (polyClasses.length > 0) poly.setAttribute('class', polyClasses.join(' '));
           layerHexes.appendChild(poly);
 
           const resObj = RESOURCES[hex.resource];
@@ -4183,6 +4448,34 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           iconText.setAttribute('pointer-events', 'none');
           iconText.textContent = resObj ? resObj.emoji : '🏜️';
           layerHexes.appendChild(iconText);
+
+          if (gainInfo) {
+            const popG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            popG.setAttribute('transform', `translate(${hex.cx}, ${hex.cy - 27})`);
+            popG.setAttribute('pointer-events', 'none');
+
+            const popBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            popBg.setAttribute('x', '-22');
+            popBg.setAttribute('y', '-9');
+            popBg.setAttribute('width', '44');
+            popBg.setAttribute('height', '18');
+            popBg.setAttribute('rx', '9');
+            popBg.setAttribute('fill', '#064e3b');
+            popBg.setAttribute('stroke', '#fde047');
+            popBg.setAttribute('stroke-width', '1.4');
+            popG.appendChild(popBg);
+
+            const popTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            popTxt.setAttribute('text-anchor', 'middle');
+            popTxt.setAttribute('dominant-baseline', 'central');
+            popTxt.setAttribute('fill', '#fef08a');
+            popTxt.setAttribute('font-size', '10');
+            popTxt.setAttribute('font-weight', '900');
+            popTxt.textContent = `${resObj ? resObj.emoji : ''}+${gainInfo.amount}`;
+            popG.appendChild(popTxt);
+
+            layerHexes.appendChild(popG);
+          }
 
           if (hex.number) {
             const isHot = hex.number === 6 || hex.number === 8;
@@ -4375,7 +4668,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const btnEnd = document.getElementById('btnEndTurn');
 
         const pipsFace = (n) => {
-          if (!n) return '<span class="font-serif font-extrabold text-2xl">?</span>';
+          if (!n) return '<span class="font-serif font-extrabold text-xl sm:text-2xl">?</span>';
           const dotsMap = {
             1: [4],
             2: [2, 6],
@@ -4387,10 +4680,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           const active = new Set(dotsMap[n] || []);
           let cells = '';
           for (let i = 0; i < 9; i++) {
-            const isHot = (n === 6 && active.has(i));
-            cells += `<span class="w-2.5 h-2.5 rounded-full ${active.has(i) ? (isHot ? 'bg-rose-600' : 'bg-mahogany-950') : 'bg-transparent'}"></span>`;
+            const isPip = active.has(i);
+            const isRedPip = isPip && (n === 1 || n === 6);
+            const sizeCls = (n === 1 && isPip) ? 'w-2 h-2 sm:w-2.5 sm:h-2.5' : 'w-1.5 h-1.5 sm:w-2 sm:h-2';
+            cells += `<span class="rounded-full ${sizeCls} ${isPip ? (isRedPip ? 'bg-rose-600' : 'bg-mahogany-950') : 'bg-transparent'}"></span>`;
           }
-          return `<div class="grid grid-cols-3 gap-1 p-1.5 w-full h-full place-items-center">${cells}</div>`;
+          return `<div class="grid grid-cols-3 grid-rows-3 w-full h-full p-2 sm:p-2.5 place-items-center">${cells}</div>`;
         };
 
         die1El.innerHTML = pipsFace(d1);
@@ -4446,17 +4741,24 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const devRow = document.getElementById('myDevCardsRow');
         const totalEl = document.getElementById('myTotalResourcesText');
 
+        const isGainHighlighted = st.lastDiceGainEvent && Date.now() < this.activeGainHighlightUntil;
+        const recentMyGains = isGainHighlighted ? (st.lastDiceGainEvent.gainsByUid?.[gameController.localUid] || {}) : {};
+
         let totalCards = 0;
         resRow.innerHTML = '';
 
         RESOURCE_KEYS.forEach(k => {
           const r = RESOURCES[k];
           const cnt = myPriv.resources[k] || 0;
+          const gainedCnt = recentMyGains[k] || 0;
           totalCards += cnt;
 
           const card = document.createElement('div');
-          card.className = `hand-card rounded-xl p-2 sm:p-2.5 border ${r.bg} bg-white/75 flex flex-col items-center justify-between min-h-[76px] sm:min-h-[86px]`;
+          card.className = `hand-card relative rounded-xl p-2 sm:p-2.5 border ${r.bg} bg-white/75 flex flex-col items-center justify-between min-h-[76px] sm:min-h-[86px] ${
+            gainedCnt > 0 ? 'ring-2 ring-emerald-500 shadow-lg bg-emerald-50/95' : ''
+          }`;
           card.innerHTML = `
+            ${gainedCnt > 0 ? `<span class="absolute -top-2 -right-1.5 px-1.5 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold shadow">+${gainedCnt}</span>` : ''}
             <div class="text-lg sm:text-2xl leading-none">${r.emoji}</div>
             <div class="text-[10px] sm:text-[11px] font-bold text-mahogany-900 mt-0.5">${r.label}</div>
             <div class="font-serif font-extrabold text-base sm:text-lg text-mahogany-950 leading-none">${cnt}<span class="text-[10px] ml-0.5">枚</span></div>
@@ -4792,8 +5094,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
       openStealTargetModal(victimUids, onSelect) {
         const st = gameController.publicState;
+        this.activeInteractiveType = 'steal_select';
         document.getElementById('interactiveModalTitle').textContent = '🦹 資源を奪う相手を選択';
-        document.getElementById('interactiveModalDesc').textContent = '移動した盗賊に隣接するプレイヤーから資源を1枚奪います。';
+        document.getElementById('interactiveModalDesc').textContent = '移動した盗賊に隣接するプレイヤーから資源を1枚奪います。誰から奪うかタップして選んでください。';
         const bodyEl = document.getElementById('interactiveModalBody');
         const footerEl = document.getElementById('interactiveModalFooter');
         footerEl.innerHTML = '';
@@ -4803,15 +5106,16 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           const p = st.players[vUid];
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'w-full p-3 rounded-xl bg-white/80 hover:bg-amber-100 border border-amber-900/30 flex items-center justify-between text-left font-bold text-mahogany-950';
+          btn.className = 'w-full p-3 rounded-xl bg-white/85 hover:bg-amber-100 border-2 border-amber-900/35 hover:border-amber-600 flex items-center justify-between text-left font-bold text-mahogany-950 transition shadow-sm';
           btn.innerHTML = `
             <span class="flex items-center gap-2">
-              <span class="w-3.5 h-3.5 rounded-full" style="background:${p.palette.hex}"></span>
+              <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background:${p.palette.hex}"></span>
               <span>${p.name}</span>
             </span>
-            <span class="text-xs text-amber-900">手札 ${p.resourceCount} 枚 • ${p.publicVP} VP</span>
+            <span class="text-xs px-2.5 py-1 rounded-lg bg-amber-900/15 text-amber-950 font-extrabold">手札 ${p.resourceCount} 枚 • ${p.publicVP} VP</span>
           `;
           btn.addEventListener('click', () => {
+            this.activeInteractiveType = null;
             this.closeModal('interactiveModal');
             onSelect(vUid);
           });
@@ -4821,75 +5125,172 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.openModal('interactiveModal');
       }
 
-      openYearOfPlentyModal(onSelectTwo) {
-        const chosen = [];
-        document.getElementById('interactiveModalTitle').textContent = '🎁 発見カード：好きな資源を2枚獲得';
-        document.getElementById('interactiveModalDesc').textContent = '銀行から受け取る資源を2枚選んでください（同じ資源を2枚でも可）。';
+      openYearOfPlentyModal(onConfirm) {
+        let sel1 = 'wood';
+        let sel2 = 'brick';
+        this.activeInteractiveType = 'year_of_plenty';
+        document.getElementById('interactiveModalTitle').textContent = '🎁 発見カード（好きな資源2枚獲得）';
+        document.getElementById('interactiveModalDesc').textContent = '銀行から獲得する資源を2枚選択してください（同じ資源2枚も可）。';
         const bodyEl = document.getElementById('interactiveModalBody');
         const footerEl = document.getElementById('interactiveModalFooter');
         footerEl.innerHTML = '';
 
-        const redraw = () => {
-          bodyEl.innerHTML = `
-            <div class="grid grid-cols-5 gap-2">${
-              RESOURCE_KEYS.map(k => {
-                const r = RESOURCES[k];
-                const cnt = chosen.filter(x => x === k).length;
-                return `
-                  <button type="button" data-yop="${k}" class="p-2.5 rounded-xl bg-white/80 hover:bg-amber-100 border border-amber-900/30 text-center">
-                    <div class="text-xl">${r.emoji}</div>
-                    <div class="text-[11px] font-bold mt-1">${r.label}</div>
-                    <div class="text-xs font-extrabold text-amber-900 mt-0.5">+${cnt}枚</div>
-                  </button>
-                `;
-              }).join('')
-            }</div>
-            <div class="text-xs font-bold text-center text-mahogany-900 pt-2">選択中: ${chosen.length} / 2 枚</div>
+        const renderSlots = () => {
+          const makeRow = (label, currentVal) => `
+            <div class="space-y-1">
+              <div class="text-xs font-bold text-mahogany-900">${label}</div>
+              <div class="grid grid-cols-5 gap-1.5">
+                ${RESOURCE_KEYS.map(k => {
+                  const r = RESOURCES[k];
+                  const active = currentVal === k;
+                  return `<button type="button" data-pick="${label}_${k}" class="p-2 rounded-xl border text-center ${
+                    active ? 'bg-amber-900 text-amber-50 border-amber-400 ring-2 ring-amber-500' : 'bg-white/75 text-mahogany-950 border-amber-900/25'
+                  }">
+                    <div class="text-base">${r.emoji}</div>
+                    <div class="text-[10px] font-bold">${r.label}</div>
+                  </button>`;
+                }).join('')}
+              </div>
+            </div>
           `;
+          bodyEl.innerHTML = makeRow('1枚目', sel1) + makeRow('2枚目', sel2);
           RESOURCE_KEYS.forEach(k => {
-            bodyEl.querySelector(`[data-yop="${k}"]`)?.addEventListener('click', () => {
-              if (chosen.length < 2) {
-                chosen.push(k);
-                if (chosen.length === 2) {
-                  this.closeModal('interactiveModal');
-                  onSelectTwo(chosen[0], chosen[1]);
-                } else {
-                  redraw();
-                }
-              }
-            });
+            bodyEl.querySelector(`[data-pick="1枚目_${k}"]`)?.addEventListener('click', () => { sel1 = k; renderSlots(); });
+            bodyEl.querySelector(`[data-pick="2枚目_${k}"]`)?.addEventListener('click', () => { sel2 = k; renderSlots(); });
           });
         };
 
-        redraw();
+        renderSlots();
+
+        const btnOk = document.createElement('button');
+        btnOk.type = 'button';
+        btnOk.className = 'brass-btn px-4 py-2 rounded-xl font-bold text-xs';
+        btnOk.textContent = '2枚を獲得する';
+        btnOk.addEventListener('click', () => {
+          this.activeInteractiveType = null;
+          this.closeModal('interactiveModal');
+          onConfirm(sel1, sel2);
+        });
+        footerEl.appendChild(btnOk);
+
         this.openModal('interactiveModal');
       }
 
-      openMonopolyModal(onSelectOne) {
-        document.getElementById('interactiveModalTitle').textContent = '👑 独占カード：全プレイヤーから回収する資源';
-        document.getElementById('interactiveModalDesc').textContent = '他の全プレイヤーが所持している指定資源をすべてあなたの獲得資源とします。';
+      openMonopolyModal(onConfirm) {
+        let chosen = 'wheat';
+        this.activeInteractiveType = 'monopoly';
+        document.getElementById('interactiveModalTitle').textContent = '👑 独占カード（資源を1種類指定）';
+        document.getElementById('interactiveModalDesc').textContent = '指定した資源を他の全プレイヤーの手札からすべて回収します。';
         const bodyEl = document.getElementById('interactiveModalBody');
         const footerEl = document.getElementById('interactiveModalFooter');
         footerEl.innerHTML = '';
 
-        bodyEl.innerHTML = `<div class="grid grid-cols-5 gap-2">${
-          RESOURCE_KEYS.map(k => {
-            const r = RESOURCES[k];
-            return `
-              <button type="button" data-mono="${k}" class="p-2.5 rounded-xl bg-white/80 hover:bg-amber-100 border border-amber-900/30 text-center">
-                <div class="text-xl">${r.emoji}</div>
-                <div class="text-[11px] font-bold mt-1">${r.label}</div>
-              </button>
-            `;
-          }).join('')
-        }</div>`;
+        const renderChoices = () => {
+          bodyEl.innerHTML = `<div class="grid grid-cols-5 gap-1.5">${
+            RESOURCE_KEYS.map(k => {
+              const r = RESOURCES[k];
+              const active = chosen === k;
+              return `<button type="button" data-mono="${k}" class="p-2.5 rounded-xl border text-center ${
+                active ? 'bg-amber-900 text-amber-50 border-amber-400 ring-2 ring-amber-500' : 'bg-white/75 text-mahogany-950 border-amber-900/25'
+              }">
+                <div class="text-lg">${r.emoji}</div>
+                <div class="text-[10px] font-bold mt-0.5">${r.label}</div>
+              </button>`;
+            }).join('')
+          }</div>`;
+          RESOURCE_KEYS.forEach(k => {
+            bodyEl.querySelector(`[data-mono="${k}"]`)?.addEventListener('click', () => { chosen = k; renderChoices(); });
+          });
+        };
 
-        RESOURCE_KEYS.forEach(k => {
-          bodyEl.querySelector(`[data-mono="${k}"]`)?.addEventListener('click', () => {
-            this.closeModal('interactiveModal');
-            onSelectOne(k);
+        renderChoices();
+
+        const btnOk = document.createElement('button');
+        btnOk.type = 'button';
+        btnOk.className = 'brass-btn px-4 py-2 rounded-xl font-bold text-xs';
+        btnOk.textContent = 'この資源を独占する';
+        btnOk.addEventListener('click', () => {
+          this.activeInteractiveType = null;
+          this.closeModal('interactiveModal');
+          onConfirm(chosen);
+        });
+        footerEl.appendChild(btnOk);
+
+        this.openModal('interactiveModal');
+      }
+
+      openTradeStatusModal(trade) {
+        const st = gameController.publicState;
+        if (!st || !trade) return;
+
+        this.activeInteractiveType = 'trade_status';
+        document.getElementById('interactiveModalTitle').textContent = '🤝 交渉の許可状況一覧';
+        document.getElementById('interactiveModalDesc').textContent = '他のプレイヤーの許可状況を確認し、許可したプレイヤーから1人を選んで交換を成立させてください。';
+        const bodyEl = document.getElementById('interactiveModalBody');
+        const footerEl = document.getElementById('interactiveModalFooter');
+        footerEl.innerHTML = '';
+
+        const offerStr = RESOURCE_KEYS.filter(k => (trade.offer[k] || 0) > 0)
+          .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${trade.offer[k]}`)
+          .join(' / ');
+        const reqStr = RESOURCE_KEYS.filter(k => (trade.request[k] || 0) > 0)
+          .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${trade.request[k]}`)
+          .join(' / ');
+
+        const otherUids = st.turnOrder.filter(u => u !== trade.fromUid);
+        const rowsHtml = otherUids.map(u => {
+          const p = st.players[u];
+          const status = trade.responses?.[u] || 'pending';
+          let badgeHtml = '<span class="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-600/40 text-amber-900 text-[11px] font-bold">⏳ 応答待ち</span>';
+          let actionHtml = '<span class="text-[11px] text-mahogany-700/60">待機中</span>';
+
+          if (status === 'accepted') {
+            badgeHtml = '<span class="px-2 py-0.5 rounded-full bg-emerald-600/20 border border-emerald-600/50 text-emerald-900 text-[11px] font-extrabold">✅ 許可</span>';
+            actionHtml = `<button type="button" data-select-partner="${u}" class="brass-btn px-3 py-1.5 rounded-lg font-extrabold text-xs whitespace-nowrap">この人と交換する</button>`;
+          } else if (status === 'declined') {
+            badgeHtml = '<span class="px-2 py-0.5 rounded-full bg-rose-600/20 border border-rose-600/40 text-rose-900 text-[11px] font-bold">❌ 拒否</span>';
+            actionHtml = '<span class="text-[11px] text-rose-800/70">不可</span>';
+          } else if (status === 'insufficient') {
+            badgeHtml = '<span class="px-2 py-0.5 rounded-full bg-slate-500/20 border border-slate-500/40 text-slate-800 text-[11px] font-bold">❌ 資源不足</span>';
+            actionHtml = '<span class="text-[11px] text-slate-600">不可</span>';
+          }
+
+          return `
+            <div class="p-2.5 rounded-xl bg-white/85 border border-amber-900/25 flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="font-bold text-xs sm:text-sm text-mahogany-950 flex items-center gap-1.5 truncate">
+                  <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${p.palette.hex}"></span>
+                  <span class="truncate">${p.name}</span>
+                </div>
+                <div class="mt-1">${badgeHtml}</div>
+              </div>
+              <div class="flex-shrink-0">${actionHtml}</div>
+            </div>
+          `;
+        }).join('');
+
+        bodyEl.innerHTML = `
+          <div class="p-2.5 rounded-xl bg-amber-950/10 border border-amber-900/25 space-y-1 text-xs font-bold text-mahogany-950">
+            <div>あなたが渡す資源: <span class="text-amber-950">${offerStr}</span></div>
+            <div>あなたが欲しい資源: <span class="text-emerald-900">${reqStr}</span></div>
+          </div>
+          <div class="space-y-2">${rowsHtml}</div>
+        `;
+
+        otherUids.forEach(u => {
+          bodyEl.querySelector(`[data-select-partner="${u}"]`)?.addEventListener('click', () => {
+            gameController.finalizeDomesticTrade(trade.fromUid, u);
           });
         });
+
+        const btnCancel = document.createElement('button');
+        btnCancel.type = 'button';
+        btnCancel.className = 'px-4 py-2 rounded-xl bg-mahogany-900 text-parchment-100 font-bold text-xs';
+        btnCancel.textContent = '交渉を取りやめる';
+        btnCancel.addEventListener('click', () => {
+          gameController.cancelDomesticTrade(trade.fromUid);
+        });
+        footerEl.appendChild(btnCancel);
 
         this.openModal('interactiveModal');
       }
@@ -4899,14 +5300,16 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const proposer = st?.players?.[trade.fromUid];
         if (!proposer) return;
 
+        this.activeInteractiveType = 'trade_response';
         document.getElementById('interactiveModalTitle').textContent = '🤝 交易の提案が届きました';
-        document.getElementById('interactiveModalDesc').textContent = `${proposer.name} から以下の条件で資源交換が提案されています。`;
+        document.getElementById('interactiveModalDesc').textContent = `${proposer.name} から以下の条件で資源交換が提案されています。許可するか選択してください。`;
         const bodyEl = document.getElementById('interactiveModalBody');
         const footerEl = document.getElementById('interactiveModalFooter');
         footerEl.innerHTML = '';
 
-        const offerStr = RESOURCE_KEYS.filter(k => trade.offer[k] > 0).map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${trade.offer[k]}`).join(' / ');
-        const reqStr = RESOURCE_KEYS.filter(k => trade.request[k] > 0).map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${trade.request[k]}`).join(' / ');
+        const offerStr = RESOURCE_KEYS.filter(k => (trade.offer[k] || 0) > 0).map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${trade.offer[k]}`).join(' / ');
+        const reqStr = RESOURCE_KEYS.filter(k => (trade.request[k] || 0) > 0).map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${trade.request[k]}`).join(' / ');
+        const canAfford = secretVault.hasResources(gameController.localUid, trade.request);
 
         bodyEl.innerHTML = `
           <div class="p-3 rounded-xl bg-white/80 border border-amber-900/25 space-y-2 text-xs font-bold text-mahogany-950">
@@ -4918,19 +5321,22 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const btnAccept = document.createElement('button');
         btnAccept.type = 'button';
         btnAccept.className = 'brass-btn px-4 py-2 rounded-xl font-bold text-xs';
-        btnAccept.textContent = '応じる（交換成立）';
+        btnAccept.disabled = !canAfford;
+        btnAccept.textContent = canAfford ? '✅ 許可する' : '❌ 資源不足のため許可不可';
         btnAccept.addEventListener('click', () => {
+          this.activeInteractiveType = null;
           this.closeModal('interactiveModal');
-          gameController.respondToTradeOffer(gameController.localUid, true);
+          gameController.respondToTradeOffer(gameController.localUid, 'accepted');
         });
 
         const btnDecline = document.createElement('button');
         btnDecline.type = 'button';
         btnDecline.className = 'px-4 py-2 rounded-xl bg-mahogany-900 text-parchment-100 font-bold text-xs';
-        btnDecline.textContent = '見送る';
+        btnDecline.textContent = '❌ 拒否する';
         btnDecline.addEventListener('click', () => {
+          this.activeInteractiveType = null;
           this.closeModal('interactiveModal');
-          gameController.respondToTradeOffer(gameController.localUid, false);
+          gameController.respondToTradeOffer(gameController.localUid, 'declined');
         });
 
         footerEl.appendChild(btnDecline);
