@@ -129,31 +129,56 @@
 
     /* サイコロの回転アニメーション */
     @keyframes diceTumble {
-      0% { transform: rotate(0deg) scale(1); }
-      25% { transform: rotate(-16deg) scale(1.12); }
-      50% { transform: rotate(14deg) scale(1.08); }
-      75% { transform: rotate(-8deg) scale(1.1); }
+      0% { transform: rotate(0deg) scale(0.92); }
+      35% { transform: rotate(-14deg) scale(1.08); }
+      70% { transform: rotate(12deg) scale(1.05); }
       100% { transform: rotate(0deg) scale(1); }
     }
-    .dice-rolling {
-      animation: diceTumble 0.45s ease-in-out;
+    .animate-dice {
+      animation: diceTumble 0.42s ease-out;
     }
 
-    /* 資源獲得時の対応タイル（ヘクス）明滅アニメーション */
+    /* 資源獲得時の対応タイル（ヘクス）明滅アニメーション（ゆっくり2回） */
     @keyframes hexProduceFlash {
       0%, 100% {
         filter: brightness(1);
         stroke: #fde047;
-        stroke-width: 2.8;
+        stroke-width: 2.5;
       }
       50% {
-        filter: brightness(1.48) drop-shadow(0 0 10px #facc15);
+        filter: brightness(1.5) drop-shadow(0 0 12px #facc15);
         stroke: #ffffff;
-        stroke-width: 4.5;
+        stroke-width: 4.8;
       }
     }
     .hex-gain-flash {
-      animation: hexProduceFlash 0.75s ease-in-out 6;
+      animation: hexProduceFlash 1.45s ease-in-out 2;
+    }
+
+    /* プレイヤーゾーン着弾時のバウンスハイライト */
+    @keyframes cornerZonePulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(250, 204, 21, 0); }
+      45% { transform: scale(1.09); box-shadow: 0 0 16px rgba(250, 204, 21, 0.85); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(250, 204, 21, 0); }
+    }
+    .corner-zone-hit {
+      animation: cornerZonePulse 0.55s ease-out;
+    }
+
+    /* 手番切り替えカットイン装飾 */
+    .turn-cutin-card {
+      background: linear-gradient(135deg, rgba(36, 20, 13, 0.96) 0%, rgba(23, 13, 8, 0.97) 100%);
+      box-shadow:
+        0 14px 36px rgba(0, 0, 0, 0.72),
+        0 0 24px rgba(245, 158, 11, 0.28),
+        inset 0 1px 0 rgba(255, 243, 205, 0.28);
+    }
+    .turn-cutin-card.is-my-turn {
+      background: linear-gradient(135deg, rgba(253, 250, 243, 0.98) 0%, rgba(237, 224, 190, 0.98) 100%);
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.65),
+        0 0 30px rgba(250, 204, 21, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
     /* 獲得資源バナー登場アニメーション */
@@ -209,7 +234,7 @@
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
         </div>
         <span id="buildVersionBadge" class="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-          v2.10
+          v3.1
         </span>
       </div>
 
@@ -403,19 +428,34 @@
         </div>
 
         <!-- インタラクティブ SVG ボード（ピンチズーム・ドラッグ移動対応） -->
-        <div id="boardViewport" class="flex-1 flex items-center justify-center p-1 sm:p-2 relative min-h-[330px] sm:min-h-[450px] overflow-hidden">
-          <!-- ズームコントロールボタン（スマホ・PC共通） -->
-          <div class="absolute top-2.5 right-2.5 z-20 flex flex-col gap-1.5 bg-mahogany-950/85 backdrop-blur-sm p-1 rounded-xl border border-brass-600/50 shadow-lg">
-            <button type="button" onclick="appUI.adjustBoardZoom(0.28)" title="盤面を拡大" class="w-8 h-8 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 text-parchment-100 font-extrabold text-base flex items-center justify-center">
+        <div id="boardViewport" class="flex-1 flex items-center justify-center p-1 sm:p-2 relative min-h-[360px] sm:min-h-[460px] overflow-hidden">
+          <!-- ズームコントロールボタン（上部中央に配置し四隅のプレイヤーゾーンと干渉しない設計） -->
+          <div class="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-row items-center gap-1 bg-mahogany-950/85 backdrop-blur-sm px-1.5 py-1 rounded-xl border border-brass-600/50 shadow-lg">
+            <button type="button" onclick="appUI.adjustBoardZoom(0.28)" title="盤面を拡大" class="w-7 h-7 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 text-parchment-100 font-extrabold text-sm flex items-center justify-center">
               ＋
             </button>
-            <button type="button" onclick="appUI.adjustBoardZoom(-0.28)" title="盤面を縮小" class="w-8 h-8 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 text-parchment-100 font-extrabold text-base flex items-center justify-center">
+            <button type="button" onclick="appUI.adjustBoardZoom(-0.28)" title="盤面を縮小" class="w-7 h-7 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 text-parchment-100 font-extrabold text-sm flex items-center justify-center">
               −
             </button>
-            <button type="button" onclick="appUI.resetBoardTransform()" title="全体表示に戻す" class="w-8 h-7 rounded-lg bg-mahogany-900 hover:bg-mahogany-800 text-brass-400 font-bold text-[10px] flex items-center justify-center">
+            <button type="button" onclick="appUI.resetBoardTransform()" title="全体表示に戻す" class="px-2 h-7 rounded-lg bg-mahogany-900 hover:bg-mahogany-800 text-brass-400 font-bold text-[10px] flex items-center justify-center">
               全体
             </button>
           </div>
+
+          <!-- マップ四隅のプレイヤーゾーン（スマホでも盤面と一体で資源移動を視認可能） -->
+          <div id="boardCornerZones" class="pointer-events-none absolute inset-0 z-10 p-1.5 sm:p-2.5 flex flex-col justify-between">
+            <div class="flex items-start justify-between gap-2">
+              <div id="cornerSlot0" class="max-w-[42%] sm:max-w-[190px]"></div>
+              <div id="cornerSlot1" class="max-w-[42%] sm:max-w-[190px]"></div>
+            </div>
+            <div class="flex items-end justify-between gap-2">
+              <div id="cornerSlot2" class="max-w-[42%] sm:max-w-[190px]"></div>
+              <div id="cornerSlot3" class="max-w-[42%] sm:max-w-[190px]"></div>
+            </div>
+          </div>
+
+          <!-- 手番切り替え「プレイヤー名の番」カットインバナー -->
+          <div id="turnCutinOverlay" class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center p-4"></div>
 
           <svg id="hexBoardSvg" viewBox="-315 -285 630 570" class="w-full h-full max-h-[56vh] sm:max-h-[62vh] select-none drop-shadow-2xl origin-center">
             <defs>
@@ -1784,6 +1824,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           ]
         };
 
+        if (typeof appUI !== 'undefined' && appUI) {
+          appUI.lastAnnouncedTurnKey = null;
+        }
         this.syncPublicCountsFromVault();
         this.prepareTurnState();
         appUI.renderAll();
@@ -1968,7 +2011,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const canRunCpu = (this.mode === 'solo') || (this.mode === 'online' && onlineManager.isHost);
         if (activePlayer && activePlayer.isCpu && canRunCpu && st.phase !== 'DISCARD') {
           if (this.cpuTimer) clearTimeout(this.cpuTimer);
-          this.cpuTimer = setTimeout(() => this.executeCpuTurnStep(), 680);
+          const isTurnOpeningStep = (st.phase === 'ROLL' || st.phase === 'INITIAL_SETTLEMENT');
+          const delayMs = isTurnOpeningStep ? 980 : 650;
+          this.cpuTimer = setTimeout(() => this.executeCpuTurnStep(), delayMs);
         }
       }
 
@@ -3855,6 +3900,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.domesticRequest = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 };
         this.lastTriggeredRollId = null;
         this.lastTriggeredStealId = null;
+        this.lastAnnouncedTurnKey = null;
+        this.turnBannerAnim = null;
         this.activeGainHighlightUntil = 0;
         this.gainHighlightTimer = null;
         this.activeInteractiveType = null;
@@ -3881,7 +3928,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           }, { passive: false });
 
           viewport.addEventListener('mousedown', (e) => {
-            if (e.button !== 0 || e.target.closest('button')) return;
+            if (e.target.closest('button')) return;
             this.isPanning = true;
             this.panStartX = e.clientX - this.boardPanX;
             this.panStartY = e.clientY - this.boardPanY;
@@ -3891,7 +3938,6 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             if (!this.isPanning) return;
             this.boardPanX = e.clientX - this.panStartX;
             this.boardPanY = e.clientY - this.panStartY;
-            this.clampBoardPan();
             this.applyBoardTransform();
           });
 
@@ -3901,36 +3947,33 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
           viewport.addEventListener('touchstart', (e) => {
             if (e.target.closest('button')) return;
-            if (e.touches.length === 2) {
+            if (e.touches.length === 1) {
+              this.isPanning = true;
+              this.panStartX = e.touches[0].clientX - this.boardPanX;
+              this.panStartY = e.touches[0].clientY - this.boardPanY;
+            } else if (e.touches.length === 2) {
               this.isPanning = false;
               const dx = e.touches[0].clientX - e.touches[1].clientX;
               const dy = e.touches[0].clientY - e.touches[1].clientY;
               this.pinchStartDist = Math.hypot(dx, dy);
               this.pinchStartZoom = this.boardZoom;
-            } else if (e.touches.length === 1) {
-              this.isPanning = true;
-              this.panStartX = e.touches[0].clientX - this.boardPanX;
-              this.panStartY = e.touches[0].clientY - this.boardPanY;
             }
           }, { passive: true });
 
           viewport.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2 && this.pinchStartDist) {
-              e.preventDefault();
+            if (e.touches.length === 1 && this.isPanning && this.boardZoom > 1.02) {
+              this.boardPanX = e.touches[0].clientX - this.panStartX;
+              this.boardPanY = e.touches[0].clientY - this.panStartY;
+              this.applyBoardTransform();
+            } else if (e.touches.length === 2 && this.pinchStartDist) {
               const dx = e.touches[0].clientX - e.touches[1].clientX;
               const dy = e.touches[0].clientY - e.touches[1].clientY;
               const dist = Math.hypot(dx, dy);
-              const nextZoom = Math.max(1, Math.min(2.6, this.pinchStartZoom * (dist / this.pinchStartDist)));
-              this.boardZoom = nextZoom;
-              this.clampBoardPan();
-              this.applyBoardTransform();
-            } else if (e.touches.length === 1 && this.isPanning) {
-              this.boardPanX = e.touches[0].clientX - this.panStartX;
-              this.boardPanY = e.touches[0].clientY - this.panStartY;
-              this.clampBoardPan();
+              const scaleRatio = dist / this.pinchStartDist;
+              this.boardZoom = Math.min(2.4, Math.max(0.8, this.pinchStartZoom * scaleRatio));
               this.applyBoardTransform();
             }
-          }, { passive: false });
+          }, { passive: true });
 
           viewport.addEventListener('touchend', () => {
             this.isPanning = false;
@@ -3940,12 +3983,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       adjustBoardZoom(delta) {
-        this.boardZoom = Math.max(1, Math.min(2.6, +(this.boardZoom + delta).toFixed(2)));
-        if (this.boardZoom === 1) {
+        this.boardZoom = Math.min(2.4, Math.max(0.8, +(this.boardZoom + delta).toFixed(2)));
+        if (this.boardZoom <= 1) {
           this.boardPanX = 0;
           this.boardPanY = 0;
-        } else {
-          this.clampBoardPan();
         }
         this.applyBoardTransform();
       }
@@ -3957,102 +3998,143 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.applyBoardTransform();
       }
 
-      clampBoardPan() {
-        const maxOffset = Math.max(0, (this.boardZoom - 1) * 150);
-        this.boardPanX = Math.max(-maxOffset, Math.min(maxOffset, this.boardPanX));
-        this.boardPanY = Math.max(-maxOffset, Math.min(maxOffset, this.boardPanY));
-      }
-
       applyBoardTransform() {
         const svg = document.getElementById('hexBoardSvg');
         if (!svg) return;
-        svg.style.transition = this.isPanning ? 'none' : 'transform 0.16s ease-out';
         svg.style.transform = `translate(${this.boardPanX}px, ${this.boardPanY}px) scale(${this.boardZoom})`;
       }
 
-      scrollToSection(elementId) {
-        const el = document.getElementById(elementId);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-
       showGameScreen() {
-        document.getElementById('lobbyScreen').classList.add('hidden');
-        document.getElementById('gameScreen').classList.remove('hidden');
-        document.getElementById('btnBackLobby').classList.remove('hidden');
+        document.getElementById('lobbyScreen')?.classList.add('hidden');
+        document.getElementById('gameScreen')?.classList.remove('hidden');
+        document.getElementById('btnBackLobby')?.classList.remove('hidden');
 
         const badge = document.getElementById('headerRoomBadge');
         const modeLabel = document.getElementById('headerModeLabel');
-        const roomCode = document.getElementById('headerRoomCode');
-        const btnCopy = document.getElementById('btnCopyInvite');
+        const codeEl = document.getElementById('headerRoomCode');
+        const copyBtn = document.getElementById('btnCopyInvite');
 
-        badge.classList.remove('hidden');
-        badge.classList.add('flex');
-
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.classList.add('flex');
+        }
         if (gameController.mode === 'online') {
-          modeLabel.textContent = 'ONLINE P2P';
-          roomCode.textContent = `ROOM: ${gameController.roomId}`;
-          roomCode.classList.remove('hidden');
-          btnCopy.classList.remove('hidden');
+          if (modeLabel) modeLabel.textContent = 'ONLINE';
+          if (codeEl) {
+            codeEl.textContent = `#${gameController.roomId}`;
+            codeEl.classList.remove('hidden');
+          }
+          if (copyBtn) copyBtn.classList.remove('hidden');
         } else {
-          modeLabel.textContent = 'SOLO VS CPU';
-          roomCode.classList.add('hidden');
-          btnCopy.classList.add('hidden');
+          if (modeLabel) modeLabel.textContent = 'SOLO VS CPU';
+          if (codeEl) codeEl.classList.add('hidden');
+          if (copyBtn) copyBtn.classList.add('hidden');
         }
       }
 
       confirmBackToLobby() {
-        this.backToLobby();
+        const st = gameController.publicState;
+        if (!st || st.status === 'finished') {
+          this.backToLobby();
+          return;
+        }
+        this.activeInteractiveType = 'confirm_exit';
+        document.getElementById('interactiveModalTitle').textContent = 'ロビーへ戻りますか？';
+        document.getElementById('interactiveModalDesc').textContent = '現在の対局を終了してロビー画面へ戻ります。';
+        document.getElementById('interactiveModalBody').innerHTML = '';
+        const footerEl = document.getElementById('interactiveModalFooter');
+        footerEl.innerHTML = '';
+
+        const btnStay = document.createElement('button');
+        btnStay.type = 'button';
+        btnStay.className = 'px-4 py-2 rounded-xl bg-amber-900/15 text-mahogany-950 font-bold text-xs';
+        btnStay.textContent = '対局を続ける';
+        btnStay.addEventListener('click', () => {
+          this.activeInteractiveType = null;
+          this.closeModal('interactiveModal');
+        });
+
+        const btnLeave = document.createElement('button');
+        btnLeave.type = 'button';
+        btnLeave.className = 'px-4 py-2 rounded-xl bg-rose-800 text-white font-bold text-xs';
+        btnLeave.textContent = 'ロビーへ戻る';
+        btnLeave.addEventListener('click', () => {
+          this.activeInteractiveType = null;
+          this.closeModal('interactiveModal');
+          this.backToLobby();
+        });
+
+        footerEl.appendChild(btnStay);
+        footerEl.appendChild(btnLeave);
+        this.openModal('interactiveModal');
       }
 
       backToLobby() {
-        if (gameController.cpuTimer) clearTimeout(gameController.cpuTimer);
+        if (gameController.cpuTimer) {
+          clearTimeout(gameController.cpuTimer);
+          gameController.cpuTimer = null;
+        }
         if (gameController.mode === 'online') {
           onlineManager.leaveRoom();
         }
-        document.getElementById('gameScreen').classList.add('hidden');
-        document.getElementById('lobbyScreen').classList.remove('hidden');
-        document.getElementById('btnBackLobby').classList.add('hidden');
-        document.getElementById('headerRoomBadge').classList.add('hidden');
-        document.getElementById('headerRoomBadge').classList.remove('flex');
-      }
+        gameController.publicState = null;
+        gameController.placementMode = null;
+        this.lastAnnouncedTurnKey = null;
+        const cutinOverlay = document.getElementById('turnCutinOverlay');
+        if (cutinOverlay) cutinOverlay.innerHTML = '';
+        this.resetBoardTransform();
 
-      toggleSound() {
-        sound.enabled = !sound.enabled;
-        const btn = document.getElementById('btnSoundToggle');
-        btn.innerHTML = sound.enabled
-          ? '🔊<span class="hidden sm:inline"> 音ON</span>'
-          : '🔇<span class="hidden sm:inline"> 音OFF</span>';
-        this.showToast(sound.enabled ? '効果音をONにしました' : '効果音をOFFにしました', 'info');
+        document.getElementById('gameScreen')?.classList.add('hidden');
+        document.getElementById('lobbyScreen')?.classList.remove('hidden');
+        document.getElementById('btnBackLobby')?.classList.add('hidden');
+        const badge = document.getElementById('headerRoomBadge');
+        if (badge) {
+          badge.classList.add('hidden');
+          badge.classList.remove('flex');
+        }
       }
 
       copyInviteLink() {
         const roomId = onlineManager.currentRoomId || gameController.roomId;
         const url = new URL(window.location.href);
-        url.searchParams.set('room', roomId);
-        const inviteText = url.toString();
+        if (roomId) url.searchParams.set('room', roomId);
+        const shareText = url.toString();
 
-        const tempInput = document.createElement('input');
-        tempInput.value = inviteText;
+        const tempInput = document.createElement('textarea');
+        tempInput.value = shareText;
+        tempInput.style.position = 'fixed';
+        tempInput.style.opacity = '0';
         document.body.appendChild(tempInput);
         tempInput.select();
         try {
           document.execCommand('copy');
           this.showToast(`招待URLをコピーしました（部屋ID: ${roomId}）`, 'success');
         } catch (e) {
-          this.showToast(`招待URL: ${inviteText}`, 'info');
+          this.showToast(`部屋ID: ${roomId} を友達に共有してください`, 'info');
         }
         document.body.removeChild(tempInput);
       }
 
+      toggleSound() {
+        sound.enabled = !sound.enabled;
+        const btn = document.getElementById('btnSoundToggle');
+        if (btn) {
+          btn.innerHTML = sound.enabled
+            ? '🔊<span class="hidden sm:inline"> 音ON</span>'
+            : '🔇<span class="hidden sm:inline"> 音OFF</span>';
+        }
+      }
+
       showToast(message, type = 'info') {
         const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        const colorMap = {
-          success: 'bg-emerald-950/95 border-emerald-400/70 text-emerald-100',
-          warn: 'bg-amber-950/95 border-amber-400/70 text-amber-100',
-          info: 'bg-mahogany-900/95 border-brass-400/70 text-parchment-100'
+        if (!container) return;
+        const colors = {
+          success: 'bg-emerald-950/95 border-emerald-400/80 text-emerald-100',
+          warn: 'bg-rose-950/95 border-rose-400/80 text-rose-100',
+          info: 'bg-mahogany-950/95 border-brass-400/80 text-parchment-100'
         };
-        toast.className = `px-4 py-2.5 rounded-xl border text-xs font-bold shadow-xl backdrop-blur-md transition-all duration-300 ${colorMap[type] || colorMap.info}`;
+        const toast = document.createElement('div');
+        toast.className = `pointer-events-auto px-3.5 py-2.5 rounded-xl border shadow-xl text-xs font-bold leading-snug transition-all duration-300 ${colors[type] || colors.info}`;
         toast.textContent = message;
         container.appendChild(toast);
 
@@ -4060,7 +4142,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           toast.style.opacity = '0';
           toast.style.transform = 'translateY(-6px)';
           setTimeout(() => toast.remove(), 300);
-        }, 3200);
+        }, 3300);
       }
 
       openModal(id) {
@@ -4071,13 +4153,18 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         document.getElementById(id)?.classList.add('hidden');
       }
 
+      scrollToSection(id) {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
       animateDice() {
-        ['die1Box', 'die2Box'].forEach(id => {
-          const el = document.getElementById(id);
+        const d1 = document.getElementById('die1Box');
+        const d2 = document.getElementById('die2Box');
+        [d1, d2].forEach(el => {
           if (!el) return;
-          el.classList.remove('dice-rolling');
+          el.classList.remove('animate-dice');
           void el.offsetWidth;
-          el.classList.add('dice-rolling');
+          el.classList.add('animate-dice');
         });
       }
 
@@ -4085,32 +4172,45 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const st = gameController.publicState;
         if (!st) return;
 
-        // 新しいサイコロ資源獲得イベントの検知と明滅タイマー起動
+        // 手番切り替え時の「プレイヤー名の番」カットイン表示判定
+        if ((st.status === 'setup' || st.status === 'playing') && st.activeUid) {
+          const turnKey = st.status === 'setup'
+            ? `setup_${st.setupStepIndex}_${st.activeUid}`
+            : `play_${st.turnNumber}_${st.activeUid}`;
+          if (turnKey !== this.lastAnnouncedTurnKey) {
+            this.lastAnnouncedTurnKey = turnKey;
+            this.showTurnBanner(st);
+          }
+        }
+
+        // 新しいサイコロ資源獲得イベントの検知と明滅・飛行アニメーション起動
         const gainEv = st.lastDiceGainEvent;
-        if (gainEv && gainEv.rollId && gainEv.rollId !== this.lastTriggeredRollId) {
+        const isNewGainEvent = Boolean(gainEv && gainEv.rollId && gainEv.rollId !== this.lastTriggeredRollId);
+        if (isNewGainEvent) {
           this.lastTriggeredRollId = gainEv.rollId;
+          this.activeGainHighlightUntil = Date.now() + 3300;
           const myGains = gainEv.gainsByUid?.[gameController.localUid];
           if (myGains && Object.keys(myGains).length > 0) {
-            this.activeGainHighlightUntil = Date.now() + 4500;
             const summaryTxt = RESOURCE_KEYS
               .filter(k => myGains[k] > 0)
               .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label} +${myGains[k]}枚`)
               .join(' / ');
             this.showToast(`📦 資源獲得: ${summaryTxt}`, 'success');
-            if (this.gainHighlightTimer) clearTimeout(this.gainHighlightTimer);
-            this.gainHighlightTimer = setTimeout(() => {
-              if (gameController.publicState) {
-                this.renderBoardSvg(gameController.publicState);
-                this.renderPrivateHand(gameController.publicState);
-              }
-            }, 4600);
           }
+          if (this.gainHighlightTimer) clearTimeout(this.gainHighlightTimer);
+          this.gainHighlightTimer = setTimeout(() => {
+            if (gameController.publicState) {
+              this.renderBoardSvg(gameController.publicState);
+              this.renderPrivateHand(gameController.publicState);
+            }
+          }, 3400);
         }
 
         // 盗賊強奪イベントの秘匿通知（奪った側・奪われた側当人のみに表示し、他プレイヤーには通知しない）
         const myPrivForNotice = secretVault.getOwnPrivateView(gameController.localUid);
         const stealNotice = myPrivForNotice.lastStealNotice;
-        if (stealNotice && stealNotice.id && stealNotice.id !== this.lastTriggeredStealId) {
+        const isNewStealEvent = Boolean(stealNotice && stealNotice.id && stealNotice.id !== this.lastTriggeredStealId);
+        if (isNewStealEvent) {
           this.lastTriggeredStealId = stealNotice.id;
           const resMeta = RESOURCES[stealNotice.resource];
           if (resMeta) {
@@ -4133,6 +4233,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
 
         this.renderPlayersBar(st);
+        this.renderCornerPlayerZones(st);
         this.renderGuidanceBanner(st);
         this.renderDiceGainBanner(st);
         this.renderBoardSvg(st);
@@ -4141,6 +4242,261 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.renderLogs(st);
         this.renderPrivateHand(st);
         this.renderMobileDock(st);
+
+        if (isNewGainEvent) {
+          requestAnimationFrame(() => this.animateDiceResourceFlights(st, gainEv));
+        }
+        if (isNewStealEvent) {
+          requestAnimationFrame(() => this.animateRobberStealFlight(st, stealNotice));
+        }
+      }
+
+      showTurnBanner(st) {
+        const overlay = document.getElementById('turnCutinOverlay');
+        const activePlayer = st.players?.[st.activeUid];
+        if (!overlay || !activePlayer) return;
+
+        if (this.turnBannerAnim) {
+          try { this.turnBannerAnim.cancel(); } catch (e) {}
+          this.turnBannerAnim = null;
+        }
+
+        const isMe = st.activeUid === gameController.localUid;
+        const accentHex = activePlayer.palette?.hex || '#f59e0b';
+        const phaseSubText = st.status === 'setup'
+          ? `初期配置 (${st.setupStepIndex + 1} / 8)`
+          : `第 ${st.turnNumber} ターン`;
+
+        overlay.innerHTML = `
+          <div class="turn-cutin-card ${isMe ? 'is-my-turn' : ''} rounded-2xl px-5 py-3.5 sm:px-7 sm:py-4 border-2 flex flex-col items-center text-center max-w-[90%] backdrop-blur-md"
+               style="border-color: ${accentHex};">
+            <div class="flex items-center gap-2 text-[11px] sm:text-xs font-extrabold tracking-wider uppercase ${isMe ? 'text-amber-800' : 'text-brass-400'}">
+              <span class="w-2.5 h-2.5 rounded-full border border-white/80 shadow" style="background: ${accentHex};"></span>
+              <span>${phaseSubText}${isMe ? ' • YOUR TURN' : ''}</span>
+            </div>
+            <div class="font-serif font-extrabold text-xl sm:text-2xl mt-1 tracking-wide ${isMe ? 'text-mahogany-950' : 'text-parchment-50'}">
+              ${activePlayer.name} の番
+            </div>
+            ${isMe ? '<div class="mt-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-600/40 text-[10px] sm:text-xs font-bold text-amber-950">✨ あなたの行動ターンです</div>' : ''}
+          </div>
+        `;
+
+        const cardEl = overlay.firstElementChild;
+        if (!cardEl || typeof cardEl.animate !== 'function') return;
+
+        this.turnBannerAnim = cardEl.animate([
+          { opacity: 0, transform: 'translateY(10px) scale(0.86)' },
+          { opacity: 1, transform: 'translateY(0) scale(1.03)', offset: 0.14 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.22 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.8 },
+          { opacity: 0, transform: 'translateY(-8px) scale(0.96)' }
+        ], {
+          duration: 1850,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        });
+
+        this.turnBannerAnim.onfinish = () => {
+          overlay.innerHTML = '';
+          this.turnBannerAnim = null;
+        };
+      }
+
+      renderCornerPlayerZones(st) {
+        const slotIds = ['cornerSlot0', 'cornerSlot1', 'cornerSlot2', 'cornerSlot3'];
+        slotIds.forEach((slotId, idx) => {
+          const slotEl = document.getElementById(slotId);
+          if (!slotEl) return;
+          const uid = st.turnOrder[idx];
+          if (!uid || !st.players[uid]) {
+            slotEl.innerHTML = '';
+            return;
+          }
+          const p = st.players[uid];
+          const isTurn = st.activeUid === uid && st.status !== 'finished';
+          const isMe = uid === gameController.localUid;
+          const secretBonusVp = isMe
+            ? secretVault.getSecretVpCount(uid)
+            : (st.revealedSecretVps?.[uid] || 0);
+          const displayedVp = p.publicVP + secretBonusVp;
+
+          slotEl.innerHTML = `
+            <div data-corner-player-uid="${uid}" class="rounded-xl px-2 py-1.5 sm:px-2.5 sm:py-1.5 backdrop-blur-md transition-all shadow-lg border ${
+              isTurn
+                ? 'bg-parchment-100/95 text-mahogany-950 border-amber-400 ring-2 ring-amber-400/90'
+                : 'bg-mahogany-950/88 text-parchment-100 border-brass-600/60'
+            }">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/70" style="background:${p.palette.hex}"></span>
+                <span class="font-bold text-[11px] sm:text-xs truncate">${p.name}</span>
+                ${isMe ? '<span class="px-1 py-0.2 rounded bg-amber-500/25 border border-amber-500/50 text-[9px] font-extrabold flex-shrink-0">自分</span>' : ''}
+              </div>
+              <div class="flex items-center justify-between gap-2 mt-0.5 text-[10px] sm:text-[11px] font-bold ${isTurn ? 'text-amber-950' : 'text-parchment-200'}">
+                <span>🏆 ${displayedVp}VP</span>
+                <span>🃏 ${p.resourceCount}枚</span>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      getHexScreenCenter(hexId, st) {
+        const svg = document.getElementById('hexBoardSvg');
+        const hex = (st.board?.hexes || []).find(h => h.id === hexId);
+        if (!svg || !hex) return null;
+        const rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return null;
+        // viewBox="-315 -285 630 570" の比率から現在の画面座標を算出
+        const normX = (hex.cx - (-315)) / 630;
+        const normY = (hex.cy - (-285)) / 570;
+        return {
+          x: rect.left + normX * rect.width,
+          y: rect.top + normY * rect.height
+        };
+      }
+
+      spawnFlyingResourceCard({ startX, startY, endX, endY, resourceKey, amountText, accentHex = '#f59e0b', delayMs = 0, durationMs = 1300, onArrive = null }) {
+        const res = RESOURCES[resourceKey];
+        if (!res) return;
+
+        const pill = document.createElement('div');
+        pill.style.position = 'fixed';
+        pill.style.left = `${startX}px`;
+        pill.style.top = `${startY}px`;
+        pill.style.transform = 'translate(-50%, -50%) scale(0.75)';
+        pill.style.zIndex = '65';
+        pill.style.pointerEvents = 'none';
+        pill.style.opacity = '0';
+        pill.style.borderColor = accentHex;
+        pill.className = 'px-2.5 py-1 rounded-xl bg-mahogany-950/95 border-2 text-parchment-50 shadow-2xl flex items-center gap-1 text-xs sm:text-sm font-extrabold whitespace-nowrap';
+        pill.innerHTML = `
+          <span class="text-base sm:text-lg leading-none">${res.emoji}</span>
+          <span>${res.label}</span>
+          <span class="text-amber-300 font-black">${amountText}</span>
+        `;
+        document.body.appendChild(pill);
+
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const arcLift = Math.min(-28, -Math.hypot(dx, dy) * 0.14);
+
+        const anim = pill.animate([
+          { opacity: 0, transform: 'translate(-50%, -50%) scale(0.65)' },
+          { opacity: 1, transform: 'translate(-50%, -50%) scale(1.12)', offset: 0.16 },
+          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.52}px), calc(-50% + ${dy * 0.52 + arcLift}px)) scale(1.06)`, offset: 0.55 },
+          { opacity: 1, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.95)`, offset: 0.9 },
+          { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.7)` }
+        ], {
+          duration: durationMs,
+          delay: delayMs,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        });
+
+        anim.onfinish = () => {
+          pill.remove();
+          if (typeof onArrive === 'function') onArrive();
+        };
+      }
+
+      animateDiceResourceFlights(st, gainEv) {
+        if (!gainEv || !gainEv.hexGainsByUid) return;
+        let staggerIdx = 0;
+
+        st.turnOrder.forEach(uid => {
+          const items = gainEv.hexGainsByUid[uid];
+          if (!Array.isArray(items) || items.length === 0) return;
+
+          const cornerEl = document.querySelector(`[data-corner-player-uid="${uid}"]`);
+          if (!cornerEl) return;
+          const targetRect = cornerEl.getBoundingClientRect();
+          if (!targetRect.width || !targetRect.height) return;
+
+          const endX = targetRect.left + targetRect.width / 2;
+          const endY = targetRect.top + targetRect.height / 2;
+          const playerColor = st.players[uid]?.palette?.hex || '#f59e0b';
+
+          items.forEach(item => {
+            const startPos = this.getHexScreenCenter(item.hexId, st);
+            if (!startPos) return;
+
+            this.spawnFlyingResourceCard({
+              startX: startPos.x,
+              startY: startPos.y,
+              endX,
+              endY,
+              resourceKey: item.resource,
+              amountText: `+${item.amount}`,
+              accentHex: playerColor,
+              delayMs: staggerIdx * 140,
+              durationMs: 1350,
+              onArrive: () => {
+                cornerEl.classList.remove('corner-zone-hit');
+                void cornerEl.offsetWidth;
+                cornerEl.classList.add('corner-zone-hit');
+              }
+            });
+            staggerIdx += 1;
+          });
+        });
+      }
+
+      getOwnResourceTargetRect(resourceKey) {
+        // スマホ下部ドックが表示中ならそちらの該当資源アイコン、PCなら手札カードの該当資源枠を取得
+        const mobileCard = document.querySelector(`#mobileMiniResources [data-mini-res="${resourceKey}"]`);
+        if (mobileCard) {
+          const mRect = mobileCard.getBoundingClientRect();
+          if (mRect.width > 0 && mRect.height > 0) return mRect;
+        }
+        const handCard = document.querySelector(`#myResourceCardsRow [data-res-card="${resourceKey}"]`);
+        if (handCard) {
+          const hRect = handCard.getBoundingClientRect();
+          if (hRect.width > 0 && hRect.height > 0) return hRect;
+        }
+        const myCorner = document.querySelector(`[data-corner-player-uid="${gameController.localUid}"]`);
+        return myCorner ? myCorner.getBoundingClientRect() : null;
+      }
+
+      animateRobberStealFlight(st, stealNotice) {
+        if (!stealNotice || !stealNotice.otherUid || !stealNotice.resource) return;
+        const otherCorner = document.querySelector(`[data-corner-player-uid="${stealNotice.otherUid}"]`);
+        const ownResRect = this.getOwnResourceTargetRect(stealNotice.resource);
+        if (!otherCorner || !ownResRect) return;
+
+        const otherRect = otherCorner.getBoundingClientRect();
+        if (!otherRect.width || !otherRect.height) return;
+
+        const otherCenter = { x: otherRect.left + otherRect.width / 2, y: otherRect.top + otherRect.height / 2 };
+        const ownCenter = { x: ownResRect.left + ownResRect.width / 2, y: ownResRect.top + ownResRect.height / 2 };
+
+        if (stealNotice.role === 'thief') {
+          this.spawnFlyingResourceCard({
+            startX: otherCenter.x,
+            startY: otherCenter.y,
+            endX: ownCenter.x,
+            endY: ownCenter.y,
+            resourceKey: stealNotice.resource,
+            amountText: '+1',
+            accentHex: '#10b981',
+            durationMs: 1200
+          });
+        } else if (stealNotice.role === 'victim') {
+          this.spawnFlyingResourceCard({
+            startX: ownCenter.x,
+            startY: ownCenter.y,
+            endX: otherCenter.x,
+            endY: otherCenter.y,
+            resourceKey: stealNotice.resource,
+            amountText: '-1',
+            accentHex: '#ef4444',
+            durationMs: 1200,
+            onArrive: () => {
+              otherCorner.classList.remove('corner-zone-hit');
+              void otherCorner.offsetWidth;
+              otherCorner.classList.add('corner-zone-hit');
+            }
+          });
+        }
       }
 
       renderDiceGainBanner(st) {
@@ -4754,6 +5110,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           totalCards += cnt;
 
           const card = document.createElement('div');
+          card.setAttribute('data-res-card', k);
           card.className = `hand-card relative rounded-xl p-2 sm:p-2.5 border ${r.bg} bg-white/75 flex flex-col items-center justify-between min-h-[76px] sm:min-h-[86px] ${
             gainedCnt > 0 ? 'ring-2 ring-emerald-500 shadow-lg bg-emerald-50/95' : ''
           }`;
@@ -4817,7 +5174,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         miniRes.innerHTML = RESOURCE_KEYS.map(k => {
           const r = RESOURCES[k];
           const cnt = myPriv.resources[k] || 0;
-          return `<div class="rounded-lg bg-mahogany-900/90 border border-brass-600/35 py-1 px-1 flex items-center justify-center gap-1">
+          return `<div data-mini-res="${k}" class="rounded-lg bg-mahogany-900/90 border border-brass-600/35 py-1 px-1 flex items-center justify-center gap-1">
             <span>${r.emoji}</span><span class="font-bold text-parchment-100">${cnt}</span>
           </div>`;
         }).join('');
