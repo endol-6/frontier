@@ -146,13 +146,29 @@
         stroke-width: 2.5;
       }
       50% {
-        filter: brightness(1.5) drop-shadow(0 0 12px #facc15);
+        filter: brightness(1.55) drop-shadow(0 0 14px #facc15);
         stroke: #ffffff;
-        stroke-width: 4.8;
+        stroke-width: 5;
       }
     }
     .hex-gain-flash {
-      animation: hexProduceFlash 1.45s ease-in-out 2;
+      animation: hexProduceFlash 2.1s ease-in-out 2;
+    }
+
+    /* マップ直接建設用の控えめなパルススポット */
+    @keyframes pulseDirectSpot {
+      0%, 100% { opacity: 0.65; transform: scale(0.95); }
+      50% { opacity: 0.95; transform: scale(1.1); }
+    }
+    .direct-build-spot {
+      cursor: pointer;
+      animation: pulseDirectSpot 1.8s infinite ease-in-out;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .direct-build-spot:hover {
+      opacity: 1;
+      filter: brightness(1.25) drop-shadow(0 0 6px #fde047);
     }
 
     /* プレイヤーゾーン着弾時のバウンスハイライト */
@@ -234,7 +250,7 @@
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
         </div>
         <span id="buildVersionBadge" class="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-          v3.1
+          v3.2
         </span>
       </div>
 
@@ -424,11 +440,11 @@
 
         <!-- 資源獲得時の視覚的サマリーバナー -->
         <div id="diceGainBanner" class="hidden px-3 sm:px-4 py-2 bg-gradient-to-r from-emerald-950/95 via-amber-950/95 to-emerald-950/95 border-b border-amber-400/60 flex flex-wrap items-center justify-between gap-2 z-10 gain-banner-pop">
-          <div id="diceGainBannerContent" class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs font-bold text-parchment-50"></div>
+          <div id="diceGainBannerContent" class="flex flex-wrap items-center gap-1.5 text-xs font-bold"></div>
         </div>
 
-        <!-- インタラクティブ SVG ボード（ピンチズーム・ドラッグ移動対応） -->
-        <div id="boardViewport" class="flex-1 flex items-center justify-center p-1 sm:p-2 relative min-h-[360px] sm:min-h-[460px] overflow-hidden">
+        <!-- インタラクティブ SVG ボード（ピンチズーム・ドラッグ移動対応・上下余白拡張版） -->
+        <div id="boardViewport" class="flex-1 flex items-center justify-center p-1 sm:p-2 relative min-h-[430px] sm:min-h-[520px] overflow-hidden">
           <!-- ズームコントロールボタン（上部中央に配置し四隅のプレイヤーゾーンと干渉しない設計） -->
           <div class="absolute top-2 left-1/2 -translate-x-1/2 z-20 flex flex-row items-center gap-1 bg-mahogany-950/85 backdrop-blur-sm px-1.5 py-1 rounded-xl border border-brass-600/50 shadow-lg">
             <button type="button" onclick="appUI.adjustBoardZoom(0.28)" title="盤面を拡大" class="w-7 h-7 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 text-parchment-100 font-extrabold text-sm flex items-center justify-center">
@@ -457,7 +473,10 @@
           <!-- 手番切り替え「プレイヤー名の番」カットインバナー -->
           <div id="turnCutinOverlay" class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center p-4"></div>
 
-          <svg id="hexBoardSvg" viewBox="-315 -285 630 570" class="w-full h-full max-h-[56vh] sm:max-h-[62vh] select-none drop-shadow-2xl origin-center">
+          <!-- サイコロ出目カットインバナー（マップ中央に約2秒間表示） -->
+          <div id="diceCutinOverlay" class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center p-4"></div>
+
+          <svg id="hexBoardSvg" viewBox="-315 -345 630 690" class="w-full h-full max-h-[64vh] sm:max-h-[68vh] select-none drop-shadow-2xl origin-center">
             <defs>
               <!-- 海のグラデーション -->
               <radialGradient id="oceanGrad" cx="50%" cy="50%" r="55%">
@@ -497,15 +516,15 @@
             </defs>
 
             <!-- 海背景 & 装飾羅針盤 -->
-            <rect x="-320" y="-290" width="640" height="580" fill="url(#oceanGrad)" />
+            <rect x="-320" y="-350" width="640" height="700" fill="url(#oceanGrad)" />
             <g opacity="0.16" stroke="#93c5fd" fill="none" stroke-width="1">
               <circle cx="0" cy="0" r="245" stroke-dasharray="6 6" />
               <circle cx="0" cy="0" r="275" />
               <line x1="-300" y1="0" x2="300" y2="0" />
-              <line x1="0" y1="-280" x2="0" y2="280" />
+              <line x1="0" y1="-340" x2="0" y2="340" />
             </g>
             <!-- 羅針盤ローズ (右下装飾) -->
-            <g transform="translate(262, 232) scale(0.75)" opacity="0.45">
+            <g transform="translate(262, 285) scale(0.75)" opacity="0.45">
               <circle cx="0" cy="0" r="26" fill="none" stroke="#e2bd6b" stroke-width="1.5" />
               <polygon points="0,-32 6,-6 32,0 6,6 0,32 -6,6 -32,0 -6,-6" fill="#e2bd6b" />
               <text x="0" y="-35" text-anchor="middle" fill="#e2bd6b" font-size="10" font-family="serif">N</text>
@@ -1737,11 +1756,13 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.publicState = null;
         this.placementMode = null; // null | 'INITIAL_SETTLEMENT' | 'INITIAL_ROAD' | 'ROAD' | 'SETTLEMENT' | 'CITY' | 'ROBBER' | 'ROAD_BUILDING'
         this.cpuTimer = null;
+        this.justRolledDice = false;
       }
 
       startSoloGame() {
         sound.ensureCtx();
         if (this.cpuTimer) clearTimeout(this.cpuTimer);
+        this.justRolledDice = false;
 
         this.mode = 'solo';
         this.roomId = 'SOLO-' + Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -1806,6 +1827,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           lastDiceGainEvent: null,
           lastDiscardEvents: [],
           dice: [null, null],
+          diceRollSeq: 0,
+          lastRollerUid: null,
           devCardPlayedThisTurn: false,
           deckCount: secretVault.getDeckCount(),
           boardSeed: board.boardSeed,
@@ -1826,6 +1849,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
         if (typeof appUI !== 'undefined' && appUI) {
           appUI.lastAnnouncedTurnKey = null;
+          appUI.lastShownDiceSeq = 0;
         }
         this.syncPublicCountsFromVault();
         this.prepareTurnState();
@@ -2012,14 +2036,48 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (activePlayer && activePlayer.isCpu && canRunCpu && st.phase !== 'DISCARD') {
           if (this.cpuTimer) clearTimeout(this.cpuTimer);
           const isTurnOpeningStep = (st.phase === 'ROLL' || st.phase === 'INITIAL_SETTLEMENT');
-          const delayMs = isTurnOpeningStep ? 980 : 650;
+          // サイコロを振った直後は、出目カットイン(2秒)と資源のゆっくり移動を視認できるよう2.6秒待機する
+          const delayMs = this.justRolledDice ? 2600 : (isTurnOpeningStep ? 1100 : 750);
+          this.justRolledDice = false;
           this.cpuTimer = setTimeout(() => this.executeCpuTurnStep(), delayMs);
+        } else {
+          this.justRolledDice = false;
         }
       }
 
       /* -----------------------------------------------------------------------
          配置可能スポット（頂点・辺）のルール判定
          ----------------------------------------------------------------------- */
+      getDirectBuildableSpots(uid) {
+        const st = this.publicState;
+        const empty = { roads: [], settlements: [], cities: [] };
+        if (!st || st.status !== 'playing' || st.phase !== 'MAIN' || st.activeUid !== uid) {
+          return empty;
+        }
+        const myPriv = secretVault.getOwnPrivateView(uid);
+        const res = myPriv.resources || {};
+
+        if (res.wood >= 1 && res.brick >= 1) {
+          const builtRoads = Object.values(st.board.roads).filter(r => r.ownerUid === uid).length;
+          if (builtRoads < 15) {
+            empty.roads = this.getValidEdgesForPlacement('ROAD', uid);
+          }
+        }
+        if (res.wood >= 1 && res.brick >= 1 && res.sheep >= 1 && res.wheat >= 1) {
+          const builtSettlements = Object.values(st.board.buildings).filter(b => b.ownerUid === uid && b.type === 'settlement').length;
+          if (builtSettlements < 5) {
+            empty.settlements = this.getValidVerticesForPlacement('SETTLEMENT', uid);
+          }
+        }
+        if (res.wheat >= 2 && res.ore >= 3) {
+          const builtCities = Object.values(st.board.buildings).filter(b => b.ownerUid === uid && b.type === 'city').length;
+          if (builtCities < 4) {
+            empty.cities = this.getValidVerticesForPlacement('CITY', uid);
+          }
+        }
+        return empty;
+      }
+
       getValidVerticesForPlacement(mode, uid) {
         const st = this.publicState;
         const allVertices = Object.values(st.board.vertices);
@@ -2079,12 +2137,27 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       /* -----------------------------------------------------------------------
          プレイヤー操作ハンドラ（配置・ダイス・建設・発展・交易）
          ----------------------------------------------------------------------- */
+      resolveDirectVertexMode(vertexId, uid) {
+        const st = this.publicState;
+        if (!st || st.status !== 'playing' || st.phase !== 'MAIN' || st.activeUid !== uid) return null;
+        const bld = st.board.buildings[vertexId];
+        if (bld && bld.ownerUid === uid && bld.type === 'settlement') {
+          return 'CITY';
+        }
+        if (!bld) {
+          return 'SETTLEMENT';
+        }
+        return null;
+      }
+
       onVertexClick(vertexId, actorUid = this.localUid, explicitMode = null) {
         const st = this.publicState;
         if (!st || st.activeUid !== actorUid) return;
 
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          const sentMode = (st.status === 'setup') ? st.phase : this.placementMode;
+          const sentMode = (st.status === 'setup')
+            ? st.phase
+            : (this.placementMode || this.resolveDirectVertexMode(vertexId, actorUid));
           if (!sentMode) return;
           if (['SETTLEMENT', 'CITY'].includes(sentMode)) {
             this.placementMode = null;
@@ -2095,8 +2168,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
 
         const mode = explicitMode || ((actorUid === this.localUid)
-          ? (st.status === 'setup' ? st.phase : this.placementMode)
-          : (st.status === 'setup' ? st.phase : this.remotePlacementModeByUid?.[actorUid]));
+          ? (st.status === 'setup' ? st.phase : (this.placementMode || this.resolveDirectVertexMode(vertexId, actorUid)))
+          : (st.status === 'setup' ? st.phase : (this.remotePlacementModeByUid?.[actorUid] || this.resolveDirectVertexMode(vertexId, actorUid))));
         const valid = this.getValidVerticesForPlacement(mode, actorUid);
         if (!valid.includes(vertexId)) return;
 
@@ -2143,8 +2216,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const st = this.publicState;
         if (!st || st.activeUid !== actorUid) return;
 
+        const resolveDirectEdge = () => (st.status === 'playing' && st.phase === 'MAIN' && !st.board.roads[edgeId]) ? 'ROAD' : null;
+
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          const sentMode = (st.status === 'setup') ? st.phase : this.placementMode;
+          const sentMode = (st.status === 'setup') ? st.phase : (this.placementMode || resolveDirectEdge());
           if (!sentMode) return;
           if (sentMode === 'ROAD') {
             this.placementMode = null;
@@ -2155,8 +2230,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
 
         const mode = explicitMode || ((actorUid === this.localUid)
-          ? (st.status === 'setup' ? st.phase : this.placementMode)
-          : (st.status === 'setup' ? st.phase : (st.phase === 'ROAD_BUILDING' ? 'ROAD_BUILDING' : this.remotePlacementModeByUid?.[actorUid])));
+          ? (st.status === 'setup' ? st.phase : (this.placementMode || resolveDirectEdge()))
+          : (st.status === 'setup' ? st.phase : (st.phase === 'ROAD_BUILDING' ? 'ROAD_BUILDING' : (this.remotePlacementModeByUid?.[actorUid] || resolveDirectEdge()))));
         const valid = this.getValidEdgesForPlacement(mode, actorUid);
         if (!valid.includes(edgeId)) return;
 
@@ -2290,6 +2365,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const d2 = Math.floor(Math.random() * 6) + 1;
         const sum = d1 + d2;
         st.dice = [d1, d2];
+        st.diceRollSeq = (st.diceRollSeq || 0) + 1;
+        st.lastRollerUid = uid;
+        this.justRolledDice = true;
 
         sound.playDiceRattle();
         appUI.animateDice();
@@ -3901,7 +3979,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.lastTriggeredRollId = null;
         this.lastTriggeredStealId = null;
         this.lastAnnouncedTurnKey = null;
+        this.lastShownDiceSeq = 0;
         this.turnBannerAnim = null;
+        this.diceBannerAnim = null;
         this.activeGainHighlightUntil = 0;
         this.gainHighlightTimer = null;
         this.activeInteractiveType = null;
@@ -4080,8 +4160,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         gameController.publicState = null;
         gameController.placementMode = null;
         this.lastAnnouncedTurnKey = null;
+        this.lastShownDiceSeq = 0;
         const cutinOverlay = document.getElementById('turnCutinOverlay');
         if (cutinOverlay) cutinOverlay.innerHTML = '';
+        const diceOverlay = document.getElementById('diceCutinOverlay');
+        if (diceOverlay) diceOverlay.innerHTML = '';
         this.resetBoardTransform();
 
         document.getElementById('gameScreen')?.classList.add('hidden');
@@ -4172,6 +4255,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const st = gameController.publicState;
         if (!st) return;
 
+        // サイコロ出目のカットイン表示判定（自分・NPC問わず約2.1秒表示）
+        if (st.diceRollSeq && st.diceRollSeq !== this.lastShownDiceSeq && st.dice?.[0] && st.dice?.[1]) {
+          this.lastShownDiceSeq = st.diceRollSeq;
+          this.showDiceCutin(st, st.dice[0], st.dice[1]);
+        }
+
         // 手番切り替え時の「プレイヤー名の番」カットイン表示判定
         if ((st.status === 'setup' || st.status === 'playing') && st.activeUid) {
           const turnKey = st.status === 'setup'
@@ -4188,7 +4277,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const isNewGainEvent = Boolean(gainEv && gainEv.rollId && gainEv.rollId !== this.lastTriggeredRollId);
         if (isNewGainEvent) {
           this.lastTriggeredRollId = gainEv.rollId;
-          this.activeGainHighlightUntil = Date.now() + 3300;
+          this.activeGainHighlightUntil = Date.now() + 4400;
           const myGains = gainEv.gainsByUid?.[gameController.localUid];
           if (myGains && Object.keys(myGains).length > 0) {
             const summaryTxt = RESOURCE_KEYS
@@ -4203,7 +4292,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               this.renderBoardSvg(gameController.publicState);
               this.renderPrivateHand(gameController.publicState);
             }
-          }, 3400);
+          }, 4500);
         }
 
         // 盗賊強奪イベントの秘匿通知（奪った側・奪われた側当人のみに表示し、他プレイヤーには通知しない）
@@ -4302,6 +4391,84 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         };
       }
 
+      showDiceCutin(st, d1, d2) {
+        const overlay = document.getElementById('diceCutinOverlay');
+        if (!overlay || !d1 || !d2) return;
+
+        if (this.diceBannerAnim) {
+          try { this.diceBannerAnim.cancel(); } catch (e) {}
+          this.diceBannerAnim = null;
+        }
+
+        const rollerUid = st.lastRollerUid || st.activeUid;
+        const roller = st.players?.[rollerUid];
+        const accentHex = roller?.palette?.hex || '#f59e0b';
+        const sum = d1 + d2;
+        const isSeven = sum === 7;
+
+        const renderMiniDie = (n) => {
+          const dotsMap = {
+            1: [4],
+            2: [2, 6],
+            3: [2, 4, 6],
+            4: [0, 2, 6, 8],
+            5: [0, 2, 4, 6, 8],
+            6: [0, 2, 3, 5, 6, 8]
+          };
+          const active = new Set(dotsMap[n] || []);
+          let cells = '';
+          for (let i = 0; i < 9; i++) {
+            const isPip = active.has(i);
+            const isRedPip = isPip && (n === 1 || n === 6);
+            const sizeCls = (n === 1 && isPip) ? 'w-2.5 h-2.5' : 'w-2 h-2';
+            cells += `<span class="rounded-full ${sizeCls} ${isPip ? (isRedPip ? 'bg-rose-600' : 'bg-mahogany-950') : 'bg-transparent'}"></span>`;
+          }
+          return `<div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-parchment-50 border-2 border-amber-900/50 shadow-lg grid grid-cols-3 grid-rows-3 p-2 place-items-center">${cells}</div>`;
+        };
+
+        overlay.innerHTML = `
+          <div class="turn-cutin-card rounded-2xl px-5 py-3.5 sm:px-7 sm:py-4 border-2 flex flex-col items-center text-center max-w-[92%] backdrop-blur-md"
+               style="border-color: ${isSeven ? '#f43f5e' : accentHex};">
+            <div class="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-parchment-200">
+              <span class="w-2.5 h-2.5 rounded-full border border-white/80" style="background: ${accentHex};"></span>
+              <span>${roller ? roller.name : '開拓者'} のダイス結果</span>
+            </div>
+            <div class="flex items-center gap-3 my-2">
+              ${renderMiniDie(d1)}
+              <span class="font-serif font-extrabold text-xl text-brass-400">＋</span>
+              ${renderMiniDie(d2)}
+              <span class="font-serif font-extrabold text-xl text-brass-400">＝</span>
+              <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl ${isSeven ? 'bg-rose-900/90 border-rose-400 text-rose-100' : 'bg-amber-900/90 border-amber-400 text-amber-100'} border-2 flex items-center justify-center font-serif font-extrabold text-2xl sm:text-3xl shadow-lg">
+                ${sum}
+              </div>
+            </div>
+            <div class="text-[11px] sm:text-xs font-extrabold ${isSeven ? 'text-rose-300' : 'text-amber-300'}">
+              ${isSeven ? '⚠️ 7が出ました！盗賊が動き出します' : `✨ 「${sum}」の土地から資源が産出！`}
+            </div>
+          </div>
+        `;
+
+        const cardEl = overlay.firstElementChild;
+        if (!cardEl || typeof cardEl.animate !== 'function') return;
+
+        this.diceBannerAnim = cardEl.animate([
+          { opacity: 0, transform: 'scale(0.82)' },
+          { opacity: 1, transform: 'scale(1.04)', offset: 0.12 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.2 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.84 },
+          { opacity: 0, transform: 'scale(0.94)' }
+        ], {
+          duration: 2100,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        });
+
+        this.diceBannerAnim.onfinish = () => {
+          overlay.innerHTML = '';
+          this.diceBannerAnim = null;
+        };
+      }
+
       renderCornerPlayerZones(st) {
         const slotIds = ['cornerSlot0', 'cornerSlot1', 'cornerSlot2', 'cornerSlot3'];
         slotIds.forEach((slotId, idx) => {
@@ -4341,21 +4508,31 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       getHexScreenCenter(hexId, st) {
+        const polyEl = document.querySelector(`#layerHexes polygon[data-hex-id="${hexId}"]`);
+        if (polyEl) {
+          const pRect = polyEl.getBoundingClientRect();
+          if (pRect.width > 0 && pRect.height > 0) {
+            return {
+              x: pRect.left + pRect.width / 2,
+              y: pRect.top + pRect.height / 2
+            };
+          }
+        }
         const svg = document.getElementById('hexBoardSvg');
         const hex = (st.board?.hexes || []).find(h => h.id === hexId);
         if (!svg || !hex) return null;
         const rect = svg.getBoundingClientRect();
         if (!rect.width || !rect.height) return null;
-        // viewBox="-315 -285 630 570" の比率から現在の画面座標を算出
+        // viewBox="-315 -345 630 690" の比率から現在の画面座標を算出
         const normX = (hex.cx - (-315)) / 630;
-        const normY = (hex.cy - (-285)) / 570;
+        const normY = (hex.cy - (-345)) / 690;
         return {
           x: rect.left + normX * rect.width,
           y: rect.top + normY * rect.height
         };
       }
 
-      spawnFlyingResourceCard({ startX, startY, endX, endY, resourceKey, amountText, accentHex = '#f59e0b', delayMs = 0, durationMs = 1300, onArrive = null }) {
+      spawnFlyingResourceCard({ startX, startY, endX, endY, resourceKey, amountText, accentHex = '#f59e0b', delayMs = 0, durationMs = 2300, onArrive = null }) {
         const res = RESOURCES[resourceKey];
         if (!res) return;
 
@@ -4363,8 +4540,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         pill.style.position = 'fixed';
         pill.style.left = `${startX}px`;
         pill.style.top = `${startY}px`;
-        pill.style.transform = 'translate(-50%, -50%) scale(0.75)';
-        pill.style.zIndex = '65';
+        pill.style.zIndex = '60';
         pill.style.pointerEvents = 'none';
         pill.style.opacity = '0';
         pill.style.borderColor = accentHex;
@@ -4428,8 +4604,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               resourceKey: item.resource,
               amountText: `+${item.amount}`,
               accentHex: playerColor,
-              delayMs: staggerIdx * 140,
-              durationMs: 1350,
+              delayMs: staggerIdx * 260,
+              durationMs: 2350,
               onArrive: () => {
                 cornerEl.classList.remove('corner-zone-hit');
                 void cornerEl.offsetWidth;
@@ -4688,8 +4864,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             ? `第${st.turnNumber}ターン：あなたの番です。「サイコロを振る」を押してください`
             : `第${st.turnNumber}ターン：${activeP.name} がサイコロを振ります...`;
         } else {
+          const directSpots = isMyTurn ? gameController.getDirectBuildableSpots(gameController.localUid) : { roads: [], settlements: [], cities: [] };
+          const hasDirectOption = (directSpots.roads.length + directSpots.settlements.length + directSpots.cities.length) > 0;
           el.textContent = isMyTurn
-            ? `第${st.turnNumber}ターン：建設・発展・交易を行い、終わったら「ターン終了」を押してください`
+            ? (hasDirectOption
+                ? `第${st.turnNumber}ターン：マップの光る場所を直接タップして建設、または交易・ターン終了`
+                : `第${st.turnNumber}ターン：建設・発展・交易を行い、終わったら「ターン終了」を押してください`)
             : `第${st.turnNumber}ターン：${activeP.name} が行動中です...`;
         }
       }
@@ -4709,8 +4889,21 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
         const board = st.board;
         const isMyTurn = st.activeUid === gameController.localUid && st.status !== 'finished';
-        const validEdges = isMyTurn ? gameController.getValidEdgesForPlacement(gameController.placementMode, gameController.localUid) : [];
-        const validVertices = isMyTurn ? gameController.getValidVerticesForPlacement(gameController.placementMode, gameController.localUid) : [];
+        const isDirectMain = isMyTurn && st.status === 'playing' && st.phase === 'MAIN' && !gameController.placementMode;
+        const directSpots = isDirectMain
+          ? gameController.getDirectBuildableSpots(gameController.localUid)
+          : { roads: [], settlements: [], cities: [] };
+
+        const validEdges = isMyTurn
+          ? (gameController.placementMode
+              ? gameController.getValidEdgesForPlacement(gameController.placementMode, gameController.localUid)
+              : directSpots.roads)
+          : [];
+        const validVertices = isMyTurn
+          ? (gameController.placementMode
+              ? gameController.getValidVerticesForPlacement(gameController.placementMode, gameController.localUid)
+              : [...directSpots.settlements, ...directSpots.cities])
+          : [];
         const canMoveRobber = isMyTurn && gameController.placementMode === 'ROBBER';
 
         // 1. 港と桟橋
@@ -4780,6 +4973,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
           const gainInfo = myHexGainMap.get(hex.id);
           const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+          poly.setAttribute('data-hex-id', hex.id);
           poly.setAttribute('points', pts);
           poly.setAttribute('fill', `url(#grad-${hex.resource})`);
           poly.setAttribute('stroke', gainInfo ? '#fde047' : '#e8d5a7');
@@ -4954,11 +5148,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             const spot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             spot.setAttribute('cx', mx);
             spot.setAttribute('cy', my);
-            spot.setAttribute('r', '6.5');
-            spot.setAttribute('fill', '#fde047');
+            spot.setAttribute('r', isDirectMain ? '5.5' : '6.5');
+            spot.setAttribute('fill', isDirectMain ? '#fef08a' : '#fde047');
             spot.setAttribute('stroke', '#78350f');
             spot.setAttribute('stroke-width', '1.8');
-            spot.setAttribute('class', 'valid-spot');
+            spot.setAttribute('class', isDirectMain ? 'direct-build-spot' : 'valid-spot');
             spot.addEventListener('click', () => gameController.onEdgeClick(edge.id));
             layerEdges.appendChild(spot);
           }
@@ -4989,6 +5183,20 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               housePath.setAttribute('stroke', '#fffbeb');
               housePath.setAttribute('stroke-width', '1.5');
               g.appendChild(housePath);
+
+              // 都市へ昇格可能な自分の開拓地には黄金リングを表示して直接タップ昇格可能にする
+              if (isValid) {
+                const upgradeRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                upgradeRing.setAttribute('r', '12.5');
+                upgradeRing.setAttribute('fill', 'rgba(253, 224, 71, 0.25)');
+                upgradeRing.setAttribute('stroke', '#fde047');
+                upgradeRing.setAttribute('stroke-width', '2.2');
+                upgradeRing.setAttribute('class', isDirectMain ? 'direct-build-spot' : 'valid-spot');
+                g.appendChild(upgradeRing);
+
+                g.setAttribute('class', 'cursor-pointer');
+                g.addEventListener('click', () => gameController.onVertexClick(v.id));
+              }
             }
             layerVertices.appendChild(g);
           } else if (isValid) {
@@ -5004,11 +5212,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             const spot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             spot.setAttribute('cx', v.x);
             spot.setAttribute('cy', v.y);
-            spot.setAttribute('r', '7.5');
-            spot.setAttribute('fill', '#fde047');
+            spot.setAttribute('r', isDirectMain ? '6.5' : '7.5');
+            spot.setAttribute('fill', isDirectMain ? '#fef08a' : '#fde047');
             spot.setAttribute('stroke', '#78350f');
             spot.setAttribute('stroke-width', '2');
-            spot.setAttribute('class', 'valid-spot');
+            spot.setAttribute('class', isDirectMain ? 'direct-build-spot' : 'valid-spot');
             spot.addEventListener('click', () => gameController.onVertexClick(v.id));
             layerVertices.appendChild(spot);
           }
