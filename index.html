@@ -183,7 +183,7 @@
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
         </div>
         <span id="buildVersionBadge" class="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-          v2.5
+          v2.7
         </span>
       </div>
 
@@ -193,9 +193,6 @@
         <span id="headerRoomCode" class="font-mono text-parchment-200 hidden"></span>
         <button id="btnCopyInvite" onclick="appUI.copyInviteLink()" class="hidden px-2 py-0.5 rounded bg-brass-600/40 hover:bg-brass-500/50 text-parchment-100 border border-brass-400/50 transition text-[10px] sm:text-[11px]">
           🔗 招待
-        </button>
-        <button id="btnManualSync" onclick="onlineManager.requestManualSync()" title="通信が止まった時に最新盤面を再取得" class="hidden px-2 py-0.5 rounded bg-sky-900/70 hover:bg-sky-800 text-sky-100 border border-sky-400/50 transition text-[10px] sm:text-[11px]">
-          🔄 同期
         </button>
       </div>
 
@@ -1450,16 +1447,34 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
        ========================================================================= */
     const HEX_SIZE = 53;
 
+    // 公式標準の反時計回りスパイラル座標順（外周12マス → 内周6マス → 中央1マス）
+    const OUTER_RING_AXIAL = [
+      { q: 0, r: -2 }, { q: -1, r: -1 }, { q: -2, r: 0 },
+      { q: -2, r: 1 }, { q: -2, r: 2 },  { q: -1, r: 2 },
+      { q: 0, r: 2 },  { q: 1, r: 1 },   { q: 2, r: 0 },
+      { q: 2, r: -1 }, { q: 2, r: -2 },  { q: 1, r: -2 }
+    ];
+    const INNER_RING_AXIAL = [
+      { q: 0, r: -1 }, { q: -1, r: 0 }, { q: -1, r: 1 },
+      { q: 0, r: 1 },  { q: 1, r: 0 },  { q: 1, r: -1 }
+    ];
+    const CENTER_AXIAL = { q: 0, r: 0 };
+    const OFFICIAL_SPIRAL_NUMBERS = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
+
+    function getRotatedSpiralCoords(cornerStartIdx) {
+      const outerShift = (cornerStartIdx % 6) * 2;
+      const innerShift = cornerStartIdx % 6;
+      const rotatedOuter = OUTER_RING_AXIAL.map((_, i) => OUTER_RING_AXIAL[(i + outerShift) % 12]);
+      const rotatedInner = INNER_RING_AXIAL.map((_, i) => INNER_RING_AXIAL[(i + innerShift) % 6]);
+      return [...rotatedOuter, ...rotatedInner, CENTER_AXIAL];
+    }
+
     function buildStandardBoardGeometry(seed = null) {
-      // 標準3-4-5-4-3の19ヘクス座標
-      const axialCoords = [];
-      for (let r = -2; r <= 2; r++) {
-        const qMin = Math.max(-2, -r - 2);
-        const qMax = Math.min(2, -r + 2);
-        for (let q = qMin; q <= qMax; q++) {
-          axialCoords.push({ q, r });
-        }
-      }
+      // 開始角インデックス（0〜5の6つの外周角のいずれか）
+      const spiralStartCorner = (seed && typeof seed.spiralStartCorner === 'number')
+        ? seed.spiralStartCorner
+        : Math.floor(Math.random() * 6);
+      const axialCoords = getRotatedSpiralCoords(spiralStartCorner);
 
       // 地形タイル19枚（シード指定時は同一配置を復元、未指定時はシャッフル生成）
       let terrainPool;
@@ -1480,17 +1495,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
       }
 
-      // 数字トークン18枚（シード指定時は同一配置を復元）
-      let numberTokens;
-      if (seed && Array.isArray(seed.numberTokens) && seed.numberTokens.length === 18) {
-        numberTokens = [...seed.numberTokens];
-      } else {
-        numberTokens = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
-        for (let i = numberTokens.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [numberTokens[i], numberTokens[j]] = [numberTokens[j], numberTokens[i]];
-        }
-      }
+      // 数字トークン18枚（公式推奨の螺旋順配置：砂漠をスキップして順番に割り当て）
+      const numberTokens = (seed && Array.isArray(seed.numberTokens) && seed.numberTokens.length === 18)
+        ? [...seed.numberTokens]
+        : [...OFFICIAL_SPIRAL_NUMBERS];
 
       const hexes = [];
       const vertexMap = new Map();
@@ -1616,7 +1624,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       const desertHex = hexes.find(h => h.resource === 'desert') || hexes[0];
 
       return {
-        boardSeed: { terrainPool, numberTokens },
+        boardSeed: { spiralStartCorner, terrainPool, numberTokens },
         hexes,
         vertices: Object.fromEntries(vertexMap),
         edges: Object.fromEntries(edgeMap),
@@ -1965,8 +1973,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
          プレイヤー操作ハンドラ（配置・ダイス・建設・発展・交易）
          ----------------------------------------------------------------------- */
       onVertexClick(vertexId, actorUid = this.localUid, explicitMode = null) {
+        const st = this.publicState;
+        if (!st || st.activeUid !== actorUid) return;
+
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          const sentMode = this.placementMode;
+          const sentMode = (st.status === 'setup') ? st.phase : this.placementMode;
+          if (!sentMode) return;
           if (['SETTLEMENT', 'CITY'].includes(sentMode)) {
             this.placementMode = null;
             appUI.renderAll();
@@ -1974,10 +1986,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           onlineManager.sendActionToHost({ type: 'VERTEX_CLICK', vertexId, mode: sentMode });
           return;
         }
-        const st = this.publicState;
-        if (!st || st.activeUid !== actorUid) return;
+
         const mode = explicitMode || ((actorUid === this.localUid)
-          ? this.placementMode
+          ? (st.status === 'setup' ? st.phase : this.placementMode)
           : (st.status === 'setup' ? st.phase : this.remotePlacementModeByUid?.[actorUid]));
         const valid = this.getValidVerticesForPlacement(mode, actorUid);
         if (!valid.includes(vertexId)) return;
@@ -2022,8 +2033,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       onEdgeClick(edgeId, actorUid = this.localUid, explicitMode = null) {
+        const st = this.publicState;
+        if (!st || st.activeUid !== actorUid) return;
+
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          const sentMode = this.placementMode;
+          const sentMode = (st.status === 'setup') ? st.phase : this.placementMode;
+          if (!sentMode) return;
           if (sentMode === 'ROAD') {
             this.placementMode = null;
             appUI.renderAll();
@@ -2031,10 +2046,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           onlineManager.sendActionToHost({ type: 'EDGE_CLICK', edgeId, mode: sentMode });
           return;
         }
-        const st = this.publicState;
-        if (!st || st.activeUid !== actorUid) return;
+
         const mode = explicitMode || ((actorUid === this.localUid)
-          ? this.placementMode
+          ? (st.status === 'setup' ? st.phase : this.placementMode)
           : (st.status === 'setup' ? st.phase : (st.phase === 'ROAD_BUILDING' ? 'ROAD_BUILDING' : this.remotePlacementModeByUid?.[actorUid])));
         const valid = this.getValidEdgesForPlacement(mode, actorUid);
         if (!valid.includes(edgeId)) return;
@@ -3265,7 +3279,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
                 this.joinRetryTimer = null;
               }
               statusPill.textContent = '切断されました';
-              appUI.showToast('ホストとの接続が切断されました。再度「参加」または「🔄 同期」を押すと復帰できます。', 'warn');
+              appUI.showToast('ホストとの接続が切断されました。再度「参加」を押すと復帰できます。', 'warn');
             });
           };
 
@@ -3580,18 +3594,17 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         });
       }
 
-      requestManualSync() {
-        if (this.isHost) {
-          this.broadcastGameState();
-          appUI.showToast('全参加者へ最新盤面を再送信しました。', 'info');
-          return;
+      sendActionToHost(actionPayload) {
+        if (this.isHost) return false;
+        if (!this.hostConn || !this.hostConn.open) {
+          appUI.showToast('ホストとの通信が途切れています。再接続を試みています...', 'warn');
+          if (this.currentRoomId) this.joinRoom(this.currentRoomId);
+          return false;
         }
-        if (this.hostConn && this.hostConn.open) {
-          this.sendPacket(this.hostConn, { type: 'REQUEST_SYNC', uid: this.localUid });
-          appUI.showToast('ホストへ最新盤面の同期を要求しました。', 'info');
-        } else {
-          this.joinRoom(this.currentRoomId);
-        }
+        return this.sendPacket(this.hostConn, {
+          ...actionPayload,
+          uid: this.localUid
+        });
       }
 
       handleGuestReceiveData(msg) {
@@ -3650,6 +3663,20 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               roads: incomingBoard.roads || {}
             }
           };
+
+          // ゲスト側の配置モード（初期配置・盗賊移動・街道建設カード）を最新フェーズと同期
+          const syncedSt = gameController.publicState;
+          if (syncedSt.status === 'finished') {
+            gameController.placementMode = null;
+          } else if (syncedSt.status === 'setup') {
+            gameController.placementMode = syncedSt.phase;
+          } else if (syncedSt.phase === 'ROBBER_MOVE') {
+            gameController.placementMode = 'ROBBER';
+          } else if (syncedSt.phase === 'ROAD_BUILDING') {
+            gameController.placementMode = 'ROAD_BUILDING';
+          } else if (syncedSt.activeUid !== this.localUid || syncedSt.phase !== 'MAIN') {
+            gameController.placementMode = null;
+          }
 
           secretVault.setOwnPrivateView(this.localUid, msg.privateView);
 
@@ -3816,7 +3843,6 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const modeLabel = document.getElementById('headerModeLabel');
         const roomCode = document.getElementById('headerRoomCode');
         const btnCopy = document.getElementById('btnCopyInvite');
-        const btnSync = document.getElementById('btnManualSync');
 
         badge.classList.remove('hidden');
         badge.classList.add('flex');
@@ -3826,12 +3852,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           roomCode.textContent = `ROOM: ${gameController.roomId}`;
           roomCode.classList.remove('hidden');
           btnCopy.classList.remove('hidden');
-          btnSync.classList.remove('hidden');
         } else {
           modeLabel.textContent = 'SOLO VS CPU';
           roomCode.classList.add('hidden');
           btnCopy.classList.add('hidden');
-          btnSync.classList.add('hidden');
         }
       }
 
