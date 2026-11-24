@@ -235,47 +235,51 @@
 
   <!-- ==================== ヘッダーバー ==================== -->
   <header class="w-full px-2.5 sm:px-6 py-2 sm:py-2.5 bg-mahogany-950/90 border-b border-brass-600/50 backdrop-blur-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-2">
-      <!-- タイトルロゴ -->
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-800 border border-amber-300/70 flex items-center justify-center shadow-md flex-shrink-0">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-y-1.5 gap-x-2">
+      <!-- タイトルロゴ & バージョン -->
+      <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+        <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-amber-500 to-amber-800 border border-amber-300/70 flex items-center justify-center shadow-md flex-shrink-0">
           <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-100" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2L3 7v10l9 5 9-5V7l-9-5zm0 2.3L18.5 8 12 11.7 5.5 8 12 4.3zM5 10.1l6 3.4v6.2l-6-3.4v-6.2zm8 9.6v-6.2l6-3.4v6.2l-6 3.4z"/>
           </svg>
         </div>
         <div class="min-w-0">
-          <h1 class="font-serif font-extrabold text-sm sm:text-xl tracking-wider text-parchment-100 leading-tight truncate">
-            開拓者たちの島
-          </h1>
+          <div class="flex items-center gap-1.5">
+            <h1 class="font-serif font-extrabold text-sm sm:text-xl tracking-wider text-parchment-100 leading-tight truncate">
+              開拓者たちの島
+            </h1>
+            <span id="buildVersionBadge" class="px-1.5 py-0.2 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
+              v3.5
+            </span>
+          </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
         </div>
-        <span id="buildVersionBadge" class="px-2 py-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-          v3.2
-        </span>
-      </div>
-
-      <!-- ルーム情報 & 招待リンク (プレイ中表示) -->
-      <div id="headerRoomBadge" class="hidden items-center gap-1.5 bg-mahogany-800/90 border border-brass-600/60 px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs flex-shrink-0">
-        <span id="headerModeLabel" class="hidden md:inline font-bold text-brass-400">SOLO VS CPU</span>
-        <span id="headerRoomCode" class="font-mono text-parchment-200 hidden"></span>
-        <button id="btnCopyInvite" onclick="appUI.copyInviteLink()" class="hidden px-2 py-0.5 rounded bg-brass-600/40 hover:bg-brass-500/50 text-parchment-100 border border-brass-400/50 transition text-[10px] sm:text-[11px]">
-          🔗 招待
-        </button>
       </div>
 
       <!-- ユーティリティボタン群 -->
-      <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+      <div class="flex items-center gap-1 sm:gap-2 flex-shrink-0 sm:order-3">
         <button onclick="appUI.toggleSound()" id="btnSoundToggle" title="効果音切替" class="px-2 sm:px-2.5 py-1.5 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 border border-brass-600/50 text-parchment-100 text-xs sm:text-sm transition">
           🔊<span class="hidden sm:inline"> 音ON</span>
         </button>
-        <button onclick="appUI.openAnalyticsModal()" title="戦績・プレイ分析＆AIコーチ" class="px-2 sm:px-2.5 py-1.5 rounded-lg bg-amber-900/90 hover:bg-amber-800 border border-amber-400/60 text-amber-100 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow">
-          <span>📊</span><span class="hidden sm:inline">プレイ分析</span>
+        <button id="btnOpenAnalytics" onclick="appUI.handleAnalyticsButtonClick()" title="中盤以降にAI戦略コーチ分析が解放されます" class="px-2 sm:px-2.5 py-1.5 rounded-lg bg-mahogany-900/70 border border-brass-600/30 text-parchment-300/50 opacity-50 cursor-not-allowed text-xs sm:text-sm font-bold transition flex items-center gap-1">
+          <span id="analyticsBtnIcon">🔒</span><span class="hidden sm:inline">プレイ分析</span>
         </button>
         <button onclick="appUI.openModal('guideModal')" title="建設コスト・ルール一覧" class="px-2 sm:px-2.5 py-1.5 rounded-lg bg-mahogany-800 hover:bg-mahogany-700 border border-brass-600/50 text-parchment-100 text-xs sm:text-sm transition flex items-center gap-1">
           <span>📜</span><span class="hidden sm:inline">建設コスト</span>
         </button>
         <button id="btnBackLobby" onclick="appUI.confirmBackToLobby()" class="hidden px-2 sm:px-2.5 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-500/50 text-rose-200 text-xs sm:text-sm transition">
           退出
+        </button>
+      </div>
+
+      <!-- ルーム情報 & 招待リンク (プレイ中表示・モバイルでは2段目にすっきり配置) -->
+      <div id="headerRoomBadge" class="hidden w-full sm:w-auto sm:order-2 items-center justify-between sm:justify-start gap-2 bg-mahogany-800/90 border border-brass-600/60 px-3 py-1 rounded-full text-[11px] sm:text-xs">
+        <div class="flex items-center gap-2">
+          <span id="headerModeLabel" class="font-bold text-brass-400">SOLO VS CPU</span>
+          <span id="headerRoomCode" class="font-mono font-bold text-parchment-100 hidden"></span>
+        </div>
+        <button id="btnCopyInvite" onclick="appUI.copyInviteLink()" class="hidden px-2.5 py-0.5 rounded-full bg-brass-600/40 hover:bg-brass-500/50 text-parchment-100 border border-brass-400/50 transition text-[10px] sm:text-[11px] font-bold">
+          🔗 招待URLコピー
         </button>
       </div>
     </div>
@@ -475,6 +479,31 @@
 
           <!-- サイコロ出目カットインバナー（マップ中央に約2秒間表示） -->
           <div id="diceCutinOverlay" class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center p-4"></div>
+
+          <!-- 発展カード獲得・使用カットインバナー -->
+          <div id="devCardCutinOverlay" class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center p-4"></div>
+
+          <!-- マップ建設前の確認フローティングパネル -->
+          <div id="buildConfirmBar" class="hidden pointer-events-auto absolute bottom-2.5 inset-x-2.5 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:min-w-[340px] sm:max-w-md z-30 parchment-panel rounded-2xl px-3.5 py-2.5 border-2 border-amber-400 shadow-2xl">
+            <div class="flex items-center justify-between gap-2.5">
+              <div class="min-w-0">
+                <div id="buildConfirmTitle" class="font-serif font-extrabold text-xs sm:text-sm text-mahogany-950 truncate">
+                  🏠 開拓地を建設しますか？
+                </div>
+                <div id="buildConfirmCost" class="text-[10px] sm:text-[11px] font-bold text-amber-900 mt-0.5 truncate">
+                  消費資源: 🌲木1 🧱煉1 🐑羊1 🌾麦1
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button type="button" onclick="gameController.cancelPendingBuild()" class="px-2.5 py-1.5 rounded-xl bg-amber-900/15 hover:bg-amber-900/25 text-mahogany-950 font-bold text-xs transition">
+                  ✕ 取消
+                </button>
+                <button type="button" onclick="gameController.confirmPendingBuild()" class="brass-btn px-3.5 py-1.5 rounded-xl font-extrabold text-xs whitespace-nowrap">
+                  ✅ 建設する
+                </button>
+              </div>
+            </div>
+          </div>
 
           <svg id="hexBoardSvg" viewBox="-315 -345 630 690" class="w-full h-full max-h-[64vh] sm:max-h-[68vh] select-none drop-shadow-2xl origin-center">
             <defs>
@@ -871,35 +900,37 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
     </div>
   </div>
 
-  <!-- ==================== モーダル4: インタラクティブ選択モーダル（7バースト破棄 / 盗賊強奪対象 / 発見 / 独占） ==================== -->
-  <div id="interactiveModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="parchment-panel rounded-2xl max-w-md w-full p-5 space-y-4">
-      <h3 id="interactiveModalTitle" class="font-serif font-extrabold text-lg text-mahogany-950">選択してください</h3>
-      <p id="interactiveModalDesc" class="text-xs text-mahogany-800 leading-relaxed"></p>
-      <div id="interactiveModalBody" class="space-y-2.5"></div>
-      <div id="interactiveModalFooter" class="pt-1 flex justify-end gap-2"></div>
+  <!-- ==================== モーダル4: インタラクティブ選択モーダル（バースト破棄・強奪選択・発見・独占・交渉応答・マップ透視） ==================== -->
+  <div id="interactiveModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-200">
+    <div id="interactiveModalCard" class="parchment-panel rounded-2xl max-w-md w-full p-5 space-y-4 transition-all duration-200">
+      <div class="flex items-start justify-between gap-2 border-b border-amber-900/20 pb-2.5">
+        <h3 id="interactiveModalTitle" class="font-serif font-extrabold text-base sm:text-lg text-mahogany-950 leading-snug">
+          選択してください
+        </h3>
+        <button id="btnToggleMapPeek" type="button" onclick="appUI.toggleInteractiveMapPeek()" class="px-2.5 py-1 rounded-lg bg-sky-900 hover:bg-sky-800 border border-sky-400/60 text-sky-50 text-[11px] font-bold flex items-center gap-1 flex-shrink-0 shadow">
+          <span>👁️</span><span>マップ透視</span>
+        </button>
+      </div>
+      <div id="interactiveModalMainBody" class="space-y-4">
+        <p id="interactiveModalDesc" class="text-xs text-mahogany-800 leading-relaxed"></p>
+        <div id="interactiveModalBody" class="space-y-2.5"></div>
+        <div id="interactiveModalFooter" class="flex items-center justify-end gap-2 pt-1"></div>
+      </div>
     </div>
   </div>
 
-  <!-- ==================== モーダル5: 勝利セレブレーション ==================== -->
-  <div id="victoryModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="parchment-panel rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center space-y-5 border-2 border-amber-500 shadow-2xl">
-      <div class="text-5xl">👑</div>
-      <div>
-        <div class="text-xs font-bold tracking-widest text-amber-800 uppercase">VICTORY ON THE ISLE</div>
-        <h2 id="victoryWinnerName" class="font-serif font-extrabold text-3xl text-mahogany-950 mt-1">
-          開拓者の勝利！
-        </h2>
-      </div>
-      <div id="victoryScoreBreakdown" class="bg-white/65 rounded-2xl p-4 border border-amber-900/20 text-left space-y-2 text-xs"></div>
-      <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
-        <button onclick="appUI.closeModal('victoryModal'); appUI.openAnalyticsModal();" class="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-800 hover:bg-amber-700 border border-amber-300/60 text-amber-50 font-bold text-sm shadow-md transition">
-          📊 AIコーチの詳細プレイ分析を見る
+  <!-- ==================== モーダル5: 勝利リザルトモーダル ==================== -->
+  <div id="victoryModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="parchment-panel rounded-3xl max-w-md w-full p-6 space-y-4 text-center border-2 border-amber-400">
+      <div class="text-4xl">👑</div>
+      <h3 id="victoryWinnerName" class="font-serif font-extrabold text-2xl text-mahogany-950">開拓者 の勝利！</h3>
+      <p class="text-xs text-mahogany-800">10勝利点に到達し、群島の覇者となりました。</p>
+      <div id="victoryScoreBreakdown" class="p-3 rounded-xl bg-white/75 border border-amber-900/20 text-left text-xs space-y-1"></div>
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button onclick="appUI.closeModal('victoryModal'); appUI.openAnalyticsModal();" class="brass-btn flex-1 py-2.5 px-4 rounded-xl font-bold text-xs">
+          📊 戦績・AIプレイ分析を見る
         </button>
-        <button onclick="gameController.startSoloGame(); appUI.closeModal('victoryModal');" class="brass-btn flex-1 py-3 rounded-xl font-bold text-sm">
-          もう一度プレイする
-        </button>
-        <button onclick="appUI.closeModal('victoryModal'); appUI.backToLobby();" class="px-4 py-3 rounded-xl bg-mahogany-900 text-parchment-100 font-bold text-sm">
+        <button onclick="appUI.closeModal('victoryModal'); appUI.backToLobby();" class="px-4 py-2.5 rounded-xl bg-mahogany-900 text-parchment-100 font-bold text-xs">
           ロビーへ戻る
         </button>
       </div>
@@ -1108,10 +1139,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       #hands = new Map();     // uid -> { resources: {wood,brick,sheep,wheat,ore}, devCards: [] }
       #devDeck = [];          // シャッフル済み発展カード山札（外部直接参照不可）
       #stealNotices = new Map(); // uid -> 当事者限定の強奪通知（他プレイヤーには非公開）
+      #drawnDevNotices = new Map(); // uid -> 購入者本人限定の発展カード獲得通知（他プレイヤーには非公開）
 
       reset(playerUids) {
         this.#hands.clear();
         this.#stealNotices.clear();
+        this.#drawnDevNotices.clear();
         playerUids.forEach(uid => {
           this.#hands.set(uid, {
             resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
@@ -1170,17 +1203,20 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       getOwnPrivateView(uid) {
         const h = this.#hands.get(uid);
         const notice = this.#stealNotices.get(uid) || null;
+        const drawnNotice = this.#drawnDevNotices.get(uid) || null;
         if (!h) {
           return {
             resources: { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 },
             devCards: [],
-            lastStealNotice: notice ? { ...notice } : null
+            lastStealNotice: notice ? { ...notice } : null,
+            lastDrawnDevNotice: drawnNotice ? { ...drawnNotice } : null
           };
         }
         return {
           resources: { ...h.resources },
           devCards: h.devCards.map(c => ({ ...c })),
-          lastStealNotice: notice ? { ...notice } : null
+          lastStealNotice: notice ? { ...notice } : null,
+          lastDrawnDevNotice: drawnNotice ? { ...drawnNotice } : null
         };
       }
 
@@ -1193,6 +1229,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         });
         if (privateView.lastStealNotice) {
           this.#stealNotices.set(uid, { ...privateView.lastStealNotice });
+        }
+        if (privateView.lastDrawnDevNotice) {
+          this.#drawnDevNotices.set(uid, { ...privateView.lastDrawnDevNotice });
         }
       }
 
@@ -1217,6 +1256,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           used: false
         };
         h.devCards.push(card);
+        // 購入者本人のみに送られる獲得通知を記録
+        this.#drawnDevNotices.set(uid, {
+          id: `drawn_${card.id}`,
+          type,
+          turn: currentTurn
+        });
         return { ...card };
       }
 
@@ -1319,6 +1364,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         playerUids.forEach(uid => {
           this.statsByUid[uid] = {
             initialVertices: [],
+            initialVertexDetails: [], // [{ vertexId, pips, resources: [], port }]
             initialPips: 0,
             initialResources: new Set(),
             initialPortCount: 0,
@@ -1340,6 +1386,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             playedKnights: 0,
             playedOtherDev: 0,
             sevenRolls: 0,
+            buildTimeline: [],        // [{ step, turn, type, label, detail, vpAfter }]
+            roadExpansionStats: { towardPort: 0, towardGoodSpot: 0, deadEndOrRedundant: 0 },
+            cityUpgradePips: [],      // 都市へ昇格させた頂点の確率ピップ一覧
             keyMilestones: []         // [{ turn, label }]
           };
         });
@@ -1352,12 +1401,110 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (!vObj) return;
         s.initialVertices.push(vertexId);
         if (vObj.port) s.initialPortCount += 1;
+        let vertexPips = 0;
+        const vertexRes = [];
         vObj.hexIds.forEach(hid => {
           const hex = board.hexes.find(h => h.id === hid);
           if (hex && hex.resource !== 'desert') {
             s.initialResources.add(hex.resource);
-            s.initialPips += (PIP_COUNTS[hex.number] || 0);
+            const p = (PIP_COUNTS[hex.number] || 0);
+            s.initialPips += p;
+            vertexPips += p;
+            vertexRes.push({ resource: hex.resource, number: hex.number, pips: p });
           }
+        });
+        s.initialVertexDetails.push({
+          vertexId,
+          order: s.initialVertices.length,
+          pips: vertexPips,
+          resources: vertexRes,
+          port: vObj.port ? (vObj.port.resource ? `${RESOURCES[vObj.port.resource].label}2:1港` : '3:1汎用港') : null
+        });
+      }
+
+      recordBuildAction(uid, st, actionType, targetId = null) {
+        const s = this.statsByUid[uid];
+        if (!s || !st) return;
+
+        let label = '';
+        let detail = '';
+
+        if (actionType === 'ROAD' || actionType === 'ROAD_BUILDING') {
+          label = actionType === 'ROAD_BUILDING' ? '街道建設(発展)' : '街道を建設';
+          const edge = st.board?.edges?.[targetId];
+          if (edge) {
+            const endpoints = [edge.v1, edge.v2].map(vid => st.board.vertices[vid]).filter(Boolean);
+            const hitsNewPort = endpoints.some(v => v.port && !st.board.buildings[v.id]);
+            let bestSpotPips = 0;
+            endpoints.forEach(v => {
+              if (!st.board.buildings[v.id] && !v.neighborVertexIds.some(nv => st.board.buildings[nv])) {
+                let pSum = 0;
+                v.hexIds.forEach(hid => {
+                  const h = st.board.hexes.find(x => x.id === hid);
+                  if (h && h.number) pSum += (PIP_COUNTS[h.number] || 0);
+                });
+                if (pSum > bestSpotPips) bestSpotPips = pSum;
+              }
+            });
+
+            if (hitsNewPort) {
+              s.roadExpansionStats.towardPort += 1;
+              detail = '未確保の港湾ルートへ延伸';
+            } else if (bestSpotPips >= 8) {
+              s.roadExpansionStats.towardGoodSpot += 1;
+              detail = `高確率拠点候補（計${bestSpotPips}ピップ）へ延伸`;
+            } else if (bestSpotPips === 0) {
+              s.roadExpansionStats.deadEndOrRedundant += 1;
+              detail = '建設不可区間への延伸・防衛路線';
+            } else {
+              detail = `開拓候補地（計${bestSpotPips}ピップ）へ接続`;
+            }
+          }
+        } else if (actionType === 'SETTLEMENT') {
+          label = '開拓地を建設';
+          const v = st.board?.vertices?.[targetId];
+          if (v) {
+            let pSum = 0;
+            const resNames = [];
+            v.hexIds.forEach(hid => {
+              const h = st.board.hexes.find(x => x.id === hid);
+              if (h && h.resource !== 'desert') {
+                pSum += (PIP_COUNTS[h.number] || 0);
+                resNames.push(`${RESOURCES[h.resource].label}(${h.number})`);
+              }
+            });
+            const portNote = v.port ? `・${v.port.resource ? RESOURCES[v.port.resource].label + '2:1港' : '3:1港'}` : '';
+            detail = `${resNames.join('・')} [計${pSum}ピップ${portNote}]`;
+          }
+        } else if (actionType === 'CITY') {
+          label = '都市へ昇格';
+          const v = st.board?.vertices?.[targetId];
+          if (v) {
+            let pSum = 0;
+            const resNames = [];
+            v.hexIds.forEach(hid => {
+              const h = st.board.hexes.find(x => x.id === hid);
+              if (h && h.resource !== 'desert') {
+                pSum += (PIP_COUNTS[h.number] || 0);
+                resNames.push(`${RESOURCES[h.resource].label}(${h.number})`);
+              }
+            });
+            s.cityUpgradePips.push(pSum);
+            detail = `${resNames.join('・')}を生産2倍化 [計${pSum}ピップ]`;
+          }
+        } else if (actionType === 'DEV') {
+          label = '発展カード購入';
+          detail = '手札圧縮・騎士/勝利点/逆転札の確保';
+        }
+
+        const vpNow = (st.players[uid]?.publicVP || 0) + secretVault.getSecretVpCount(uid);
+        s.buildTimeline.push({
+          step: s.buildTimeline.length + 1,
+          turn: st.turnNumber,
+          type: actionType,
+          label,
+          detail,
+          vpAfter: vpNow
         });
       }
 
@@ -1448,68 +1595,90 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (me.builtCities >= 2 && me.boughtDevCards >= 2) {
           playstyle = '都市化・発展特化型（OWSマスター）';
           playstyleDesc = '鉱石・小麦・羊毛を軸に都市の倍増生産と発展カードで一気に勝利点へ到達する重厚な戦略です。';
-        } else if (me.builtRoads >= 4 && (me.builtSettlements >= 2 || playerInfo.hasLongestRoad)) {
-          playstyle = '高速開拓・街道支配型';
-          playstyleDesc = '豊富な木材・レンガで領土を広げ、優秀な土地と最長交易路ボーナスを制圧する展開型戦略です。';
-        } else if (totalTrades >= 3 && (me.maritimeTrades['3:1'] + me.maritimeTrades['2:1'] >= 2)) {
-          playstyle = '港湾交易マスター型';
-          playstyleDesc = '港の有利レートを駆使して手札の偏りを自在に解消し、手番テンポを握る技巧派スタイルです。';
+        } else if (me.builtRoads >= 5 && me.builtSettlements >= 2) {
+          playstyle = '広域拡張・街道支配型';
+          playstyleDesc = '木材とレンガを活かして盤面を広く抑え、複数拠点と最長交易路で主導権を握る攻撃的スタイルです。';
+        } else if (totalTrades >= 3) {
+          playstyle = '港湾交易・資源変換マスター型';
+          playstyleDesc = '港の有利レートと交渉を駆使し、偏った資源を自在に建設資材へ変換する柔軟なスタイルです。';
         }
 
-        // 4. 総合戦術ランク (S / A / B / C) と総合スコア (0〜100)
-        const finalVp = playerInfo.publicVP + secretVault.getSecretVpCount(targetUid);
-        let score = 50;
-        score += Math.min(25, finalVp * 2.5);
-        score += Math.min(10, Math.max(-5, (me.initialPips - 16) * 1.5));
-        score += resDiversityCount >= 4 ? 5 : 0;
-        score -= me.burstDiscarded * 2.5;
-        score -= me.maritimeTrades['4:1'] * 2;
-        score += (me.maritimeTrades['3:1'] + me.maritimeTrades['2:1']) * 2.5;
-        if (st.winnerUid === targetUid) score += 10;
-        score = Math.max(25, Math.min(99, Math.round(score)));
+        // 4. 総合戦術スコア & ランク算出
+        const finalVp = (playerInfo?.publicVP || 0) + secretVault.getSecretVpCount(targetUid);
+        const score = Math.min(
+          100,
+          Math.max(
+            20,
+            Math.round(
+              finalVp * 6.5 +
+              Math.min(24, me.initialPips) * 0.8 +
+              resDiversityCount * 2.5 -
+              me.burstDiscarded * 2.5 +
+              (me.roadExpansionStats.towardPort + me.roadExpansionStats.towardGoodSpot) * 2
+            )
+          )
+        );
+        const rank = score >= 88 ? 'S' : (score >= 74 ? 'A' : (score >= 58 ? 'B' : 'C'));
 
-        let rank = 'B';
-        if (score >= 86) rank = 'S';
-        else if (score >= 72) rank = 'A';
-        else if (score >= 56) rank = 'B';
-        else rank = 'C';
-
-        // 5. AI戦略コーチによる具体的フィードバック生成
+        // 5. AI戦略コーチによる本格的フィードバック生成（初期配置・街道方向・建設順番・戦略一貫性）
         const goodPlays = [];
         const improvements = [];
 
-        if (me.initialPips >= avgInitialPips) {
-          goodPlays.push(`初期配置の合計確率ピップが ${me.initialPips} 点（卓平均 ${avgInitialPips.toFixed(1)} 点）と高く、序盤から安定した資源供給基盤を築けました。`);
-        } else {
-          improvements.push(`初期配置の合計ピップが ${me.initialPips} 点（卓平均 ${avgInitialPips.toFixed(1)} 点）と控えめでした。6・8や5・9に隣接する頂点を優先すると生産量が安定します。`);
+        // (A) 初期配置2拠点の組み合わせ＆港シナジー分析
+        if (me.initialVertexDetails.length >= 2) {
+          const v1 = me.initialVertexDetails[0];
+          const v2 = me.initialVertexDetails[1];
+          const v1ResSet = new Set(v1.resources.map(r => r.resource));
+          const overlapCount = v2.resources.filter(r => v1ResSet.has(r.resource)).length;
+
+          if (me.initialPips >= avgInitialPips && resDiversityCount >= 4) {
+            goodPlays.push(`【初期配置の布石】1軒目(${v1.pips}ピップ)と2軒目(${v2.pips}ピップ)で計${me.initialPips}ピップ・${resDiversityCount}種の資源をバランス良く確保し、序盤から手詰まりしにくい理想的な土台を構築しました。`);
+          } else if (overlapCount >= 2 && me.initialPortCount === 0) {
+            improvements.push(`【初期配置の補完性】1軒目と2軒目で同じ資源が${overlapCount}箇所重複しているにもかかわらず専門港を押さえられていません。2軒目は1軒目に不足している資源を補う頂点を選ぶと展開力が劇的に向上します。`);
+          } else if (me.initialPortCount >= 1) {
+            goodPlays.push(`【初期配置×港シナジー】初期配置の段階から港拠点（${me.initialPortCount}箇所）を組み込んでおり、資源の偏りを海上交易で吸収できる戦略的な配置でした。`);
+          } else if (me.initialPips < avgInitialPips) {
+            improvements.push(`【初期配置の確率期待値】初期2拠点の合計が${me.initialPips}ピップ（卓平均${avgInitialPips.toFixed(1)}）と控えめでした。6・8や5・9に隣接する交点を最優先すると毎ターンの資源収入が安定します。`);
+          }
         }
 
-        if (resDiversityCount >= 4) {
-          goodPlays.push(`初期2拠点で ${resDiversityCount} 種類の資源を網羅しており、序盤の建設選択肢を広く確保できました。`);
-        } else {
-          improvements.push(`初期配置の資源が ${resDiversityCount} 種類に偏っていたため、不足資源を補う早期の港確保か交渉トレードをさらに意識すると展開が加速します。`);
+        // (B) 街道を伸ばす方向・空間拡張の評価
+        const roadStats = me.roadExpansionStats;
+        if (roadStats.towardPort + roadStats.towardGoodSpot >= 2) {
+          goodPlays.push(`【街道の延伸方向】目的を持って街道を伸ばせており、高確率な空き拠点（${roadStats.towardGoodSpot}回）や未確保の港（${roadStats.towardPort}回）へ最短ルートでアクセスする空間支配が光りました。`);
+        } else if (roadStats.deadEndOrRedundant >= 2) {
+          improvements.push(`【街道の延伸方向】距離ルールで開拓地を建てられない方向へ街道が${roadStats.deadEndOrRedundant}本伸びています。最長交易路狙い以外では、必ず「次の開拓予定頂点」か「港」をゴールに定めて街道を引くと資源効率が上がります。`);
+        } else if (me.builtRoads >= 3 && me.builtSettlements === 0 && !playerInfo.hasLongestRoad) {
+          improvements.push(`【街道と拠点の比率】街道を${me.builtRoads}本建設した一方で新規開拓地が0軒です。街道は開拓地を建てるための手段なので、木・レンガだけでなく麦・羊も揃えて確実に拠点化しましょう。`);
         }
 
-        if (me.burstDiscarded === 0) {
-          goodPlays.push(`7の出目によるバースト損失が 0 枚でした。手札が7枚を超える前に建設や交易で手札を圧縮するリスク管理が機能しています。`);
-        } else {
-          improvements.push(`7のバーストで合計 ${me.burstDiscarded} 枚の資源を失いました。手札が7枚を超えそうなターンは、街道1本や発展カード購入で7枚以下に抑えるのが定石です。`);
+        // (C) 建てた拠点・都市とその「建設順番」の戦略評価
+        const firstSettlementStep = me.buildTimeline.findIndex(x => x.type === 'SETTLEMENT');
+        const firstCityStep = me.buildTimeline.findIndex(x => x.type === 'CITY');
+        if (firstSettlementStep !== -1 && (firstCityStep === -1 || firstSettlementStep < firstCityStep)) {
+          goodPlays.push(`【建設の順番】まず新規開拓地を建てて数字のカバー範囲を広げてから都市化・発展へ移行する「王道の拡張順序」を実践できており、中盤以降の資源爆発力に繋がりました。`);
+        } else if (firstCityStep !== -1 && firstSettlementStep === -1 && me.builtCities >= 1) {
+          goodPlays.push(`【建設の順番（OWS特化）】新規開拓地を増やさず早期に都市昇格へ資源を集中させる「都市・発展特化ルート」を選択し、少数の高確率タイルから大量資源を生み出す組み立てが機能しました。`);
+        }
+
+        if (me.cityUpgradePips.length > 0) {
+          const avgCityPip = me.cityUpgradePips.reduce((a, b) => a + b, 0) / me.cityUpgradePips.length;
+          if (avgCityPip >= 10) {
+            goodPlays.push(`【都市昇格の優先順位】平均${avgCityPip.toFixed(1)}ピップという極めて生産力の高い開拓地を優先的に都市化したため、1回の出目あたりの資源獲得効率が最大化されました。`);
+          } else if (avgCityPip < 8) {
+            improvements.push(`【都市昇格の優先順位】都市化した拠点の平均ピップが${avgCityPip.toFixed(1)}とやや低めでした。都市化は生産量が2倍になるため、最も数字確率が高い拠点から順に昇格させるのが定石です。`);
+          }
+        }
+
+        // (D) 戦略の組み立て・リスク管理（バースト・港レート・盗賊）
+        if (me.burstDiscarded === 0 && st.turnNumber >= 4) {
+          goodPlays.push(`【手札リスク管理】7のバーストによる資源破棄を0枚に抑えきりました。手札が7枚を超える前に街道や発展カードへ変換するテンポ管理が優秀です。`);
+        } else if (me.burstDiscarded >= 3) {
+          improvements.push(`【手札リスク管理】7のバーストで計${me.burstDiscarded}枚を失いました。自分のターン終了時に手札が7枚以下になるよう、発展カード購入や港交易で手札を圧縮する習慣をつけると終盤の失速を防げます。`);
         }
 
         if (me.maritimeTrades['4:1'] >= 2) {
-          improvements.push(`銀行との非効率な 4:1 交換を ${me.maritimeTrades['4:1']} 回行いました。3:1汎用港や2:1専門港へ早期に開拓地を伸ばすことで資源ロスを半減できます。`);
-        } else if (me.maritimeTrades['3:1'] + me.maritimeTrades['2:1'] >= 1) {
-          goodPlays.push(`港の有利レート（3:1 / 2:1）を ${me.maritimeTrades['3:1'] + me.maritimeTrades['2:1']} 回活用し、効率よく必要資源へ変換できました。`);
-        }
-
-        if (me.robberBlockedCount >= 2) {
-          improvements.push(`盗賊に塞がれたタイルの出目が ${me.robberBlockedCount} 回ヒットし、計 ${me.robberBlockedLostCards} 枚の資源を逃しました。騎士カードで早めに盗賊を排除する判断が有効です。`);
-        }
-
-        if (me.builtCities >= 1) {
-          goodPlays.push(`開拓地を都市へ昇格（${me.builtCities} 都市）させたことで、1回の出目あたりの資源爆発力と勝利点効率を大きく高めました。`);
-        } else if (st.turnNumber >= 6) {
-          improvements.push(`中盤以降に都市化（小麦2・鉱石3）を達成できると生産効率が2倍になるため、早めに鉱石・小麦タイルへの進出を狙いましょう。`);
+          improvements.push(`【戦略の組み立て・交易効率】4:1の銀行交換を${me.maritimeTrades['4:1']}回使用しました。主力資源と噛み合う2:1専門港または3:1汎用港を中盤までに押さえることで、同じ資源量からもう1軒分の建設リソースを捻出できます。`);
         }
 
         return {
@@ -1526,7 +1695,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             pipDiff,
             resDiversityCount,
             initialPortCount: me.initialPortCount,
-            setupRating
+            setupRating,
+            vertexDetails: me.initialVertexDetails
           },
           luck: {
             expected: +expected.toFixed(1),
@@ -1545,8 +1715,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             robberStolenGained: me.robberStolenGained,
             robberStolenLost: me.robberStolenLost
           },
-          goodPlays: goodPlays.slice(0, 3),
-          improvements: improvements.slice(0, 3)
+          roadExpansionStats: { ...me.roadExpansionStats },
+          buildTimeline: [...me.buildTimeline],
+          goodPlays: goodPlays.slice(0, 4),
+          improvements: improvements.slice(0, 4)
         };
       }
     }
@@ -1755,14 +1927,28 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.cpuDifficulty = 'standard';
         this.publicState = null;
         this.placementMode = null; // null | 'INITIAL_SETTLEMENT' | 'INITIAL_ROAD' | 'ROAD' | 'SETTLEMENT' | 'CITY' | 'ROBBER' | 'ROAD_BUILDING'
+        this.pendingBuildConfirm = null; // null | { kind: 'vertex' | 'edge', targetId: string, mode: string }
         this.cpuTimer = null;
         this.justRolledDice = false;
+        this.justHadResourceGain = false;
+        this.justPlayedDevCard = false;
+      }
+
+      startSoloGame() {
+        sound.ensureCtx();
+        if (this.cpuTimer) clearTimeout(this.cpuTimer);
+        this.pendingBuildConfirm = null;
+        this.justRolledDice = false;
+        this.justHadResourceGain = false;
+        this.justPlayedDevCard = false;
       }
 
       startSoloGame() {
         sound.ensureCtx();
         if (this.cpuTimer) clearTimeout(this.cpuTimer);
         this.justRolledDice = false;
+        this.justHadResourceGain = false;
+        this.justPlayedDevCard = false;
 
         this.mode = 'solo';
         this.roomId = 'SOLO-' + Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -1826,6 +2012,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           pendingTrade: null,
           lastDiceGainEvent: null,
           lastDiscardEvents: [],
+          lastDevCardPlayedEvent: null,
           dice: [null, null],
           diceRollSeq: 0,
           lastRollerUid: null,
@@ -1850,6 +2037,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (typeof appUI !== 'undefined' && appUI) {
           appUI.lastAnnouncedTurnKey = null;
           appUI.lastShownDiceSeq = 0;
+          appUI.lastTriggeredDrawnDevId = null;
+          appUI.lastTriggeredPlayedDevId = null;
         }
         this.syncPublicCountsFromVault();
         this.prepareTurnState();
@@ -2012,7 +2201,14 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
       prepareTurnState() {
         const st = this.publicState;
-        if (!st || st.status === 'finished') return;
+        if (!st || st.status === 'finished') {
+          this.pendingBuildConfirm = null;
+          return;
+        }
+
+        if (st.activeUid !== this.localUid) {
+          this.pendingBuildConfirm = null;
+        }
 
         const activePlayer = st.players[st.activeUid];
         if (st.status === 'setup') {
@@ -2036,12 +2232,21 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (activePlayer && activePlayer.isCpu && canRunCpu && st.phase !== 'DISCARD') {
           if (this.cpuTimer) clearTimeout(this.cpuTimer);
           const isTurnOpeningStep = (st.phase === 'ROLL' || st.phase === 'INITIAL_SETTLEMENT');
-          // サイコロを振った直後は、出目カットイン(2秒)と資源のゆっくり移動を視認できるよう2.6秒待機する
-          const delayMs = this.justRolledDice ? 2600 : (isTurnOpeningStep ? 1100 : 750);
+          // サイコロ出目カットイン(2.05秒)後に資源移動(2.35秒)が始まるため、視認完了まで待機する
+          let delayMs = isTurnOpeningStep ? 1100 : 750;
+          if (this.justRolledDice) {
+            delayMs = this.justHadResourceGain ? 4400 : 2350;
+          } else if (this.justPlayedDevCard) {
+            delayMs = 2400;
+          }
           this.justRolledDice = false;
+          this.justHadResourceGain = false;
+          this.justPlayedDevCard = false;
           this.cpuTimer = setTimeout(() => this.executeCpuTurnStep(), delayMs);
         } else {
           this.justRolledDice = false;
+          this.justHadResourceGain = false;
+          this.justPlayedDevCard = false;
         }
       }
 
@@ -2150,28 +2355,61 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         return null;
       }
 
-      onVertexClick(vertexId, actorUid = this.localUid, explicitMode = null) {
+      requestBuildConfirmation(kind, targetId, mode) {
+        this.pendingBuildConfirm = { kind, targetId, mode };
+        appUI.renderAll();
+      }
+
+      cancelPendingBuild() {
+        this.pendingBuildConfirm = null;
+        appUI.renderAll();
+      }
+
+      confirmPendingBuild() {
+        const pending = this.pendingBuildConfirm;
+        if (!pending) return;
+        this.pendingBuildConfirm = null;
+        if (pending.kind === 'vertex') {
+          this.onVertexClick(pending.targetId, this.localUid, pending.mode, true);
+        } else if (pending.kind === 'edge') {
+          this.onEdgeClick(pending.targetId, this.localUid, pending.mode, true);
+        }
+      }
+
+      onVertexClick(vertexId, actorUid = this.localUid, explicitMode = null, skipConfirm = false) {
         const st = this.publicState;
         if (!st || st.activeUid !== actorUid) return;
 
+        const resolvedMode = explicitMode || ((actorUid === this.localUid)
+          ? (st.status === 'setup' ? st.phase : (this.placementMode || this.resolveDirectVertexMode(vertexId, actorUid)))
+          : (st.status === 'setup' ? st.phase : (this.remotePlacementModeByUid?.[actorUid] || this.resolveDirectVertexMode(vertexId, actorUid))));
+        const valid = this.getValidVerticesForPlacement(resolvedMode, actorUid);
+        if (!valid.includes(vertexId)) return;
+
+        // ローカルプレイヤーの操作時はワンタップ確定せず一度確認ステップを挟む
+        if (actorUid === this.localUid && !skipConfirm) {
+          const isSamePending = this.pendingBuildConfirm
+            && this.pendingBuildConfirm.kind === 'vertex'
+            && this.pendingBuildConfirm.targetId === vertexId
+            && this.pendingBuildConfirm.mode === resolvedMode;
+          if (!isSamePending) {
+            this.requestBuildConfirmation('vertex', vertexId, resolvedMode);
+            return;
+          }
+          this.pendingBuildConfirm = null;
+        }
+
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          const sentMode = (st.status === 'setup')
-            ? st.phase
-            : (this.placementMode || this.resolveDirectVertexMode(vertexId, actorUid));
-          if (!sentMode) return;
-          if (['SETTLEMENT', 'CITY'].includes(sentMode)) {
+          if (!resolvedMode) return;
+          if (['SETTLEMENT', 'CITY'].includes(resolvedMode)) {
             this.placementMode = null;
             appUI.renderAll();
           }
-          onlineManager.sendActionToHost({ type: 'VERTEX_CLICK', vertexId, mode: sentMode });
+          onlineManager.sendActionToHost({ type: 'VERTEX_CLICK', vertexId, mode: resolvedMode });
           return;
         }
 
-        const mode = explicitMode || ((actorUid === this.localUid)
-          ? (st.status === 'setup' ? st.phase : (this.placementMode || this.resolveDirectVertexMode(vertexId, actorUid)))
-          : (st.status === 'setup' ? st.phase : (this.remotePlacementModeByUid?.[actorUid] || this.resolveDirectVertexMode(vertexId, actorUid))));
-        const valid = this.getValidVerticesForPlacement(mode, actorUid);
-        if (!valid.includes(vertexId)) return;
+        const mode = resolvedMode;
 
         if (mode === 'INITIAL_SETTLEMENT') {
           this.placeInitialSettlement(actorUid, vertexId);
@@ -2191,6 +2429,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           sound.playWoodThud();
           this.addLog(`🏠 ${st.players[actorUid].name} が新しい開拓地を建設しました。`);
           this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'SETTLEMENT', vertexId);
           if (!this.checkVictoryCondition()) this.syncAfterHostAction();
         } else if (mode === 'CITY') {
           const cityCount = Object.values(st.board.buildings).filter(b => b.ownerUid === actorUid && b.type === 'city').length;
@@ -2208,32 +2447,46 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           sound.playWoodThud();
           this.addLog(`🏰 ${st.players[actorUid].name} が開拓地を都市へ昇格させました！`);
           this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'CITY', vertexId);
           if (!this.checkVictoryCondition()) this.syncAfterHostAction();
         }
       }
 
-      onEdgeClick(edgeId, actorUid = this.localUid, explicitMode = null) {
+      onEdgeClick(edgeId, actorUid = this.localUid, explicitMode = null, skipConfirm = false) {
         const st = this.publicState;
         if (!st || st.activeUid !== actorUid) return;
 
         const resolveDirectEdge = () => (st.status === 'playing' && st.phase === 'MAIN' && !st.board.roads[edgeId]) ? 'ROAD' : null;
+        const resolvedMode = explicitMode || ((actorUid === this.localUid)
+          ? (st.status === 'setup' ? st.phase : (this.placementMode || resolveDirectEdge()))
+          : (st.status === 'setup' ? st.phase : (st.phase === 'ROAD_BUILDING' ? 'ROAD_BUILDING' : (this.remotePlacementModeByUid?.[actorUid] || resolveDirectEdge()))));
+        const valid = this.getValidEdgesForPlacement(resolvedMode, actorUid);
+        if (!valid.includes(edgeId)) return;
+
+        // ローカルプレイヤーの操作時はワンタップ確定せず一度確認ステップを挟む
+        if (actorUid === this.localUid && !skipConfirm) {
+          const isSamePending = this.pendingBuildConfirm
+            && this.pendingBuildConfirm.kind === 'edge'
+            && this.pendingBuildConfirm.targetId === edgeId
+            && this.pendingBuildConfirm.mode === resolvedMode;
+          if (!isSamePending) {
+            this.requestBuildConfirmation('edge', edgeId, resolvedMode);
+            return;
+          }
+          this.pendingBuildConfirm = null;
+        }
 
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          const sentMode = (st.status === 'setup') ? st.phase : (this.placementMode || resolveDirectEdge());
-          if (!sentMode) return;
-          if (sentMode === 'ROAD') {
+          if (!resolvedMode) return;
+          if (resolvedMode === 'ROAD') {
             this.placementMode = null;
             appUI.renderAll();
           }
-          onlineManager.sendActionToHost({ type: 'EDGE_CLICK', edgeId, mode: sentMode });
+          onlineManager.sendActionToHost({ type: 'EDGE_CLICK', edgeId, mode: resolvedMode });
           return;
         }
 
-        const mode = explicitMode || ((actorUid === this.localUid)
-          ? (st.status === 'setup' ? st.phase : (this.placementMode || resolveDirectEdge()))
-          : (st.status === 'setup' ? st.phase : (st.phase === 'ROAD_BUILDING' ? 'ROAD_BUILDING' : (this.remotePlacementModeByUid?.[actorUid] || resolveDirectEdge()))));
-        const valid = this.getValidEdgesForPlacement(mode, actorUid);
-        if (!valid.includes(edgeId)) return;
+        const mode = resolvedMode;
 
         if (mode === 'INITIAL_ROAD') {
           this.placeInitialRoad(actorUid, edgeId);
@@ -2252,6 +2505,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           sound.playWoodThud();
           this.addLog(`🛤️ ${st.players[actorUid].name} が街道を建設しました。`);
           this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'ROAD', edgeId);
           if (!this.checkVictoryCondition()) this.syncAfterHostAction();
         } else if (mode === 'ROAD_BUILDING') {
           st.board.roads[edgeId] = { ownerUid: actorUid };
@@ -2260,6 +2514,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           sound.playWoodThud();
           this.addLog(`🛤️ ${st.players[actorUid].name} が街道建設カードにより無料の街道を配置しました。`);
           this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'ROAD_BUILDING', edgeId);
           if (this.checkVictoryCondition()) return;
 
           const nextValid = this.getValidEdgesForPlacement('ROAD_BUILDING', actorUid);
@@ -2481,6 +2736,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               hexGainsByUid
             }
           : null;
+        this.justHadResourceGain = Boolean(st.lastDiceGainEvent);
 
         analytics.recordDiceRollExpectation(st, uid, actualGainsByUid, blockedLossesByUid);
 
@@ -2593,6 +2849,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       enterPlacementMode(mode) {
         const st = this.publicState;
         if (!st || st.activeUid !== this.localUid || st.phase !== 'MAIN') return;
+        this.pendingBuildConfirm = null;
 
         if (mode === 'ROAD') {
           if (this.getValidEdgesForPlacement('ROAD', this.localUid).length === 0) {
@@ -2619,7 +2876,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       cancelPlacementMode() {
-        if (this.publicState?.status === 'setup') return;
+        this.pendingBuildConfirm = null;
+        if (this.publicState?.status === 'setup') {
+          appUI.renderAll();
+          return;
+        }
         this.placementMode = null;
         if (this.mode === 'online' && !onlineManager.isHost) {
           onlineManager.sendActionToHost({ type: 'SET_PLACEMENT_MODE', mode: null });
@@ -2648,6 +2909,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         sound.playChime();
         this.addLog(`📜 ${st.players[actorUid].name} が発展カードを1枚購入しました。`);
         this.syncPublicCountsFromVault();
+        analytics.recordBuildAction(actorUid, st, 'DEV');
         if (!this.checkVictoryCondition()) this.syncAfterHostAction();
       }
 
@@ -2705,7 +2967,22 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           const usedType = secretVault.markDevCardUsed(actorUid, cardId);
           if (!usedType) return;
           st.devCardPlayedThisTurn = true;
+          this.justPlayedDevCard = true;
           this.syncPublicCountsFromVault();
+
+          let extraDetail = '';
+          if (usedType === 'year_of_plenty' && payload) {
+            extraDetail = `${RESOURCES[payload.res1].emoji}${RESOURCES[payload.res1].label}・${RESOURCES[payload.res2].emoji}${RESOURCES[payload.res2].label} を獲得`;
+          } else if (usedType === 'monopoly' && payload) {
+            extraDetail = `指定資源: ${RESOURCES[payload.chosenRes].emoji}${RESOURCES[payload.chosenRes].label}`;
+          }
+
+          st.lastDevCardPlayedEvent = {
+            id: `playdev_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            playerUid: actorUid,
+            cardType: usedType,
+            extraText: extraDetail
+          };
 
           if (usedType === 'knight') {
             st.players[actorUid].knightsPlayed += 1;
@@ -2969,6 +3246,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       handleEndTurn(actorUid = this.localUid) {
+        if (actorUid === this.localUid) {
+          this.pendingBuildConfirm = null;
+        }
         if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
           onlineManager.sendActionToHost({ type: 'END_TURN' });
           return;
@@ -2995,6 +3275,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         st.devCardPlayedThisTurn = false;
         st.lastDiceGainEvent = null;
         st.lastDiscardEvents = [];
+        st.lastDevCardPlayedEvent = null;
         this.placementMode = null;
         this.prepareTurnState();
       }
@@ -3097,8 +3378,15 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             if (knightCard && (blockedSelf || st.players[uid].knightsPlayed >= 2)) {
               secretVault.markDevCardUsed(uid, knightCard.id);
               st.devCardPlayedThisTurn = true;
+              this.justPlayedDevCard = true;
               st.players[uid].knightsPlayed += 1;
               analytics.statsByUid[uid].playedKnights += 1;
+              st.lastDevCardPlayedEvent = {
+                id: `playdev_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                playerUid: uid,
+                cardType: 'knight',
+                extraText: ''
+              };
               this.addLog(`⚔️ ${st.players[uid].name} が【騎士】を使用しました！`);
               this.recalculateAllVictoryPoints();
               if (this.checkVictoryCondition()) return;
@@ -3928,6 +4216,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           } else if (syncedSt.activeUid !== this.localUid || syncedSt.phase !== 'MAIN') {
             gameController.placementMode = null;
           }
+          if (syncedSt.activeUid !== this.localUid || syncedSt.status === 'finished') {
+            gameController.pendingBuildConfirm = null;
+          }
 
           secretVault.setOwnPrivateView(this.localUid, msg.privateView);
 
@@ -3978,13 +4269,19 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.domesticRequest = { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 };
         this.lastTriggeredRollId = null;
         this.lastTriggeredStealId = null;
+        this.lastTriggeredDrawnDevId = null;
+        this.lastTriggeredPlayedDevId = null;
         this.lastAnnouncedTurnKey = null;
         this.lastShownDiceSeq = 0;
         this.turnBannerAnim = null;
         this.diceBannerAnim = null;
+        this.devCardBannerAnim = null;
+        this.pendingGainTimer = null;
         this.activeGainHighlightUntil = 0;
         this.gainHighlightTimer = null;
         this.activeInteractiveType = null;
+        this.isInteractiveMapPeek = false;
+        this.analyticsUnlockedNotified = false;
         this.boardZoom = 1;
         this.boardPanX = 0;
         this.boardPanY = 0;
@@ -4008,7 +4305,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           }, { passive: false });
 
           viewport.addEventListener('mousedown', (e) => {
-            if (e.target.closest('button')) return;
+            if (e.target.closest('button, #buildConfirmBar')) return;
             this.isPanning = true;
             this.panStartX = e.clientX - this.boardPanX;
             this.panStartY = e.clientY - this.boardPanY;
@@ -4026,7 +4323,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           });
 
           viewport.addEventListener('touchstart', (e) => {
-            if (e.target.closest('button')) return;
+            if (e.target.closest('button, #buildConfirmBar')) return;
             if (e.touches.length === 1) {
               this.isPanning = true;
               this.panStartX = e.touches[0].clientX - this.boardPanX;
@@ -4159,12 +4456,23 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
         gameController.publicState = null;
         gameController.placementMode = null;
+        gameController.pendingBuildConfirm = null;
         this.lastAnnouncedTurnKey = null;
         this.lastShownDiceSeq = 0;
+        this.lastTriggeredDrawnDevId = null;
+        this.lastTriggeredPlayedDevId = null;
+        if (this.pendingGainTimer) {
+          clearTimeout(this.pendingGainTimer);
+          this.pendingGainTimer = null;
+        }
+        this.analyticsUnlockedNotified = false;
+        this.updateAnalyticsButtonState(null);
         const cutinOverlay = document.getElementById('turnCutinOverlay');
         if (cutinOverlay) cutinOverlay.innerHTML = '';
         const diceOverlay = document.getElementById('diceCutinOverlay');
         if (diceOverlay) diceOverlay.innerHTML = '';
+        const devOverlay = document.getElementById('devCardCutinOverlay');
+        if (devOverlay) devOverlay.innerHTML = '';
         this.resetBoardTransform();
 
         document.getElementById('gameScreen')?.classList.add('hidden');
@@ -4229,11 +4537,87 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       openModal(id) {
+        if (id === 'interactiveModal') {
+          this.setInteractiveMapPeek(false);
+        }
         document.getElementById(id)?.classList.remove('hidden');
       }
 
       closeModal(id) {
+        if (id === 'interactiveModal') {
+          this.setInteractiveMapPeek(false);
+        }
         document.getElementById(id)?.classList.add('hidden');
+      }
+
+      toggleInteractiveMapPeek() {
+        this.setInteractiveMapPeek(!this.isInteractiveMapPeek);
+      }
+
+      setInteractiveMapPeek(enabled) {
+        this.isInteractiveMapPeek = Boolean(enabled);
+        const modal = document.getElementById('interactiveModal');
+        const card = document.getElementById('interactiveModalCard');
+        const mainBody = document.getElementById('interactiveModalMainBody');
+        const btn = document.getElementById('btnToggleMapPeek');
+        if (!modal || !card || !mainBody || !btn) return;
+
+        if (this.isInteractiveMapPeek) {
+          modal.className = 'fixed inset-x-0 bottom-2 z-50 bg-transparent pointer-events-none flex items-end justify-center p-2.5 sm:p-4 transition-all duration-200';
+          card.className = 'parchment-panel pointer-events-auto rounded-2xl max-w-md w-full px-4 py-2.5 shadow-2xl border-2 border-sky-400 transition-all duration-200';
+          mainBody.classList.add('hidden');
+          btn.className = 'px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-700 border border-amber-300 text-amber-50 text-xs font-extrabold flex items-center gap-1 flex-shrink-0 shadow';
+          btn.innerHTML = '<span>📋</span><span>選択画面に戻る</span>';
+        } else {
+          modal.className = 'fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-200';
+          card.className = 'parchment-panel rounded-2xl max-w-md w-full p-5 space-y-4 transition-all duration-200';
+          mainBody.classList.remove('hidden');
+          btn.className = 'px-2.5 py-1 rounded-lg bg-sky-900 hover:bg-sky-800 border border-sky-400/60 text-sky-50 text-[11px] font-bold flex items-center gap-1 flex-shrink-0 shadow';
+          btn.innerHTML = '<span>👁️</span><span>マップ透視</span>';
+        }
+      }
+
+      isAnalyticsUnlocked(st) {
+        if (!st) return false;
+        if (st.status === 'finished') return true;
+        if (st.status !== 'playing') return false;
+        const maxVp = Math.max(...st.turnOrder.map(u => st.players[u]?.publicVP || 0));
+        return st.turnNumber >= 4 || maxVp >= 5;
+      }
+
+      updateAnalyticsButtonState(st) {
+        const btn = document.getElementById('btnOpenAnalytics');
+        const iconEl = document.getElementById('analyticsBtnIcon');
+        if (!btn) return;
+
+        const unlocked = this.isAnalyticsUnlocked(st);
+        if (unlocked) {
+          btn.className = 'px-2 sm:px-2.5 py-1.5 rounded-lg bg-amber-900/95 hover:bg-amber-800 border border-amber-400/80 text-amber-100 text-xs sm:text-sm font-bold transition flex items-center gap-1 shadow-md cursor-pointer';
+          btn.title = '戦績・AI戦略コーチの本格プレイ分析を見る';
+          if (iconEl) iconEl.textContent = '📊';
+          if (!this.analyticsUnlockedNotified && st.status === 'playing') {
+            this.analyticsUnlockedNotified = true;
+            this.showToast('📊 中盤に到達し「AI戦略コーチのプレイ分析」が解放されました！', 'success');
+          }
+        } else {
+          btn.className = 'px-2 sm:px-2.5 py-1.5 rounded-lg bg-mahogany-900/70 border border-brass-600/30 text-parchment-300/50 opacity-50 cursor-not-allowed text-xs sm:text-sm font-bold transition flex items-center gap-1';
+          btn.title = '序盤はデータ蓄積中のため無効です（第4ターン以降で解放）';
+          if (iconEl) iconEl.textContent = '🔒';
+        }
+      }
+
+      handleAnalyticsButtonClick() {
+        const st = gameController.publicState;
+        if (!this.isAnalyticsUnlocked(st)) {
+          const stageTxt = !st
+            ? '対局開始後、中盤（第4ターン以降）に解放されます。'
+            : (st.status === 'setup'
+                ? '現在は初期配置フェーズです。中盤（第4ターン以降）にAIコーチ分析が点灯・解放されます。'
+                : `現在は序盤（第${st.turnNumber}ターン）のためデータ蓄積中です。第4ターン以降（または5VP到達）でAI戦略コーチが解放されます。`);
+          this.showToast(`🔒 ${stageTxt}`, 'info');
+          return;
+        }
+        this.openAnalyticsModal();
       }
 
       scrollToSection(id) {
@@ -4255,10 +4639,44 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const st = gameController.publicState;
         if (!st) return;
 
-        // サイコロ出目のカットイン表示判定（自分・NPC問わず約2.1秒表示）
-        if (st.diceRollSeq && st.diceRollSeq !== this.lastShownDiceSeq && st.dice?.[0] && st.dice?.[1]) {
+        // 新しいサイコロ資源獲得イベントの検知（出目ポップアウトが消えた後に明滅＆移動を発火）
+        const gainEv = st.lastDiceGainEvent;
+        const isNewGainEvent = Boolean(gainEv && gainEv.rollId && gainEv.rollId !== this.lastTriggeredRollId);
+        if (isNewGainEvent) {
+          this.lastTriggeredRollId = gainEv.rollId;
+        }
+
+        const triggerDelayedGainVisuals = () => {
+          const latestSt = gameController.publicState || st;
+          this.activeGainHighlightUntil = Date.now() + 4400;
+          const myGains = gainEv?.gainsByUid?.[gameController.localUid];
+          if (myGains && Object.keys(myGains).length > 0) {
+            const summaryTxt = RESOURCE_KEYS
+              .filter(k => myGains[k] > 0)
+              .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label} +${myGains[k]}枚`)
+              .join(' / ');
+            this.showToast(`📦 資源獲得: ${summaryTxt}`, 'success');
+          }
+          this.renderBoardSvg(latestSt);
+          this.renderPrivateHand(latestSt);
+          requestAnimationFrame(() => this.animateDiceResourceFlights(latestSt, gainEv));
+
+          if (this.gainHighlightTimer) clearTimeout(this.gainHighlightTimer);
+          this.gainHighlightTimer = setTimeout(() => {
+            if (gameController.publicState) {
+              this.renderBoardSvg(gameController.publicState);
+              this.renderPrivateHand(gameController.publicState);
+            }
+          }, 4500);
+        };
+
+        // サイコロ出目のカットイン表示判定（自分・NPC問わず約2.05秒表示し、消えた直後に資源演出を開始）
+        const isNewDiceRoll = Boolean(st.diceRollSeq && st.diceRollSeq !== this.lastShownDiceSeq && st.dice?.[0] && st.dice?.[1]);
+        if (isNewDiceRoll) {
           this.lastShownDiceSeq = st.diceRollSeq;
-          this.showDiceCutin(st, st.dice[0], st.dice[1]);
+          this.showDiceCutin(st, st.dice[0], st.dice[1], isNewGainEvent ? triggerDelayedGainVisuals : null);
+        } else if (isNewGainEvent) {
+          triggerDelayedGainVisuals();
         }
 
         // 手番切り替え時の「プレイヤー名の番」カットイン表示判定
@@ -4270,29 +4688,6 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             this.lastAnnouncedTurnKey = turnKey;
             this.showTurnBanner(st);
           }
-        }
-
-        // 新しいサイコロ資源獲得イベントの検知と明滅・飛行アニメーション起動
-        const gainEv = st.lastDiceGainEvent;
-        const isNewGainEvent = Boolean(gainEv && gainEv.rollId && gainEv.rollId !== this.lastTriggeredRollId);
-        if (isNewGainEvent) {
-          this.lastTriggeredRollId = gainEv.rollId;
-          this.activeGainHighlightUntil = Date.now() + 4400;
-          const myGains = gainEv.gainsByUid?.[gameController.localUid];
-          if (myGains && Object.keys(myGains).length > 0) {
-            const summaryTxt = RESOURCE_KEYS
-              .filter(k => myGains[k] > 0)
-              .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label} +${myGains[k]}枚`)
-              .join(' / ');
-            this.showToast(`📦 資源獲得: ${summaryTxt}`, 'success');
-          }
-          if (this.gainHighlightTimer) clearTimeout(this.gainHighlightTimer);
-          this.gainHighlightTimer = setTimeout(() => {
-            if (gameController.publicState) {
-              this.renderBoardSvg(gameController.publicState);
-              this.renderPrivateHand(gameController.publicState);
-            }
-          }, 4500);
         }
 
         // 盗賊強奪イベントの秘匿通知（奪った側・奪われた側当人のみに表示し、他プレイヤーには通知しない）
@@ -4312,6 +4707,33 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           }
         }
 
+        // 発展カード購入カットイン（購入者本人のみにイラスト・説明付きで表示）
+        const drawnNotice = myPrivForNotice.lastDrawnDevNotice;
+        if (drawnNotice && drawnNotice.id && drawnNotice.id !== this.lastTriggeredDrawnDevId) {
+          this.lastTriggeredDrawnDevId = drawnNotice.id;
+          const myPlayer = st.players[gameController.localUid];
+          this.showDevCardCutin({
+            mode: 'drawn',
+            cardType: drawnNotice.type,
+            playerName: myPlayer ? myPlayer.name : 'あなた',
+            accentHex: myPlayer?.palette?.hex || '#f59e0b'
+          });
+        }
+
+        // 発展カード使用カットイン（他プレイヤーにも分かるよう全プレイヤーに表示）
+        const playedDevEv = st.lastDevCardPlayedEvent;
+        if (playedDevEv && playedDevEv.id && playedDevEv.id !== this.lastTriggeredPlayedDevId) {
+          this.lastTriggeredPlayedDevId = playedDevEv.id;
+          const actor = st.players[playedDevEv.playerUid];
+          this.showDevCardCutin({
+            mode: 'played',
+            cardType: playedDevEv.cardType,
+            playerName: actor ? actor.name : '開拓者',
+            accentHex: actor?.palette?.hex || '#f59e0b',
+            extraText: playedDevEv.extraText || ''
+          });
+        }
+
         // 盗賊強奪相手選択フェーズ中のモーダル自動表示保証
         if (st.phase === 'STEAL_SELECT' && st.activeUid === gameController.localUid && Array.isArray(st.stealVictims) && st.stealVictims.length > 0) {
           if (this.activeInteractiveType !== 'steal_select') {
@@ -4324,6 +4746,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.renderPlayersBar(st);
         this.renderCornerPlayerZones(st);
         this.renderGuidanceBanner(st);
+        this.renderBuildConfirmBar(st);
         this.renderDiceGainBanner(st);
         this.renderBoardSvg(st);
         this.renderDiceAndTurnControls(st);
@@ -4331,13 +4754,56 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.renderLogs(st);
         this.renderPrivateHand(st);
         this.renderMobileDock(st);
+        this.updateAnalyticsButtonState(st);
 
-        if (isNewGainEvent) {
-          requestAnimationFrame(() => this.animateDiceResourceFlights(st, gainEv));
-        }
         if (isNewStealEvent) {
           requestAnimationFrame(() => this.animateRobberStealFlight(st, stealNotice));
         }
+      }
+
+      renderBuildConfirmBar(st) {
+        const bar = document.getElementById('buildConfirmBar');
+        const titleEl = document.getElementById('buildConfirmTitle');
+        const costEl = document.getElementById('buildConfirmCost');
+        if (!bar || !titleEl || !costEl) return;
+
+        const pending = gameController.pendingBuildConfirm;
+        if (!pending || !st || st.activeUid !== gameController.localUid || st.status === 'finished') {
+          bar.classList.add('hidden');
+          return;
+        }
+
+        const confirmMeta = {
+          INITIAL_SETTLEMENT: {
+            title: '🚩 ここに初期開拓地を配置しますか？',
+            cost: '初期配置（資源消費なし・+1 VP）'
+          },
+          INITIAL_ROAD: {
+            title: '🛤️ ここに初期街道を配置しますか？',
+            cost: '初期配置（資源消費なし）'
+          },
+          SETTLEMENT: {
+            title: '🏠 ここに開拓地を建設しますか？',
+            cost: '消費資源: 🌲木材1 🧱レンガ1 🐑羊毛1 🌾小麦1（+1 VP）'
+          },
+          CITY: {
+            title: '🏰 この開拓地を都市へ昇格しますか？',
+            cost: '消費資源: 🌾小麦2 ⛰️鉱石3（+2 VP・産出2倍）'
+          },
+          ROAD: {
+            title: '🛤️ ここに街道を建設しますか？',
+            cost: '消費資源: 🌲木材1 🧱レンガ1'
+          },
+          ROAD_BUILDING: {
+            title: '🛤️ ここに無料の街道を建設しますか？',
+            cost: `発展カード「街道建設」効果（残り ${st.roadBuildingRemaining || 1} 本）`
+          }
+        };
+
+        const info = confirmMeta[pending.mode] || { title: 'ここに建設しますか？', cost: '' };
+        titleEl.textContent = info.title;
+        costEl.textContent = info.cost;
+        bar.classList.remove('hidden');
       }
 
       showTurnBanner(st) {
@@ -4391,13 +4857,20 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         };
       }
 
-      showDiceCutin(st, d1, d2) {
+      showDiceCutin(st, d1, d2, onComplete = null) {
         const overlay = document.getElementById('diceCutinOverlay');
-        if (!overlay || !d1 || !d2) return;
+        if (!overlay || !d1 || !d2) {
+          if (typeof onComplete === 'function') onComplete();
+          return;
+        }
 
         if (this.diceBannerAnim) {
           try { this.diceBannerAnim.cancel(); } catch (e) {}
           this.diceBannerAnim = null;
+        }
+        if (this.pendingGainTimer) {
+          clearTimeout(this.pendingGainTimer);
+          this.pendingGainTimer = null;
         }
 
         const rollerUid = st.lastRollerUid || st.activeUid;
@@ -4449,7 +4922,21 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         `;
 
         const cardEl = overlay.firstElementChild;
-        if (!cardEl || typeof cardEl.animate !== 'function') return;
+        if (!cardEl || typeof cardEl.animate !== 'function') {
+          if (typeof onComplete === 'function') {
+            this.pendingGainTimer = setTimeout(onComplete, 2050);
+          }
+          return;
+        }
+
+        let completed = false;
+        const finishOnce = () => {
+          if (completed) return;
+          completed = true;
+          overlay.innerHTML = '';
+          this.diceBannerAnim = null;
+          if (typeof onComplete === 'function') onComplete();
+        };
 
         this.diceBannerAnim = cardEl.animate([
           { opacity: 0, transform: 'scale(0.82)' },
@@ -4458,14 +4945,150 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           { opacity: 1, transform: 'scale(1)', offset: 0.84 },
           { opacity: 0, transform: 'scale(0.94)' }
         ], {
-          duration: 2100,
+          duration: 2050,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
 
-        this.diceBannerAnim.onfinish = () => {
+        this.diceBannerAnim.onfinish = finishOnce;
+        this.pendingGainTimer = setTimeout(finishOnce, 2080);
+      }
+
+      getDevCardSvgIllustration(cardType) {
+        const svgs = {
+          knight: `
+            <svg viewBox="0 0 120 96" class="w-24 h-20 sm:w-28 sm:h-22 mx-auto drop-shadow">
+              <defs>
+                <linearGradient id="shieldGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b"/>
+                  <stop offset="100%" stop-color="#92400e"/>
+                </linearGradient>
+              </defs>
+              <circle cx="60" cy="48" r="40" fill="rgba(245, 158, 11, 0.16)" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <!-- 交差する剣 -->
+              <path d="M26 74 L90 18 L95 23 L31 79 Z" fill="#e2e8f0" stroke="#475569" stroke-width="1.5"/>
+              <path d="M94 74 L30 18 L25 23 L89 79 Z" fill="#cbd5e1" stroke="#475569" stroke-width="1.5"/>
+              <!-- 紋章盾 -->
+              <path d="M60 18 L84 28 V50 C84 67 60 80 60 80 C60 80 36 67 36 50 V28 Z" fill="url(#shieldGrad)" stroke="#fef3c7" stroke-width="2.2"/>
+              <path d="M60 26 L75 33 V49 C75 60 60 70 60 70 C60 70 45 60 45 49 V33 Z" fill="#7f1d1d" stroke="#fde68a" stroke-width="1.2"/>
+              <polygon points="60,35 64,45 74,45 66,51 69,61 60,55 51,61 54,51 46,45 56,45" fill="#fde047"/>
+            </svg>`,
+          road_building: `
+            <svg viewBox="0 0 120 96" class="w-24 h-20 sm:w-28 sm:h-22 mx-auto drop-shadow">
+              <circle cx="60" cy="48" r="40" fill="rgba(52, 211, 153, 0.14)" stroke="#6ee7b7" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <!-- 遠方の丘と太陽 -->
+              <circle cx="84" cy="26" r="9" fill="#fde047" opacity="0.9"/>
+              <path d="M18 68 Q45 42 75 68 Z" fill="#166534"/>
+              <path d="M48 68 Q78 38 104 68 Z" fill="#15803d"/>
+              <!-- 伸びる石畳の街道 -->
+              <path d="M36 82 L54 44 L66 44 L84 82 Z" fill="#d6d3d1" stroke="#57534e" stroke-width="1.8"/>
+              <line x1="60" y1="47" x2="60" y2="54" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="60" y1="60" x2="60" y2="68" stroke="#78350f" stroke-width="3" stroke-linecap="round"/>
+              <line x1="60" y1="73" x2="60" y2="80" stroke="#78350f" stroke-width="3.5" stroke-linecap="round"/>
+              <!-- 開拓旗 -->
+              <line x1="46" y1="30" x2="46" y2="52" stroke="#fef3c7" stroke-width="2"/>
+              <polygon points="46,30 63,35 46,40" fill="#dc2626" stroke="#fef3c7" stroke-width="1"/>
+            </svg>`,
+          year_of_plenty: `
+            <svg viewBox="0 0 120 96" class="w-24 h-20 sm:w-28 sm:h-22 mx-auto drop-shadow">
+              <circle cx="60" cy="48" r="40" fill="rgba(250, 204, 21, 0.16)" stroke="#fde047" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <!-- 宝箱本体 -->
+              <rect x="30" y="44" width="60" height="34" rx="5" fill="#78350f" stroke="#fbbf24" stroke-width="2"/>
+              <path d="M28 44 Q60 22 92 44 Z" fill="#92400e" stroke="#fbbf24" stroke-width="2"/>
+              <rect x="54" y="41" width="12" height="14" rx="2" fill="#fde047" stroke="#78350f" stroke-width="1.5"/>
+              <!-- 溢れる黄金と恵みの星 -->
+              <circle cx="44" cy="26" r="4" fill="#fde047"/>
+              <circle cx="60" cy="19" r="5" fill="#fef08a"/>
+              <circle cx="76" cy="26" r="4" fill="#fde047"/>
+              <path d="M38 42 Q60 30 82 42" fill="none" stroke="#fef08a" stroke-width="3" stroke-linecap="round"/>
+            </svg>`,
+          monopoly: `
+            <svg viewBox="0 0 120 96" class="w-24 h-20 sm:w-28 sm:h-22 mx-auto drop-shadow">
+              <circle cx="60" cy="48" r="40" fill="rgba(192, 132, 252, 0.16)" stroke="#d8b4fe" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <!-- 黄金の王冠 -->
+              <path d="M28 66 L34 32 L50 48 L60 24 L70 48 L86 32 L92 66 Z" fill="#f59e0b" stroke="#fef3c7" stroke-width="2" stroke-linejoin="round"/>
+              <rect x="28" y="66" width="64" height="10" rx="3" fill="#b45309" stroke="#fef3c7" stroke-width="1.8"/>
+              <circle cx="34" cy="29" r="3.5" fill="#fef08a"/>
+              <circle cx="60" cy="21" r="4.5" fill="#fef08a"/>
+              <circle cx="86" cy="29" r="3.5" fill="#fef08a"/>
+              <circle cx="60" cy="56" r="4.5" fill="#dc2626" stroke="#fef3c7" stroke-width="1"/>
+            </svg>`,
+          victory_point: `
+            <svg viewBox="0 0 120 96" class="w-24 h-20 sm:w-28 sm:h-22 mx-auto drop-shadow">
+              <circle cx="60" cy="48" r="40" fill="rgba(56, 189, 248, 0.16)" stroke="#7dd3fc" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <!-- 白亜の神殿・記念碑 -->
+              <polygon points="60,18 28,36 92,36" fill="#fef3c7" stroke="#b45309" stroke-width="1.8"/>
+              <rect x="34" y="36" width="8" height="32" fill="#f5f5f4" stroke="#78716c" stroke-width="1.2"/>
+              <rect x="49" y="36" width="8" height="32" fill="#f5f5f4" stroke="#78716c" stroke-width="1.2"/>
+              <rect x="63" y="36" width="8" height="32" fill="#f5f5f4" stroke="#78716c" stroke-width="1.2"/>
+              <rect x="78" y="36" width="8" height="32" fill="#f5f5f4" stroke="#78716c" stroke-width="1.2"/>
+              <rect x="26" y="68" width="68" height="8" rx="2" fill="#d97706" stroke="#fef3c7" stroke-width="1.5"/>
+              <text x="60" y="56" text-anchor="middle" fill="#b45309" font-size="13" font-weight="900" font-family="serif">+1 VP</text>
+            </svg>`
+        };
+        return svgs[cardType] || svgs.victory_point;
+      }
+
+      showDevCardCutin({ mode, cardType, playerName, accentHex = '#f59e0b', extraText = '' }) {
+        const overlay = document.getElementById('devCardCutinOverlay');
+        const meta = DEV_CARD_META[cardType];
+        if (!overlay || !meta) return;
+
+        if (this.devCardBannerAnim) {
+          try { this.devCardBannerAnim.cancel(); } catch (e) {}
+          this.devCardBannerAnim = null;
+        }
+
+        const isDrawn = mode === 'drawn';
+        const headerTag = isDrawn
+          ? '📜 発展カードを引きました（あなた専用）'
+          : `✨ ${playerName} が発展カードを使用！`;
+        const footerNote = isDrawn
+          ? (cardType === 'victory_point'
+              ? '🏛️ 勝利点 +1 があなたの得点に秘匿加算されています'
+              : '⏳ 購入した次のターンから1ターンに1枚使用できます')
+          : (extraText || '発展カードの効果が発動しました！');
+
+        overlay.innerHTML = `
+          <div class="parchment-panel rounded-3xl px-5 py-4 sm:px-7 sm:py-5 border-2 flex flex-col items-center text-center max-w-[92%] sm:max-w-sm shadow-2xl"
+               style="border-color: ${accentHex}; box-shadow: 0 18px 44px rgba(0,0,0,0.78), 0 0 28px rgba(245,158,11,0.4);">
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-mahogany-950 text-amber-200 text-[10px] sm:text-xs font-extrabold tracking-wide">
+              <span class="w-2.5 h-2.5 rounded-full border border-white/80" style="background: ${accentHex};"></span>
+              <span>${headerTag}</span>
+            </div>
+            <div class="my-2">
+              ${this.getDevCardSvgIllustration(cardType)}
+            </div>
+            <div class="font-serif font-extrabold text-xl sm:text-2xl text-mahogany-950 tracking-wide">
+              ${meta.icon} ${meta.label}
+            </div>
+            <p class="text-xs text-mahogany-900 font-medium mt-1.5 leading-relaxed">
+              ${meta.desc}
+            </p>
+            <div class="mt-2.5 px-3 py-1 rounded-xl bg-amber-950/15 border border-amber-900/25 text-[11px] font-bold text-amber-950">
+              ${footerNote}
+            </div>
+          </div>
+        `;
+
+        const cardEl = overlay.firstElementChild;
+        if (!cardEl || typeof cardEl.animate !== 'function') return;
+
+        this.devCardBannerAnim = cardEl.animate([
+          { opacity: 0, transform: 'translateY(14px) scale(0.84)' },
+          { opacity: 1, transform: 'translateY(0) scale(1.03)', offset: 0.12 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.2 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.85 },
+          { opacity: 0, transform: 'translateY(-10px) scale(0.95)' }
+        ], {
+          duration: 2650,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        });
+
+        this.devCardBannerAnim.onfinish = () => {
           overlay.innerHTML = '';
-          this.diceBannerAnim = null;
+          this.devCardBannerAnim = null;
         };
       }
 
@@ -5102,6 +5725,9 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         });
 
         // 3. 街道 (Edges)
+        const pendingConfirm = (isMyTurn && gameController.pendingBuildConfirm) ? gameController.pendingBuildConfirm : null;
+        const myColorHex = st.players[gameController.localUid]?.palette?.hex || '#f59e0b';
+
         Object.values(board.edges || {}).forEach(edge => {
           const v1 = board.vertices[edge.v1];
           const v2 = board.vertices[edge.v2];
@@ -5109,6 +5735,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
           const road = board.roads?.[edge.id];
           const isValid = validEdges.includes(edge.id);
+          const isPendingEdge = pendingConfirm && pendingConfirm.kind === 'edge' && pendingConfirm.targetId === edge.id;
 
           if (road) {
             const owner = st.players[road.ownerUid];
@@ -5134,6 +5761,31 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           } else if (isValid) {
             const mx = (v1.x + v2.x) / 2;
             const my = (v1.y + v2.y) / 2;
+
+            if (isPendingEdge) {
+              const previewOuter = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              previewOuter.setAttribute('x1', v1.x);
+              previewOuter.setAttribute('y1', v1.y);
+              previewOuter.setAttribute('x2', v2.x);
+              previewOuter.setAttribute('y2', v2.y);
+              previewOuter.setAttribute('stroke', '#fde047');
+              previewOuter.setAttribute('stroke-width', '9.5');
+              previewOuter.setAttribute('stroke-linecap', 'round');
+              previewOuter.setAttribute('opacity', '0.9');
+              layerEdges.appendChild(previewOuter);
+
+              const previewInner = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              previewInner.setAttribute('x1', v1.x);
+              previewInner.setAttribute('y1', v1.y);
+              previewInner.setAttribute('x2', v2.x);
+              previewInner.setAttribute('y2', v2.y);
+              previewInner.setAttribute('stroke', myColorHex);
+              previewInner.setAttribute('stroke-width', '5.5');
+              previewInner.setAttribute('stroke-dasharray', '5 3');
+              previewInner.setAttribute('stroke-linecap', 'round');
+              layerEdges.appendChild(previewInner);
+            }
+
             const hitLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             hitLine.setAttribute('x1', v1.x);
             hitLine.setAttribute('y1', v1.y);
@@ -5148,10 +5800,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             const spot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             spot.setAttribute('cx', mx);
             spot.setAttribute('cy', my);
-            spot.setAttribute('r', isDirectMain ? '5.5' : '6.5');
-            spot.setAttribute('fill', isDirectMain ? '#fef08a' : '#fde047');
-            spot.setAttribute('stroke', '#78350f');
-            spot.setAttribute('stroke-width', '1.8');
+            spot.setAttribute('r', isPendingEdge ? '8' : (isDirectMain ? '5.5' : '6.5'));
+            spot.setAttribute('fill', isPendingEdge ? '#34d399' : (isDirectMain ? '#fef08a' : '#fde047'));
+            spot.setAttribute('stroke', isPendingEdge ? '#ffffff' : '#78350f');
+            spot.setAttribute('stroke-width', isPendingEdge ? '2.4' : '1.8');
             spot.setAttribute('class', isDirectMain ? 'direct-build-spot' : 'valid-spot');
             spot.addEventListener('click', () => gameController.onEdgeClick(edge.id));
             layerEdges.appendChild(spot);
@@ -5162,6 +5814,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         Object.values(board.vertices || {}).forEach(v => {
           const bld = board.buildings?.[v.id];
           const isValid = validVertices.includes(v.id);
+          const isPendingVertex = pendingConfirm && pendingConfirm.kind === 'vertex' && pendingConfirm.targetId === v.id;
 
           if (bld) {
             const owner = st.players[bld.ownerUid];
@@ -5187,10 +5840,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
               // 都市へ昇格可能な自分の開拓地には黄金リングを表示して直接タップ昇格可能にする
               if (isValid) {
                 const upgradeRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                upgradeRing.setAttribute('r', '12.5');
-                upgradeRing.setAttribute('fill', 'rgba(253, 224, 71, 0.25)');
-                upgradeRing.setAttribute('stroke', '#fde047');
-                upgradeRing.setAttribute('stroke-width', '2.2');
+                upgradeRing.setAttribute('r', isPendingVertex ? '15.5' : '12.5');
+                upgradeRing.setAttribute('fill', isPendingVertex ? 'rgba(52, 211, 153, 0.38)' : 'rgba(253, 224, 71, 0.25)');
+                upgradeRing.setAttribute('stroke', isPendingVertex ? '#34d399' : '#fde047');
+                upgradeRing.setAttribute('stroke-width', isPendingVertex ? '3' : '2.2');
                 upgradeRing.setAttribute('class', isDirectMain ? 'direct-build-spot' : 'valid-spot');
                 g.appendChild(upgradeRing);
 
@@ -5200,6 +5853,29 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             }
             layerVertices.appendChild(g);
           } else if (isValid) {
+            if (isPendingVertex) {
+              const ghostG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+              ghostG.setAttribute('transform', `translate(${v.x}, ${v.y})`);
+              ghostG.setAttribute('pointer-events', 'none');
+
+              const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              ring.setAttribute('r', '14.5');
+              ring.setAttribute('fill', 'rgba(52, 211, 153, 0.32)');
+              ring.setAttribute('stroke', '#34d399');
+              ring.setAttribute('stroke-width', '2.5');
+              ghostG.appendChild(ring);
+
+              const ghostHouse = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              ghostHouse.setAttribute('d', 'M-7,6 L-7,-1 L0,-7.5 L7,-1 L7,6 Z');
+              ghostHouse.setAttribute('fill', myColorHex);
+              ghostHouse.setAttribute('stroke', '#ffffff');
+              ghostHouse.setAttribute('stroke-width', '1.8');
+              ghostHouse.setAttribute('opacity', '0.9');
+              ghostG.appendChild(ghostHouse);
+
+              layerVertices.appendChild(ghostG);
+            }
+
             const hitCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             hitCircle.setAttribute('cx', v.x);
             hitCircle.setAttribute('cy', v.y);
@@ -5212,10 +5888,11 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             const spot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             spot.setAttribute('cx', v.x);
             spot.setAttribute('cy', v.y);
-            spot.setAttribute('r', isDirectMain ? '6.5' : '7.5');
-            spot.setAttribute('fill', isDirectMain ? '#fef08a' : '#fde047');
-            spot.setAttribute('stroke', '#78350f');
+            spot.setAttribute('r', isPendingVertex ? '5' : (isDirectMain ? '6.5' : '7.5'));
+            spot.setAttribute('fill', isPendingVertex ? '#34d399' : (isDirectMain ? '#fef08a' : '#fde047'));
+            spot.setAttribute('stroke', isPendingVertex ? '#ffffff' : '#78350f');
             spot.setAttribute('stroke-width', '2');
+            spot.setAttribute('opacity', isPendingVertex ? '0.65' : '1');
             spot.setAttribute('class', isDirectMain ? 'direct-build-spot' : 'valid-spot');
             spot.addEventListener('click', () => gameController.onVertexClick(v.id));
             layerVertices.appendChild(spot);
@@ -5695,7 +6372,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         let sel2 = 'brick';
         this.activeInteractiveType = 'year_of_plenty';
         document.getElementById('interactiveModalTitle').textContent = '🎁 発見カード（好きな資源2枚獲得）';
-        document.getElementById('interactiveModalDesc').textContent = '銀行から獲得する資源を2枚選択してください（同じ資源2枚も可）。';
+        document.getElementById('interactiveModalDesc').textContent = '銀行から獲得する資源を2枚選択してください（同じ資源2枚も可）。右上の「👁️ マップ透視」で盤面も確認できます。';
         const bodyEl = document.getElementById('interactiveModalBody');
         const footerEl = document.getElementById('interactiveModalFooter');
         footerEl.innerHTML = '';
@@ -5745,7 +6422,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         let chosen = 'wheat';
         this.activeInteractiveType = 'monopoly';
         document.getElementById('interactiveModalTitle').textContent = '👑 独占カード（資源を1種類指定）';
-        document.getElementById('interactiveModalDesc').textContent = '指定した資源を他の全プレイヤーの手札からすべて回収します。';
+        document.getElementById('interactiveModalDesc').textContent = '指定した資源を他の全プレイヤーの手札からすべて回収します。右上の「👁️ マップ透視」で盤面も確認できます。';
         const bodyEl = document.getElementById('interactiveModalBody');
         const footerEl = document.getElementById('interactiveModalFooter');
         footerEl.innerHTML = '';
@@ -5946,6 +6623,24 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const report = analytics.generateReport(st, gameController.localUid);
         if (!report) return;
 
+        const timelineHtml = report.buildTimeline.length > 0
+          ? report.buildTimeline.map(item => `
+              <div class="flex items-start justify-between gap-2 py-1.5 border-b border-brass-600/20 last:border-none">
+                <div class="min-w-0">
+                  <span class="inline-block px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-[10px] mr-1">#${item.step} (T${item.turn})</span>
+                  <span class="font-bold text-parchment-100">${item.label}</span>
+                  ${item.detail ? `<div class="text-[11px] text-parchment-300/80 mt-0.5 pl-1">└ ${item.detail}</div>` : ''}
+                </div>
+                <span class="text-[11px] font-bold text-brass-400 flex-shrink-0">${item.vpAfter} VP</span>
+              </div>
+            `).join('')
+          : '<div class="text-parchment-300/60 italic py-2">まだ建設・購入履歴がありません。</div>';
+
+        const initialSetupDetailsHtml = (report.setup.vertexDetails || []).map(v => {
+          const resTxt = v.resources.map(r => `${RESOURCES[r.resource].emoji}${RESOURCES[r.resource].label}(${r.number})`).join(' ');
+          return `<div class="text-[11px] text-parchment-200">• ${v.order}軒目: ${resTxt || '砂漠隣接'} <span class="text-amber-300 font-bold">[計${v.pips}ピップ${v.port ? ' / ' + v.port : ''}]</span></div>`;
+        }).join('');
+
         contentEl.innerHTML = `
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="p-4 rounded-2xl bg-mahogany-950/90 border border-brass-500/50">
@@ -5958,7 +6653,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             </div>
 
             <div class="p-4 rounded-2xl bg-mahogany-950/90 border border-brass-500/50">
-              <div class="text-[11px] text-brass-400 font-bold">プレイスタイル診断</div>
+              <div class="text-[11px] text-brass-400 font-bold">戦略アーキタイプ診断</div>
               <div class="font-serif font-bold text-base text-parchment-100 mt-1">${report.playstyle}</div>
               <p class="text-[11px] text-parchment-300/80 mt-1 leading-relaxed">${report.playstyleDesc}</p>
             </div>
@@ -5976,28 +6671,38 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="p-4 rounded-2xl bg-mahogany-950/90 border border-brass-600/40 space-y-1.5">
-              <div class="font-bold text-brass-400">📍 初期配置セットアップ分析</div>
+              <div class="font-bold text-brass-400">📍 初期配置セットアップ & 拠点詳細</div>
               <div class="text-parchment-100 font-bold">${report.setup.setupRating}</div>
               <div class="text-parchment-300/85">初期確率ピップ: <strong>${report.setup.initialPips}</strong>（卓平均 ${report.setup.avgInitialPips} / 差 ${report.setup.pipDiff >= 0 ? '+' : ''}${report.setup.pipDiff}）</div>
               <div class="text-parchment-300/85">資源種類数: <strong>${report.setup.resDiversityCount}種</strong> / 初期港接続: <strong>${report.setup.initialPortCount}箇所</strong></div>
+              <div class="pt-1 border-t border-brass-600/25 space-y-0.5">${initialSetupDetailsHtml}</div>
             </div>
 
             <div class="p-4 rounded-2xl bg-mahogany-950/90 border border-brass-600/40 space-y-1.5">
-              <div class="font-bold text-brass-400">⚖️ 資源収支・交易・リスク管理</div>
+              <div class="font-bold text-brass-400">🧭 街道延伸方向 & 資源収支バランス</div>
+              <div class="text-parchment-300/85">街道の延伸傾向: 港湾方向 <strong>${report.roadExpansionStats.towardPort}本</strong> / 好立地方向 <strong>${report.roadExpansionStats.towardGoodSpot}本</strong> / 袋小路・防衛 <strong>${report.roadExpansionStats.deadEndOrRedundant}本</strong></div>
               <div class="text-parchment-300/85">総獲得資源: <strong>${report.economy.totalGained}枚</strong> / 建設・発展投資: <strong>${report.economy.totalSpentOnBuild}枚</strong></div>
               <div class="text-parchment-300/85">海上交易: 4:1×${report.economy.maritimeTrades['4:1']} / 3:1×${report.economy.maritimeTrades['3:1']} / 2:1×${report.economy.maritimeTrades['2:1']} / 交渉×${report.economy.domesticTrades}</div>
               <div class="text-parchment-300/85">7バースト破棄: <strong>${report.economy.burstDiscarded}枚</strong> / 盗賊封鎖被弾: <strong>${report.economy.robberBlockedCount}回</strong></div>
             </div>
           </div>
 
+          <div class="p-4 rounded-2xl bg-mahogany-950/90 border border-brass-600/40 space-y-2">
+            <div class="font-bold text-brass-400 flex items-center justify-between">
+              <span>🏗️ 拠点・都市・発展の建設順番（ビルドオーダー履歴）</span>
+              <span class="text-[11px] text-parchment-300/75">計 ${report.buildTimeline.length} アクション</span>
+            </div>
+            <div class="max-h-40 overflow-y-auto pr-1">${timelineHtml}</div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/40 space-y-2">
-              <div class="font-bold text-emerald-300">✨ 良かったポイント（AIコーチ評価）</div>
-              ${(report.goodPlays.length > 0 ? report.goodPlays : ['序盤の基盤構築を進めながら次の勝利点ルートを模索中です。']).map(g => `<p class="text-parchment-100 leading-relaxed">・${g}</p>`).join('')}
+              <div class="font-bold text-emerald-300">✨ 戦術的に優れていたポイント</div>
+              ${(report.goodPlays.length > 0 ? report.goodPlays : ['初期配置からの拡張ルートを組み立てながら勝利点への足場を固めています。']).map(g => `<p class="text-parchment-100 leading-relaxed">・${g}</p>`).join('')}
             </div>
             <div class="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 space-y-2">
-              <div class="font-bold text-amber-300">🎯 さらなる上達へのアドバイス</div>
-              ${(report.improvements.length > 0 ? report.improvements : ['現在の立ち回りは非常に安定しています。終盤の勝利点ラッシュに備えましょう。']).map(m => `<p class="text-parchment-100 leading-relaxed">・${m}</p>`).join('')}
+              <div class="font-bold text-amber-300">🎯 戦略の組み立て・改善コーチング</div>
+              ${(report.improvements.length > 0 ? report.improvements : ['初期配置・街道方向・建設順番の噛み合いが非常に良好です。終盤の10VP到達へ向け手札圧縮を意識しましょう。']).map(m => `<p class="text-parchment-100 leading-relaxed">・${m}</p>`).join('')}
             </div>
           </div>
         `;
