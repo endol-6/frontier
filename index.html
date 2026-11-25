@@ -298,32 +298,32 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v4.8
+              v5.1
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
         </div>
       </div>
 
-      <!-- 右側: ルームID / 招待 / AI分析 / ロビー戻る -->
-      <div id="headerGameActions" class="hidden flex flex-wrap items-center gap-1.5 sm:gap-2">
-        <div id="roomBadgeContainer" class="hidden items-center gap-1 px-2 py-1 rounded-lg bg-mahogany-900 border border-brass-600/50 text-[11px] sm:text-xs">
-          <span class="text-brass-400">ROOM:</span>
+      <!-- 右側: ルームID / 招待 / AI分析 / ロビー戻る（スマホでも1行で収まるコンパクト設計） -->
+      <div id="headerGameActions" class="hidden flex items-center gap-1 sm:gap-2 flex-nowrap">
+        <div id="roomBadgeContainer" class="hidden items-center gap-1 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg bg-mahogany-900 border border-brass-600/50 text-[10px] sm:text-xs whitespace-nowrap flex-shrink-0">
+          <span class="hidden sm:inline text-brass-400">ROOM:</span>
           <span id="headerRoomCode" class="font-mono font-bold text-amber-300 tracking-wider">------</span>
-          <button onclick="appUI.copyInviteLink()" class="ml-1 px-1.5 py-0.5 rounded bg-amber-600/30 hover:bg-amber-600/50 border border-amber-400/50 text-amber-200 text-[10px] font-bold">
-            🔗 招待
+          <button onclick="appUI.copyInviteLink()" class="px-1 py-0.5 rounded bg-amber-600/30 hover:bg-amber-600/50 border border-amber-400/50 text-amber-200 text-[10px] font-bold whitespace-nowrap">
+            🔗招待
           </button>
         </div>
 
         <button id="btnOpenAnalytics" onclick="appUI.openAnalyticsModal()" disabled
-          class="px-2.5 py-1.5 rounded-xl bg-mahogany-800 border border-brass-600/40 text-parchment-300/50 text-xs font-bold flex items-center gap-1 transition cursor-not-allowed"
+          class="px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-xl bg-mahogany-800 border border-brass-600/40 text-parchment-300/50 text-[10px] sm:text-xs font-bold flex items-center gap-1 transition cursor-not-allowed whitespace-nowrap flex-shrink-0"
           title="中盤（第4ターン以降）から解放されます">
-          <span>🧠 AI戦略分析</span>
-          <span id="analyticsLockBadge" class="text-[10px] px-1 rounded bg-black/40 text-amber-300/80">中盤解放</span>
+          <span>AI戦略分析</span>
+          <span id="analyticsLockBadge" class="text-[9px] px-1 rounded bg-black/40 text-amber-300/80">中盤解放</span>
         </button>
 
         <button onclick="appUI.confirmBackToLobby()"
-          class="px-2.5 py-1.5 rounded-xl bg-mahogany-900 hover:bg-red-950/80 border border-brass-600/50 text-parchment-200 text-xs font-bold">
+          class="px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-xl bg-mahogany-900 hover:bg-red-950/80 border border-brass-600/50 text-parchment-200 text-[10px] sm:text-xs font-bold whitespace-nowrap flex-shrink-0">
           ロビー
         </button>
       </div>
@@ -526,7 +526,7 @@
         </div>
 
         <!-- 盤面SVG（上下に余裕を持たせた viewBox・ドラッグ移動なし） -->
-        <svg id="catanBoardSvg" viewBox="-330 -345 660 690" class="w-full h-full touch-manipulation">
+        <svg id="catanBoardSvg" viewBox="-330 -360 660 720" class="w-full h-full touch-manipulation">
           <defs>
             <filter id="tileShadow" filterUnits="userSpaceOnUse" x="-400" y="-400" width="800" height="800">
               <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.45" />
@@ -923,9 +923,9 @@
       <div class="flex items-center justify-between border-b border-brass-600/30 pb-2.5">
         <div>
           <span class="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider">TACTICAL AI COACH REPORT</span>
-          <h3 class="font-serif font-extrabold text-xl text-mahogany-950">🧠 本格戦績・戦略コーチング分析</h3>
+          <h3 class="font-serif font-extrabold text-lg sm:text-xl text-mahogany-950">本格戦績・戦略コーチング分析</h3>
         </div>
-        <button onclick="appUI.closeModal('analyticsModal')" class="w-8 h-8 rounded-full bg-mahogany-900/15 font-bold text-mahogany-950">✕</button>
+        <button onclick="appUI.closeModal('analyticsModal')" class="w-8 h-8 rounded-full bg-mahogany-900/15 font-bold text-mahogany-950 flex-shrink-0">✕</button>
       </div>
       <div id="analyticsReportContent" class="space-y-3 text-xs sm:text-sm"></div>
     </div>
@@ -1193,12 +1193,23 @@
         const step = coastalEdges.length / harborTypes.length;
         for (let i = 0; i < harborTypes.length; i++) {
           const item = coastalEdges[Math.floor(i * step) % coastalEdges.length];
-          const len = Math.hypot(item.mx, item.my) || 1;
-          const hx = Math.round((item.mx + (item.mx / len) * 28) * 10) / 10;
-          const hy = Math.round((item.my + (item.my / len) * 28) * 10) / 10;
+          const vA = vById[item.edge.v1];
+          const vB = vById[item.edge.v2];
+          // 海岸エッジの外向き法線ベクトルを算出し、海側へゆとりを持って配置
+          const edx = vB.x - vA.x;
+          const edy = vB.y - vA.y;
+          const eLen = Math.hypot(edx, edy) || 1;
+          let nx = -edy / eLen;
+          let ny = edx / eLen;
+          if (nx * item.mx + ny * item.my < 0) {
+            nx = -nx;
+            ny = -ny;
+          }
+          const hx = Math.round((item.mx + nx * 35) * 10) / 10;
+          const hy = Math.round((item.my + ny * 35) * 10) / 10;
           const hType = harborTypes[i];
-          vById[item.edge.v1].harbor = hType;
-          vById[item.edge.v2].harbor = hType;
+          vA.harbor = hType;
+          vB.harbor = hType;
           harbors.push({
             id: `hb${i}`,
             type: hType,
@@ -1450,8 +1461,10 @@
         const me = st.players[localUid];
         if (!me) return '<p>データがありません。</p>';
 
+        const hand = gameController.myHand || emptyHand();
         const secVp = gameController.myDevHand.filter(c => c.type === 'vp').length;
         const totalVp = me.publicVP + secVp;
+        const rates = gameController.getPlayerTradeRates(localUid);
 
         // 初期配置評価
         const totalInitPips = this.initialSettlements.reduce((s, x) => s + x.pips, 0);
@@ -1460,65 +1473,113 @@
 
         let initComment = '';
         if (allInitTerrains.size >= 4 && totalInitPips >= 18) {
-          initComment = `初期2拠点で${allInitTerrains.size}種類の資源と合計産出期待値${totalInitPips}ピップを確保できており、序盤からバランス良く資源が回る理想的な立ち上がりです。`;
+          initComment = `初期2拠点で${allInitTerrains.size}種類の資源と合計産出期待値${totalInitPips}ピップを確保できており、序盤からバランス良く資源が回る立ち上がりです。`;
         } else if (allInitTerrains.size <= 2) {
           initComment = `初期配置の資源が${allInitTerrains.size}種類に偏っています。不足している資源のタイルや「3:1 / 2:1港」へ早めに街道を伸ばして補完するのが重要です。`;
         } else {
           initComment = `初期2拠点の合計期待値は${totalInitPips}ピップ（資源${allInitTerrains.size}種）です。不足資源は交易や港の活用で補いましょう。`;
         }
 
-        // 戦略ルート＆アドバイス
-        const tips = [];
-        if (me.longestRoadLength >= 4 && !me.hasLongestRoad) {
-          tips.push(`現在の連続街道は${me.longestRoadLength}本です。あと1〜2本伸ばすと「最長交易路 (+2VP)」に到達できます。`);
+        // 現在の資源傾向とおすすめ方針の決定
+        const oreWheatScore = (hand.ore || 0) + (hand.wheat || 0) + (4 - me.citiesRemaining) * 2.5;
+        const woodBrickScore = (hand.wood || 0) + (hand.brick || 0) + Math.floor(me.longestRoadLength / 2);
+        const hasSpecializedHarbor = RESOURCE_KEYS.some(k => rates[k] === 2);
+
+        // 不足資源の特定
+        const missingResources = RESOURCE_KEYS.filter(k => (hand[k] || 0) === 0).map(k => `${RESOURCES[k].emoji}${RESOURCES[k].name}`);
+
+        let recommendedPolicyTitle = '';
+        let recommendedPolicyReason = '';
+        const actionSteps = [];
+
+        if (oreWheatScore >= woodBrickScore && me.citiesRemaining > 0 && me.settlementsRemaining < 5) {
+          recommendedPolicyTitle = '🏰 都市化＆発展カード集中方針（高効率VPルート）';
+          recommendedPolicyReason = '小麦・鉱石の供給または手持ちが整いつつあるため、既存開拓地の都市化と発展カード購入で確実に勝利点を積み上げる方針が最も勝率が高いです。';
+          actionSteps.push(`【最優先アクション】🌾小麦×2・⛰️鉱石×3 を集め、最も数字の強い開拓地（6・8・5・9隣接）を都市へ昇格させましょう（残り都市枠 ${me.citiesRemaining}）。`);
+          if (!me.hasLargestArmy && me.knightsPlayed >= 1) {
+            actionSteps.push(`【称号狙い】騎士を${me.knightsPlayed}枚使用済みです。発展カードを引いて3枚目の騎士を揃え「最大騎士力 (+2VP)」の奪取を狙いましょう。`);
+          }
+        } else if (woodBrickScore > oreWheatScore && me.roadsRemaining >= 3) {
+          recommendedPolicyTitle = '🛤️ 街道拡張＆最長交易路制覇方針（盤面支配ルート）';
+          recommendedPolicyReason = '木材・レンガの機動力を活かせる盤面状況です。良質な空き頂点への開拓地増設と連続街道の延長を同時に進める方針がおすすめです。';
+          if (!me.hasLongestRoad) {
+            const needRoads = Math.max(1, 5 - me.longestRoadLength);
+            actionSteps.push(`【最優先アクション】現在連続街道は${me.longestRoadLength}本です。あと${needRoads}本つなげて「最長交易路 (+2VP)」を先に獲得しましょう。`);
+          } else {
+            actionSteps.push(`【防衛アクション】「最長交易路 (+2VP)」を保持中です。他プレイヤーに追い抜かれないよう、分岐や延長で街道を1〜2本足しておくと安全です。`);
+          }
+          actionSteps.push('【拡張ルート】街道を伸ばす先は、未所持の資源タイル（特に小麦・鉱石）または「3:1 / 2:1港」の頂点を目指してください。');
+        } else {
+          recommendedPolicyTitle = '⛵ 港レート活用＆バランス開拓方針（柔軟ビルド型）';
+          recommendedPolicyReason = hasSpecializedHarbor
+            ? '2:1専門港を確保できているため、得意資源を港で不足資源へ変換しながら都市化と新規開拓を両立する方針が有効です。'
+            : '特定資源の偏りを交易と港確保で補いながら、手札7枚以下を保って堅実に拠点数を増やす方針がおすすめです。';
+          actionSteps.push('【最優先アクション】「3:1一般港」または自分の最多産出資源と一致する「2:1専門港」の頂点に開拓地を建て、交易効率を引き上げましょう。');
         }
-        if (me.knightsPlayed >= 2 && !me.hasLargestArmy) {
-          tips.push(`騎士を${me.knightsPlayed}回使用済みです。もう1枚騎士を使えば「最大騎士力 (+2VP)」の権利を得られます。`);
+
+        if (missingResources.length > 0) {
+          actionSteps.push(`【資源補完】現在手札に ${missingResources.slice(0, 3).join('・')} が不足しています。余剰資源でプレイヤー交渉か港交易を行いましょう。`);
         }
-        if (me.citiesRemaining === 4 && st.turnNumber >= 6) {
-          tips.push('中盤以降は麦2・鉱石3を集めて既存の開拓地を「都市 (2VP)」へ昇格させると、資源産出量も倍増します。');
+
+        // 共通の戦術補強アドバイス
+        const topOpponentVp = Math.max(0, ...st.turnOrder.filter(u => u !== localUid).map(u => st.players[u].publicVP));
+        if (topOpponentVp >= 7) {
+          actionSteps.push(`【警戒ライン】トップのライバルが公開${topOpponentVp}VPに到達しています。盗賊移動時はトッププレイヤーの高確率タイル（6・8など）を優先して止めましょう。`);
         }
-        if (tips.length === 0) {
-          tips.push('手札が8枚以上になる前に街道や発展カードへ変換し、7のバーストリスクを抑えながら10VPを目指しましょう。');
+        if (totalHandCount(hand) >= 6) {
+          actionSteps.push(`【バースト予防】現在手札が${totalHandCount(hand)}枚です。次の7で半分失わないよう、街道1本や発展カード1枚でも早めに消費しておきましょう。`);
         }
 
         const timelineHtml = this.buildTimeline.length > 0
           ? this.buildTimeline.slice(-8).map(item => `
-              <div class="flex items-center justify-between px-2.5 py-1 rounded-lg bg-white/70 border border-brass-600/20 text-xs">
-                <span class="font-bold text-amber-900">ターン ${item.turn}</span>
-                <span class="font-extrabold text-mahogany-950">${item.detail}</span>
+              <div class="flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-white/70 border border-brass-600/20 text-xs">
+                <span class="font-bold text-amber-900 whitespace-nowrap flex-shrink-0">ターン ${item.turn}</span>
+                <span class="font-extrabold text-mahogany-950 truncate">${item.detail}</span>
               </div>
             `).join('')
           : '<div class="text-xs text-mahogany-800">まだ建設履歴がありません。</div>';
 
         return `
-          <div class="rounded-2xl bg-mahogany-950 text-parchment-100 p-4 border border-amber-400/60 flex items-center justify-between">
-            <div>
-              <div class="text-[11px] text-amber-300 font-bold">現在の総合戦力評価</div>
-              <div class="font-serif font-black text-2xl text-white mt-0.5">${me.name} — ${totalVp} VP</div>
+          <div class="rounded-2xl bg-mahogany-950 text-parchment-100 p-3 sm:p-4 border border-amber-400/60 flex items-center justify-between gap-2 overflow-x-auto">
+            <div class="flex-shrink-0">
+              <div class="text-[10px] sm:text-[11px] text-amber-300 font-bold whitespace-nowrap">獲得勝利点</div>
+              <div class="font-serif font-black text-2xl sm:text-3xl text-white mt-0.5 whitespace-nowrap">${totalVp} <span class="text-sm sm:text-lg text-amber-300">VP</span></div>
             </div>
-            <div class="text-right text-xs space-y-0.5">
-              <div>連続街道: <strong class="text-amber-300">${me.longestRoadLength}本</strong></div>
-              <div>騎士使用: <strong class="text-amber-300">${me.knightsPlayed}回</strong></div>
-              <div>交易回数: <strong class="text-amber-300">${this.tradesCount}回</strong></div>
+            <div class="grid grid-cols-3 gap-1 sm:gap-2.5 text-center flex-shrink-0">
+              <div class="px-1.5 sm:px-2.5 py-1 rounded-xl bg-mahogany-900 border border-brass-600/40 whitespace-nowrap">
+                <div class="text-[9px] sm:text-[10px] text-parchment-300">連続街道</div>
+                <div class="font-extrabold text-xs sm:text-sm text-amber-300">${me.longestRoadLength}本</div>
+              </div>
+              <div class="px-1.5 sm:px-2.5 py-1 rounded-xl bg-mahogany-900 border border-brass-600/40 whitespace-nowrap">
+                <div class="text-[9px] sm:text-[10px] text-parchment-300">騎士使用</div>
+                <div class="font-extrabold text-xs sm:text-sm text-amber-300">${me.knightsPlayed}回</div>
+              </div>
+              <div class="px-1.5 sm:px-2.5 py-1 rounded-xl bg-mahogany-900 border border-brass-600/40 whitespace-nowrap">
+                <div class="text-[9px] sm:text-[10px] text-parchment-300">交易回数</div>
+                <div class="font-extrabold text-xs sm:text-sm text-amber-300">${this.tradesCount}回</div>
+              </div>
             </div>
           </div>
 
+          <div class="rounded-2xl bg-amber-900/15 p-3.5 border-2 border-amber-700/40 space-y-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-mahogany-900 text-amber-300 text-[10px] font-extrabold whitespace-nowrap">おすすめ方針</span>
+              <span class="font-extrabold text-mahogany-950 text-xs sm:text-sm">${recommendedPolicyTitle}</span>
+            </div>
+            <p class="text-xs text-mahogany-950 leading-relaxed font-medium">${recommendedPolicyReason}</p>
+            <ul class="list-disc pl-4 space-y-1 text-xs text-mahogany-950 font-bold">
+              ${actionSteps.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+          </div>
+
           <div class="rounded-2xl bg-white/80 p-3.5 border border-brass-600/30 space-y-1.5">
-            <div class="font-extrabold text-mahogany-950 text-sm">📍 初期配置＆資源バランス診断</div>
+            <div class="font-extrabold text-mahogany-950 text-xs sm:text-sm">📍 初期配置＆資源バランス診断</div>
             <p class="text-xs text-mahogany-900 leading-relaxed">${initComment}</p>
             ${initHarbors.length > 0 ? `<div class="text-[11px] font-bold text-sky-900">⚓ 確保済みの港: ${initHarbors.join(', ')}</div>` : ''}
           </div>
 
-          <div class="rounded-2xl bg-amber-900/10 p-3.5 border border-amber-800/30 space-y-1.5">
-            <div class="font-extrabold text-mahogany-950 text-sm">🎯 勝利に向けた次の一手コーチング</div>
-            <ul class="list-disc pl-4 space-y-1 text-xs text-mahogany-950 font-medium">
-              ${tips.map(t => `<li>${t}</li>`).join('')}
-            </ul>
-          </div>
-
           <div class="space-y-1.5">
-            <div class="font-extrabold text-mahogany-950 text-xs">📜 あなたの開拓タイムライン（直近）</div>
+            <div class="font-extrabold text-mahogany-950 text-xs">📜 開拓タイムライン（直近）</div>
             ${timelineHtml}
           </div>
         `;
@@ -1673,15 +1734,9 @@
         this.roomCode = rawCode;
 
         const myName = (document.getElementById('inputPlayerName').value || '').trim() || 'プレイヤーA';
-        let savedUid = '';
-        try {
-          savedUid = sessionStorage.getItem(`catan_uid_${rawCode}`) || '';
-        } catch (e) {}
-        if (!savedUid) {
-          savedUid = 'guest_' + Math.random().toString(36).slice(2, 9);
-          try { sessionStorage.setItem(`catan_uid_${rawCode}`, savedUid); } catch (e) {}
-        }
-        gameController.localUid = savedUid;
+        // 同一ブラウザの別タブでも異なるUIDになるようタブ固有ランダムIDを優先生成
+        const guestUid = 'guest_' + Date.now().toString(36).slice(-4) + '_' + Math.random().toString(36).slice(2, 6);
+        gameController.localUid = guestUid;
 
         this.peer = new Peer(undefined, { debug: 0 });
         this.peer.on('open', () => {
@@ -1692,7 +1747,7 @@
             if (this.hostConn !== conn) return;
             conn.send(JSON.stringify({
               type: 'JOIN',
-              uid: savedUid,
+              uid: guestUid,
               name: myName,
               palette: appUI.selectedPalette
             }));
@@ -2383,10 +2438,10 @@
 
           if (Object.keys(st.pendingDiscards).length > 0) {
             st.phase = 'DISCARD_WAIT';
-            this.pushStateAndRender(3200);
+            this.pushStateAndRender(2200);
           } else {
             st.phase = 'ROBBER_MOVE';
-            this.pushStateAndRender(5300);
+            this.pushStateAndRender(4250);
           }
           return;
         }
@@ -2536,6 +2591,7 @@
 
         if (this.isOnline && !onlineManager.isHost) {
           onlineManager.sendActionToHost({ type: 'PROPOSE_TRADE', give, want });
+          appUI.showToast('交換提案を送信しました...');
           return;
         }
         this.startDomesticTradeOffer(this.localUid, give, want);
@@ -2543,7 +2599,7 @@
 
       startDomesticTradeOffer(proposerUid, give, want) {
         const st = this.publicState;
-        if (!st) return;
+        if (!st || !st.players[proposerUid]) return;
         const responses = {};
         for (const uid of st.turnOrder) {
           if (uid === proposerUid) continue;
@@ -2554,7 +2610,7 @@
           }
         }
         st.activeTradeOffer = {
-          id: `tr_${Date.now()}`,
+          id: `tr_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
           proposerUid,
           proposerName: st.players[proposerUid].name,
           give,
@@ -3722,6 +3778,9 @@
           return;
         }
 
+        const isSeven = diceEv.sum === 7;
+        const durationMs = isSeven ? 700 : 2100;
+
         overlay.innerHTML = `
           <div class="rounded-3xl bg-mahogany-950/95 border-[3px] border-amber-400 px-6 py-5 sm:px-8 sm:py-6 text-center shadow-[0_20px_54px_rgba(0,0,0,0.9)] backdrop-blur-md">
             <div class="text-xs font-extrabold text-amber-300 mb-2">🎲 ${diceEv.rollerName} のダイスロール</div>
@@ -3734,7 +3793,7 @@
                 ${this.buildDicePipsHtml(diceEv.d2)}
               </div>
             </div>
-            <div class="mt-2 font-serif font-black text-3xl sm:text-4xl ${diceEv.sum === 7 ? 'text-red-400' : 'text-amber-300'}">
+            <div class="mt-2 font-serif font-black text-3xl sm:text-4xl ${isSeven ? 'text-red-400' : 'text-amber-300'}">
               合計 【 ${diceEv.sum} 】
             </div>
           </div>
@@ -3750,23 +3809,23 @@
         };
 
         if (!cardEl || typeof cardEl.animate !== 'function') {
-          setTimeout(finish, 2100);
+          setTimeout(finish, durationMs);
           return;
         }
 
         this.diceCutinAnim = cardEl.animate([
           { opacity: 0, transform: 'scale(0.8)' },
-          { opacity: 1, transform: 'scale(1.05)', offset: 0.14 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.22 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.84 },
+          { opacity: 1, transform: 'scale(1.05)', offset: 0.16 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.25 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.82 },
           { opacity: 0, transform: 'scale(0.92)' }
         ], {
-          duration: 2100,
+          duration: durationMs,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
         this.diceCutinAnim.onfinish = finish;
-        setTimeout(finish, 2150);
+        setTimeout(finish, durationMs + 50);
       }
 
       showRobber7Cutin(rollerName) {
@@ -3777,7 +3836,7 @@
           <div class="w-full max-w-md rounded-3xl border-[3px] border-red-500 px-6 py-6 text-center shadow-[0_24px_60px_rgba(220,38,38,0.65)] backdrop-blur-md"
                style="background: linear-gradient(180deg, #450a0a 0%, #1c0f08 55%, #090402 100%);">
             <div class="inline-block px-3 py-0.5 rounded-full bg-red-500/25 border border-red-400 text-red-200 text-xs font-extrabold tracking-widest">
-              ⚠️ ROLL 7 • ROBBER ATTACK
+              ⚠️ ROBBER ATTACK
             </div>
             <div class="my-3">
               <svg viewBox="0 0 120 96" class="w-28 h-24 mx-auto drop-shadow-[0_6px_16px_rgba(0,0,0,0.85)]">
@@ -3790,7 +3849,7 @@
               </svg>
             </div>
             <h3 class="font-serif font-black text-2xl sm:text-3xl text-red-300">
-              7が出た！盗賊襲来！
+              盗賊襲来！
             </h3>
             <p class="text-xs sm:text-sm text-parchment-200 mt-1.5 font-bold">
               手札8枚以上は半分破棄！${rollerName} が盗賊を移動します。
@@ -4510,12 +4569,12 @@
         const unlocked = st.turnNumber >= 4 || (me && me.publicVP >= 5) || st.status === 'finished';
         if (unlocked) {
           btnAi.disabled = false;
-          btnAi.className = 'px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400 text-amber-200 text-xs font-extrabold flex items-center gap-1 transition shadow cursor-pointer';
+          btnAi.className = 'px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-xl bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400 text-amber-200 text-[10px] sm:text-xs font-extrabold flex items-center gap-1 transition shadow cursor-pointer whitespace-nowrap flex-shrink-0';
           lockBadge.textContent = '分析可能';
-          lockBadge.className = 'text-[10px] px-1 rounded bg-emerald-600 text-white font-bold';
+          lockBadge.className = 'text-[9px] px-1 rounded bg-emerald-600 text-white font-bold';
         } else {
           btnAi.disabled = true;
-          btnAi.className = 'px-2.5 py-1.5 rounded-xl bg-mahogany-800 border border-brass-600/40 text-parchment-300/50 text-xs font-bold flex items-center gap-1 transition cursor-not-allowed';
+          btnAi.className = 'px-1.5 py-1 sm:px-2.5 sm:py-1 rounded-xl bg-mahogany-800 border border-brass-600/40 text-parchment-300/50 text-[10px] sm:text-xs font-bold flex items-center gap-1 transition cursor-not-allowed whitespace-nowrap flex-shrink-0';
           lockBadge.textContent = 'T4解放';
         }
 
@@ -4583,12 +4642,13 @@
         panel.classList.remove('hidden');
       }
 
-      /* -------------------- SVG盤面描画 -------------------- */
       getHexPolygonPoints(cx, cy, r) {
         const pts = [];
         for (let i = 0; i < 6; i++) {
           const rad = (Math.PI / 180) * (60 * i - 30);
-          pts.push(`${(cx + r * Math.cos(rad)).toFixed(1)},${(cy + r * Math.sin(rad)).toFixed(1)}`);
+          const x = Math.round((cx + r * Math.cos(rad)) * 100) / 100;
+          const y = Math.round((cy + r * Math.sin(rad)) * 100) / 100;
+          pts.push(`${x},${y}`);
         }
         return pts.join(' ');
       }
@@ -4599,18 +4659,37 @@
         const board = st.board;
         const vById = Object.fromEntries(board.vertices.map(v => [v.id, v]));
 
-        // 1. 港レイヤー
+        // 1. 港レイヤー（種類別色分け・大型2段バッジ・木製桟橋）
+        const harborPalette = {
+          '3:1':  { fill: '#1e3a8a', stroke: '#fbbf24', pillFill: '#0f172a', textFill: '#fde047', icon: '⚓', ratio: '3:1' },
+          wood:   { fill: '#14532d', stroke: '#86efac', pillFill: '#052e16', textFill: '#bbf7d0', icon: '🌲', ratio: '2:1' },
+          brick:  { fill: '#991b1b', stroke: '#fca5a5', pillFill: '#450a0a', textFill: '#fecaca', icon: '🧱', ratio: '2:1' },
+          sheep:  { fill: '#3f6212', stroke: '#bef264', pillFill: '#1a2e05', textFill: '#ecfccb', icon: '🐑', ratio: '2:1' },
+          wheat:  { fill: '#b45309', stroke: '#fde047', pillFill: '#451a03', textFill: '#fef08a', icon: '🌾', ratio: '2:1' },
+          ore:    { fill: '#334155', stroke: '#7dd3fc', pillFill: '#0f172a', textFill: '#bae6fd', icon: '⛰️', ratio: '2:1' }
+        };
+
         const layerHarbors = document.getElementById('layerHarbors');
         layerHarbors.innerHTML = board.harbors.map(hb => {
           const v1 = vById[hb.v1];
           const v2 = vById[hb.v2];
-          const label = hb.type === '3:1' ? '3:1' : `${RESOURCES[hb.type].emoji}2:1`;
+          const style = harborPalette[hb.type] || harborPalette['3:1'];
           return `
-            <g>
-              <line x1="${v1.x}" y1="${v1.y}" x2="${hb.x}" y2="${hb.y}" stroke="#fde68a" stroke-width="2.5" stroke-dasharray="3 2" opacity="0.8"/>
-              <line x1="${v2.x}" y1="${v2.y}" x2="${hb.x}" y2="${hb.y}" stroke="#fde68a" stroke-width="2.5" stroke-dasharray="3 2" opacity="0.8"/>
-              <circle cx="${hb.x}" cy="${hb.y}" r="15" fill="#1e1b18" stroke="#f59e0b" stroke-width="2"/>
-              <text x="${hb.x}" y="${hb.y + 3.5}" text-anchor="middle" fill="#fef3c7" font-size="8.5" font-weight="800">${label}</text>
+            <g filter="url(#pieceShadow)">
+              <!-- 木製桟橋ドック -->
+              <line x1="${v1.x}" y1="${v1.y}" x2="${hb.x}" y2="${hb.y}" stroke="#451a03" stroke-width="5.5" stroke-linecap="round"/>
+              <line x1="${v1.x}" y1="${v1.y}" x2="${hb.x}" y2="${hb.y}" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+              <line x1="${v2.x}" y1="${v2.y}" x2="${hb.x}" y2="${hb.y}" stroke="#451a03" stroke-width="5.5" stroke-linecap="round"/>
+              <line x1="${v2.x}" y1="${v2.y}" x2="${hb.x}" y2="${hb.y}" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+              <!-- 接続頂点マーカー -->
+              <circle cx="${v1.x}" cy="${v1.y}" r="4.5" fill="${style.stroke}" stroke="#1c1917" stroke-width="1.4"/>
+              <circle cx="${v2.x}" cy="${v2.y}" r="4.5" fill="${style.stroke}" stroke="#1c1917" stroke-width="1.4"/>
+              <!-- 大型港メダル -->
+              <circle cx="${hb.x}" cy="${hb.y}" r="21" fill="${style.fill}" stroke="#ffffff" stroke-width="2.6"/>
+              <circle cx="${hb.x}" cy="${hb.y}" r="18.2" fill="none" stroke="${style.stroke}" stroke-width="1.8"/>
+              <text x="${hb.x}" y="${hb.y - 2.5}" text-anchor="middle" font-size="14.5">${style.icon}</text>
+              <rect x="${hb.x - 14.5}" y="${hb.y + 3}" width="29" height="12.5" rx="6" fill="${style.pillFill}" stroke="${style.stroke}" stroke-width="1"/>
+              <text x="${hb.x}" y="${hb.y + 12.2}" text-anchor="middle" fill="${style.textFill}" font-size="9.8" font-weight="900">${style.ratio}</text>
             </g>
           `;
         }).join('');
@@ -4999,8 +5078,10 @@
           `;
 
           const listEl = document.getElementById('tradeResponsesList');
-          listEl.innerHTML = Object.entries(offer.responses).map(([rUid, resp]) => {
+          const entries = Object.entries(offer.responses || {});
+          listEl.innerHTML = entries.map(([rUid, resp]) => {
             const p = st.players[rUid];
+            if (!p) return '';
             let statusHtml = '<span class="text-xs font-bold text-amber-800">⏳ 応答待ち...</span>';
             let actionBtn = '';
 
@@ -5037,13 +5118,18 @@
         }
 
         // 自分が受信者で未応答の場合: 受信モーダルを表示
-        const myResp = offer.responses[myUid];
+        this.closeModal('tradeResponsesModal');
+        const myResp = offer.responses ? offer.responses[myUid] : null;
         if (myResp && myResp.status === 'pending') {
           if (this.activeXrayModalId === 'incomingTradeModal') return;
+          // 他のモーダルが開いていても交渉通知を最優先で前面表示する
+          this.closeModal('buildModal');
+          this.closeModal('devCardModal');
+          this.closeModal('analyticsModal');
           const canAccept = canAfford(gameController.myHand, offer.want);
           document.getElementById('btnAcceptIncomingTrade').disabled = !canAccept;
           document.getElementById('incomingTradeDetails').innerHTML = `
-            <div class="font-extrabold text-mahogany-950">提案者: ${offer.proposerName}</div>
+            <div class="font-extrabold text-mahogany-950">提案者: ${offer.proposerName || st.players[offer.proposerUid]?.name || '開拓者'}</div>
             <div class="text-emerald-900 font-bold">📥 あなたが受け取る資源: ${formatResourceBundle(offer.give)}</div>
             <div class="text-red-900 font-bold">📤 あなたが渡す資源: ${formatResourceBundle(offer.want)}</div>
             ${!canAccept ? '<div class="text-[11px] text-red-700 font-extrabold">※ 渡すための資源が不足しているため「許可」は押せません</div>' : ''}
