@@ -181,6 +181,43 @@
       animation: cornerZonePulse 0.55s ease-out;
     }
 
+    /* 対戦開始時の火花（スパーク）パーティクル＆四角アリーナ発光 */
+    @keyframes sparkFly {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(var(--spark-angle, 0deg)) translateX(0px) scale(1.2);
+      }
+      70% {
+        opacity: 0.95;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--spark-angle, 0deg)) translateX(var(--spark-dist, 120px)) scale(0.2);
+      }
+    }
+    .battle-spark {
+      position: absolute;
+      width: 14px;
+      height: 3px;
+      border-radius: 9999px;
+      background: linear-gradient(90deg, #ffffff 0%, #fde047 45%, #f97316 100%);
+      box-shadow: 0 0 8px #facc15, 0 0 14px #f97316;
+      pointer-events: none;
+      animation: sparkFly var(--spark-dur, 0.85s) cubic-bezier(0.16, 1, 0.3, 1) var(--spark-delay, 0s) infinite;
+    }
+
+    @keyframes arenaBorderSpark {
+      0%, 100% {
+        box-shadow: 0 0 18px rgba(251, 191, 36, 0.35), inset 0 0 12px rgba(245, 158, 11, 0.2);
+      }
+      50% {
+        box-shadow: 0 0 34px rgba(251, 191, 36, 0.75), 0 0 60px rgba(234, 88, 12, 0.4), inset 0 0 20px rgba(253, 224, 71, 0.35);
+      }
+    }
+    .arena-spark-box {
+      animation: arenaBorderSpark 1.1s ease-in-out infinite;
+    }
+
     /* 手番切り替えカットイン装飾 */
     .turn-cutin-card {
       background: linear-gradient(135deg, rgba(36, 20, 13, 0.96) 0%, rgba(23, 13, 8, 0.97) 100%);
@@ -249,7 +286,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.2 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v3.5
+              v3.7
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -339,19 +376,26 @@
           <div class="flex items-center justify-between">
             <div>
               <h3 class="font-serif font-bold text-lg text-parchment-100 flex items-center gap-2">
-                <span>⚔️</span> ソロ対戦
+                <span>🧭</span> ソロ対戦（vs CPU 3人）
               </h3>
               <p class="text-xs text-parchment-300/80 mt-0.5">
-                通信不要ですぐに開始。3人のCPUと対戦します。
+                異なる戦略を持つ3人のCPU開拓者とすぐに対戦できます。
               </p>
             </div>
           </div>
-          <div class="flex flex-wrap items-center gap-3 pt-1">
+          <div class="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
             <select id="selectCpuLevel" class="px-3 py-2 rounded-lg bg-mahogany-950 border border-brass-600/60 text-xs text-parchment-100">
               <option value="standard">CPU強さ: 標準</option>
               <option value="tactical">CPU強さ: 熟練</option>
             </select>
-            <button onclick="gameController.startSoloGame()" class="brass-btn flex-1 py-2.5 px-5 rounded-xl font-bold text-sm tracking-wide">
+            <select id="selectSoloStarter" class="px-3 py-2 rounded-lg bg-mahogany-950 border border-brass-600/60 text-xs text-parchment-100">
+              <option value="random">開始順: ランダム</option>
+              <option value="0">1番手: あなたから</option>
+              <option value="1">1番手: 赤髭のバルド</option>
+              <option value="2">1番手: 賢者セレス</option>
+              <option value="3">1番手: 航海士ミア</option>
+            </select>
+            <button onclick="gameController.startSoloGame()" class="brass-btn flex-1 py-2.5 px-5 rounded-xl font-bold text-sm tracking-wide min-w-[160px]">
               ソロ対戦を開始する
             </button>
           </div>
@@ -386,6 +430,21 @@
             </div>
 
             <div id="waitingSeatsList" class="grid grid-cols-2 gap-2 text-xs"></div>
+
+            <!-- 開始プレイヤー選択（ホスト操作・時計回り起点） -->
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-mahogany-950/90 px-3 py-2 rounded-xl border border-brass-600/40 text-xs">
+              <span class="font-bold text-brass-400 flex items-center gap-1">
+                <span>↻</span><span>開始プレイヤー（時計回り）:</span>
+              </span>
+              <select id="selectOnlineStarter" onchange="onlineManager.setStarterChoice(this.value)" class="hidden px-2.5 py-1 rounded-lg bg-mahogany-900 border border-brass-500/60 text-parchment-100 font-bold text-xs">
+                <option value="random">ランダム抽選</option>
+                <option value="0">左上（席1）から開始</option>
+                <option value="1">右上（席2）から開始</option>
+                <option value="2">右下（席3）から開始</option>
+                <option value="3">左下（席4）から開始</option>
+              </select>
+              <span id="guestOnlineStarterLabel" class="font-bold text-parchment-100">ランダム抽選</span>
+            </div>
 
             <div class="flex flex-wrap gap-2 pt-1">
               <button id="btnStartOnlineGame" onclick="onlineManager.hostStartGame()" class="brass-btn flex-1 py-2.5 px-4 rounded-xl font-bold text-sm">
@@ -476,6 +535,9 @@
 
           <!-- 手番切り替え「プレイヤー名の番」カットインバナー -->
           <div id="turnCutinOverlay" class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center p-4"></div>
+
+          <!-- 対戦開始「4人四角配置＆火花散る」演出オーバーレイ -->
+          <div id="matchStartOverlay" class="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"></div>
 
           <!-- サイコロ出目カットインバナー（マップ中央に約2秒間表示） -->
           <div id="diceCutinOverlay" class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center p-4"></div>
@@ -1126,6 +1188,25 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           gain.connect(ctx.destination);
           osc.start(now);
           osc.stop(now + 0.58);
+        });
+      }
+
+      playMatchStart() {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        // 重厚な開戦ブラス和音＋火花スパーク音
+        [261.63, 329.63, 392.0, 523.25].forEach((freq, i) => {
+          const now = ctx.currentTime + i * 0.05;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.09, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.68);
         });
       }
     }
@@ -1932,20 +2013,13 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.justRolledDice = false;
         this.justHadResourceGain = false;
         this.justPlayedDevCard = false;
+        this.isMatchOpening = false;
       }
 
       startSoloGame() {
         sound.ensureCtx();
         if (this.cpuTimer) clearTimeout(this.cpuTimer);
         this.pendingBuildConfirm = null;
-        this.justRolledDice = false;
-        this.justHadResourceGain = false;
-        this.justPlayedDevCard = false;
-      }
-
-      startSoloGame() {
-        sound.ensureCtx();
-        if (this.cpuTimer) clearTimeout(this.cpuTimer);
         this.justRolledDice = false;
         this.justHadResourceGain = false;
         this.justPlayedDevCard = false;
@@ -1956,6 +2030,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.cpuDifficulty = document.getElementById('selectCpuLevel').value || 'standard';
 
         const humanName = (document.getElementById('inputPlayerName').value || '開拓者A').trim();
+        // 時計回り座席配置: 0=左上(あなた), 1=右上(CPU1), 2=右下(CPU2), 3=左下(CPU3)
         const players = [
           { uid: this.localUid, name: humanName, isCpu: false, archetype: null, palette: PLAYER_PALETTES[0] },
           { uid: 'uid_cpu_2', name: '赤髭のバルド (CPU)', isCpu: true, archetype: CPU_ARCHETYPES.expansion, palette: PLAYER_PALETTES[1] },
@@ -1963,24 +2038,36 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           { uid: 'uid_cpu_4', name: '航海士ミア (CPU)', isCpu: true, archetype: CPU_ARCHETYPES.trader, palette: PLAYER_PALETTES[3] }
         ];
 
-        this.initializeMatch(players);
+        const starterVal = document.getElementById('selectSoloStarter')?.value || 'random';
+        const startSeatIndex = starterVal === 'random'
+          ? Math.floor(Math.random() * 4)
+          : Math.min(3, Math.max(0, parseInt(starterVal, 10) || 0));
+
+        this.initializeMatch(players, startSeatIndex);
         appUI.showGameScreen();
-        sound.playChime();
       }
 
-      initializeMatch(playerDefs) {
+      initializeMatch(playerDefs, startSeatIndex = 0) {
         const board = buildStandardBoardGeometry();
-        secretVault.reset(playerDefs.map(p => p.uid));
-        analytics.reset(playerDefs.map(p => p.uid));
+        const normalizedStart = ((startSeatIndex % 4) + 4) % 4;
+        // 選ばれた開始プレイヤーを先頭(0番)とし、そこから時計回り(0→1→2→3)に並べ替え
+        const orderedDefs = [0, 1, 2, 3].map(offset => {
+          const cwSeat = (normalizedStart + offset) % 4;
+          return { ...playerDefs[cwSeat], clockwiseSeat: cwSeat };
+        });
 
-        // 初期配置スネークドラフト順: [0, 1, 2, 3, 3, 2, 1, 0]
+        secretVault.reset(orderedDefs.map(p => p.uid));
+        analytics.reset(orderedDefs.map(p => p.uid));
+
+        // 初期配置スネークドラフト順: [0, 1, 2, 3, 3, 2, 1, 0]（開始プレイヤーから時計回り→折り返し）
         const setupOrder = [0, 1, 2, 3, 3, 2, 1, 0];
 
         const playersMap = {};
-        playerDefs.forEach((p, idx) => {
+        orderedDefs.forEach((p, idx) => {
           playersMap[p.uid] = {
             uid: p.uid,
             seatIndex: idx,
+            clockwiseSeat: p.clockwiseSeat,
             name: p.name,
             isCpu: p.isCpu,
             archetypeLabel: p.archetype ? p.archetype.label : 'プレイヤー',
@@ -1994,16 +2081,19 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
             hasLargestArmy: false
           };
         });
-        this.cpuArchetypesByUid = Object.fromEntries(playerDefs.map(p => [p.uid, p.archetype || CPU_ARCHETYPES.trader]));
+        this.cpuArchetypesByUid = Object.fromEntries(orderedDefs.map(p => [p.uid, p.archetype || CPU_ARCHETYPES.trader]));
+        const starterPlayer = orderedDefs[0];
 
         this.publicState = {
+          matchId: `match_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
           roomId: this.roomId,
           status: 'setup', // 'setup' | 'playing' | 'finished'
           turnNumber: 1,
           setupStepIndex: 0,
           setupOrder,
-          turnOrder: playerDefs.map(p => p.uid),
-          activeUid: playerDefs[setupOrder[0]].uid,
+          turnOrder: orderedDefs.map(p => p.uid),
+          starterUid: starterPlayer.uid,
+          activeUid: starterPlayer.uid,
           phase: 'INITIAL_SETTLEMENT', // 'INITIAL_SETTLEMENT' | 'INITIAL_ROAD' | 'ROLL' | 'MAIN' | 'DISCARD' | 'ROBBER_MOVE' | 'STEAL_SELECT'
           lastInitialSettlementVertex: null,
           roadBuildingRemaining: 0,
@@ -2030,11 +2120,13 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           winnerUid: null,
           revealedSecretVps: null,
           logs: [
-            { id: 1, text: '未知の島へ上陸しました。初期開拓地と街道を順に配置します。', time: this.nowStr() }
+            { id: 1, text: `🔥 対戦開始！【${starterPlayer.name}】を1番手として時計回りに初期配置を行います。`, time: this.nowStr() }
           ]
         };
 
+        this.isMatchOpening = true;
         if (typeof appUI !== 'undefined' && appUI) {
+          appUI.lastAnnouncedMatchId = null;
           appUI.lastAnnouncedTurnKey = null;
           appUI.lastShownDiceSeq = 0;
           appUI.lastTriggeredDrawnDevId = null;
@@ -2042,549 +2134,36 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
         this.syncPublicCountsFromVault();
         this.prepareTurnState();
-        appUI.renderAll();
-      }
-
-      nowStr() {
-        const d = new Date();
-        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      }
-
-      formatResourceDelta(deltaObj) {
-        if (!deltaObj) return '';
-        return RESOURCE_KEYS
-          .filter(k => (deltaObj[k] || 0) > 0)
-          .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${deltaObj[k]}`)
-          .join('・');
-      }
-
-      addLog(text) {
-        if (!this.publicState) return;
-        this.publicState.logs.unshift({
-          id: Date.now() + Math.random(),
-          text,
-          time: this.nowStr()
-        });
-        if (this.publicState.logs.length > 40) this.publicState.logs.pop();
-      }
-
-      syncPublicCountsFromVault() {
-        if (!this.publicState) return;
-        this.publicState.deckCount = secretVault.getDeckCount();
-        Object.keys(this.publicState.players).forEach(uid => {
-          const counts = secretVault.getPublicSummaryCounts(uid);
-          this.publicState.players[uid].resourceCount = counts.resourceCount;
-          this.publicState.players[uid].devCardCount = counts.devCardCount;
-        });
-        this.recalculateAllVictoryPoints();
-      }
-
-      recalculateAllVictoryPoints() {
-        const st = this.publicState;
-        if (!st) return;
-
-        // 最長交易路の計算 (DFS)
-        let bestRoadHolder = st.longestRoadHolder;
-        let bestRoadLen = bestRoadHolder ? this.computeLongestRoadForPlayer(bestRoadHolder) : 4;
-        if (bestRoadLen < 5) {
-          bestRoadHolder = null;
-          bestRoadLen = 4;
-        }
-
-        st.turnOrder.forEach(uid => {
-          const len = this.computeLongestRoadForPlayer(uid);
-          st.players[uid].longestRoadLength = len;
-          if (len >= 5 && len > bestRoadLen) {
-            bestRoadLen = len;
-            bestRoadHolder = uid;
-          }
-        });
-        st.longestRoadHolder = bestRoadHolder;
-
-        // 最大騎士力の計算 (3枚以上)
-        let bestArmyHolder = st.largestArmyHolder;
-        let bestKnights = bestArmyHolder ? st.players[bestArmyHolder].knightsPlayed : 2;
-        if (bestKnights < 3) {
-          bestArmyHolder = null;
-          bestKnights = 2;
-        }
-        st.turnOrder.forEach(uid => {
-          const k = st.players[uid].knightsPlayed;
-          if (k >= 3 && k > bestKnights) {
-            bestKnights = k;
-            bestArmyHolder = uid;
-          }
-        });
-        st.largestArmyHolder = bestArmyHolder;
-
-        // 各プレイヤーの公開VP集計
-        st.turnOrder.forEach(uid => {
-          let vp = 0;
-          Object.values(st.board.buildings).forEach(b => {
-            if (b.ownerUid === uid) vp += b.type === 'city' ? 2 : 1;
-          });
-          st.players[uid].hasLongestRoad = (st.longestRoadHolder === uid);
-          st.players[uid].hasLargestArmy = (st.largestArmyHolder === uid);
-          if (st.players[uid].hasLongestRoad) vp += 2;
-          if (st.players[uid].hasLargestArmy) vp += 2;
-          st.players[uid].publicVP = vp;
-        });
-      }
-
-      // 最長交易路グラフDFS探索（相手の開拓地による分断も考慮）
-      computeLongestRoadForPlayer(uid) {
-        const st = this.publicState;
-        const playerEdges = Object.values(st.board.roads)
-          .map((r, idx) => ({ id: Object.keys(st.board.roads)[idx], ...r }))
-          .filter(r => r.ownerUid === uid);
-        if (playerEdges.length === 0) return 0;
-
-        // 隣接リスト構築
-        const adj = new Map();
-        playerEdges.forEach(e => {
-          const edgeGeo = st.board.edges[e.id];
-          if (!adj.has(edgeGeo.v1)) adj.set(edgeGeo.v1, []);
-          if (!adj.has(edgeGeo.v2)) adj.set(edgeGeo.v2, []);
-          adj.get(edgeGeo.v1).push({ edgeId: e.id, to: edgeGeo.v2 });
-          adj.get(edgeGeo.v2).push({ edgeId: e.id, to: edgeGeo.v1 });
-        });
-
-        let maxLen = 0;
-        const visitedEdges = new Set();
-
-        const dfs = (vertexId, currentLen) => {
-          if (currentLen > maxLen) maxLen = currentLen;
-          // 相手の建物が建っている頂点を通過して先へは進めない
-          const bld = st.board.buildings[vertexId];
-          if (bld && bld.ownerUid !== uid && currentLen > 0) return;
-
-          const neighbors = adj.get(vertexId) || [];
-          for (const next of neighbors) {
-            if (!visitedEdges.has(next.edgeId)) {
-              visitedEdges.add(next.edgeId);
-              dfs(next.to, currentLen + 1);
-              visitedEdges.delete(next.edgeId);
-            }
-          }
-        };
-
-        adj.forEach((_, startVertex) => {
-          dfs(startVertex, 0);
-        });
-        return maxLen;
-      }
-
-      checkVictoryCondition() {
-        const st = this.publicState;
-        if (!st || st.status === 'finished') return false;
-        const activeUid = st.activeUid;
-        const totalVP = st.players[activeUid].publicVP + secretVault.getSecretVpCount(activeUid);
-        if (totalVP >= 10) {
-          st.status = 'finished';
-          st.winnerUid = activeUid;
-          // 決着時のみ全員の秘匿勝利点内訳を公開
-          const revealed = {};
-          st.turnOrder.forEach(uid => {
-            revealed[uid] = secretVault.getSecretVpCount(uid);
-          });
-          st.revealedSecretVps = revealed;
-          this.placementMode = null;
-          this.addLog(`👑 ${st.players[activeUid].name} が ${totalVP} 勝利点に到達し勝利しました！`);
-          analytics.recordTurnSnapshot(st.turnNumber, st, '決着');
-          sound.playVictory();
-          this.syncAfterHostAction();
-          appUI.showVictoryModal(activeUid);
-          return true;
-        }
-        return false;
-      }
-
-      prepareTurnState() {
-        const st = this.publicState;
-        if (!st || st.status === 'finished') {
-          this.pendingBuildConfirm = null;
-          return;
-        }
-
-        if (st.activeUid !== this.localUid) {
-          this.pendingBuildConfirm = null;
-        }
-
-        const activePlayer = st.players[st.activeUid];
-        if (st.status === 'setup') {
-          this.placementMode = st.phase; // 'INITIAL_SETTLEMENT' or 'INITIAL_ROAD'
-        } else if (st.phase === 'ROBBER_MOVE') {
-          this.placementMode = 'ROBBER';
-        } else if (st.phase === 'ROAD_BUILDING') {
-          this.placementMode = 'ROAD_BUILDING';
-        } else {
-          this.placementMode = null;
-        }
-
-        if (this.mode === 'online' && onlineManager.isHost) {
-          onlineManager.broadcastGameState();
-        }
-
-        appUI.renderAll();
-
-        // CPUのターンの場合は思考タイマーをセット（ソロ、またはオンラインのホストが代行）
-        const canRunCpu = (this.mode === 'solo') || (this.mode === 'online' && onlineManager.isHost);
-        if (activePlayer && activePlayer.isCpu && canRunCpu && st.phase !== 'DISCARD') {
-          if (this.cpuTimer) clearTimeout(this.cpuTimer);
-          const isTurnOpeningStep = (st.phase === 'ROLL' || st.phase === 'INITIAL_SETTLEMENT');
-          // サイコロ出目カットイン(2.05秒)後に資源移動(2.35秒)が始まるため、視認完了まで待機する
-          let delayMs = isTurnOpeningStep ? 1100 : 750;
-          if (this.justRolledDice) {
-            delayMs = this.justHadResourceGain ? 4400 : 2350;
-          } else if (this.justPlayedDevCard) {
-            delayMs = 2400;
-          }
-          this.justRolledDice = false;
-          this.justHadResourceGain = false;
-          this.justPlayedDevCard = false;
-          this.cpuTimer = setTimeout(() => this.executeCpuTurnStep(), delayMs);
-        } else {
-          this.justRolledDice = false;
-          this.justHadResourceGain = false;
-          this.justPlayedDevCard = false;
-        }
-      }
-
-      /* -----------------------------------------------------------------------
-         配置可能スポット（頂点・辺）のルール判定
-         ----------------------------------------------------------------------- */
-      getDirectBuildableSpots(uid) {
-        const st = this.publicState;
-        const empty = { roads: [], settlements: [], cities: [] };
-        if (!st || st.status !== 'playing' || st.phase !== 'MAIN' || st.activeUid !== uid) {
-          return empty;
-        }
-        const myPriv = secretVault.getOwnPrivateView(uid);
-        const res = myPriv.resources || {};
-
-        if (res.wood >= 1 && res.brick >= 1) {
-          const builtRoads = Object.values(st.board.roads).filter(r => r.ownerUid === uid).length;
-          if (builtRoads < 15) {
-            empty.roads = this.getValidEdgesForPlacement('ROAD', uid);
-          }
-        }
-        if (res.wood >= 1 && res.brick >= 1 && res.sheep >= 1 && res.wheat >= 1) {
-          const builtSettlements = Object.values(st.board.buildings).filter(b => b.ownerUid === uid && b.type === 'settlement').length;
-          if (builtSettlements < 5) {
-            empty.settlements = this.getValidVerticesForPlacement('SETTLEMENT', uid);
-          }
-        }
-        if (res.wheat >= 2 && res.ore >= 3) {
-          const builtCities = Object.values(st.board.buildings).filter(b => b.ownerUid === uid && b.type === 'city').length;
-          if (builtCities < 4) {
-            empty.cities = this.getValidVerticesForPlacement('CITY', uid);
-          }
-        }
-        return empty;
-      }
-
-      getValidVerticesForPlacement(mode, uid) {
-        const st = this.publicState;
-        const allVertices = Object.values(st.board.vertices);
-
-        if (mode === 'INITIAL_SETTLEMENT') {
-          return allVertices.filter(v => {
-            if (st.board.buildings[v.id]) return false;
-            return !v.neighborVertexIds.some(nv => st.board.buildings[nv]);
-          }).map(v => v.id);
-        }
-
-        if (mode === 'SETTLEMENT') {
-          return allVertices.filter(v => {
-            if (st.board.buildings[v.id]) return false;
-            if (v.neighborVertexIds.some(nv => st.board.buildings[nv])) return false;
-            // 自分の街道に接続していること
-            return v.edgeIds.some(eid => st.board.roads[eid]?.ownerUid === uid);
-          }).map(v => v.id);
-        }
-
-        if (mode === 'CITY') {
-          return allVertices.filter(v => {
-            const b = st.board.buildings[v.id];
-            return b && b.ownerUid === uid && b.type === 'settlement';
-          }).map(v => v.id);
-        }
-
-        return [];
-      }
-
-      getValidEdgesForPlacement(mode, uid) {
-        const st = this.publicState;
-        const allEdges = Object.values(st.board.edges);
-
-        if (mode === 'INITIAL_ROAD') {
-          const anchorV = st.board.vertices[st.lastInitialSettlementVertex];
-          if (!anchorV) return [];
-          return anchorV.edgeIds.filter(eid => !st.board.roads[eid]);
-        }
-
-        if (mode === 'ROAD' || mode === 'ROAD_BUILDING') {
-          return allEdges.filter(e => {
-            if (st.board.roads[e.id]) return false;
-            // 端点v1またはv2に自分の建物があるか、自分の街道が繋がっている（相手の建物で分断されていない）
-            return [e.v1, e.v2].some(vid => {
-              const bld = st.board.buildings[vid];
-              if (bld) return bld.ownerUid === uid;
-              const vObj = st.board.vertices[vid];
-              return vObj.edgeIds.some(adjEid => st.board.roads[adjEid]?.ownerUid === uid);
-            });
-          }).map(e => e.id);
-        }
-
-        return [];
-      }
-
-      /* -----------------------------------------------------------------------
-         プレイヤー操作ハンドラ（配置・ダイス・建設・発展・交易）
-         ----------------------------------------------------------------------- */
-      resolveDirectVertexMode(vertexId, uid) {
-        const st = this.publicState;
-        if (!st || st.status !== 'playing' || st.phase !== 'MAIN' || st.activeUid !== uid) return null;
-        const bld = st.board.buildings[vertexId];
-        if (bld && bld.ownerUid === uid && bld.type === 'settlement') {
-          return 'CITY';
-        }
-        if (!bld) {
-          return 'SETTLEMENT';
-        }
-        return null;
-      }
-
-      requestBuildConfirmation(kind, targetId, mode) {
-        this.pendingBuildConfirm = { kind, targetId, mode };
-        appUI.renderAll();
-      }
-
-      cancelPendingBuild() {
-        this.pendingBuildConfirm = null;
-        appUI.renderAll();
-      }
-
-      confirmPendingBuild() {
-        const pending = this.pendingBuildConfirm;
-        if (!pending) return;
-        this.pendingBuildConfirm = null;
-        if (pending.kind === 'vertex') {
-          this.onVertexClick(pending.targetId, this.localUid, pending.mode, true);
-        } else if (pending.kind === 'edge') {
-          this.onEdgeClick(pending.targetId, this.localUid, pending.mode, true);
-        }
-      }
-
-      onVertexClick(vertexId, actorUid = this.localUid, explicitMode = null, skipConfirm = false) {
-        const st = this.publicState;
-        if (!st || st.activeUid !== actorUid) return;
-
-        const resolvedMode = explicitMode || ((actorUid === this.localUid)
-          ? (st.status === 'setup' ? st.phase : (this.placementMode || this.resolveDirectVertexMode(vertexId, actorUid)))
-          : (st.status === 'setup' ? st.phase : (this.remotePlacementModeByUid?.[actorUid] || this.resolveDirectVertexMode(vertexId, actorUid))));
-        const valid = this.getValidVerticesForPlacement(resolvedMode, actorUid);
-        if (!valid.includes(vertexId)) return;
-
-        // ローカルプレイヤーの操作時はワンタップ確定せず一度確認ステップを挟む
-        if (actorUid === this.localUid && !skipConfirm) {
-          const isSamePending = this.pendingBuildConfirm
-            && this.pendingBuildConfirm.kind === 'vertex'
-            && this.pendingBuildConfirm.targetId === vertexId
-            && this.pendingBuildConfirm.mode === resolvedMode;
-          if (!isSamePending) {
-            this.requestBuildConfirmation('vertex', vertexId, resolvedMode);
-            return;
-          }
-          this.pendingBuildConfirm = null;
-        }
-
-        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          if (!resolvedMode) return;
-          if (['SETTLEMENT', 'CITY'].includes(resolvedMode)) {
-            this.placementMode = null;
-            appUI.renderAll();
-          }
-          onlineManager.sendActionToHost({ type: 'VERTEX_CLICK', vertexId, mode: resolvedMode });
-          return;
-        }
-
-        const mode = resolvedMode;
-
-        if (mode === 'INITIAL_SETTLEMENT') {
-          this.placeInitialSettlement(actorUid, vertexId);
-        } else if (mode === 'SETTLEMENT') {
-          const builtCount = Object.values(st.board.buildings).filter(b => b.ownerUid === actorUid && b.type === 'settlement').length;
-          if (builtCount >= 5) {
-            if (actorUid === this.localUid) appUI.showToast('開拓地の上限（5軒）に達しています。都市へ昇格させてください。', 'warn');
-            return;
-          }
-          if (!secretVault.spendResources(actorUid, { wood: 1, brick: 1, sheep: 1, wheat: 1 })) return;
-          st.board.buildings[vertexId] = { ownerUid: actorUid, type: 'settlement' };
-          if (actorUid === this.localUid) this.placementMode = null;
-          else if (this.remotePlacementModeByUid) this.remotePlacementModeByUid[actorUid] = null;
-          analytics.statsByUid[actorUid].builtSettlements += 1;
-          analytics.statsByUid[actorUid].totalSpentOnBuild += 4;
-          analytics.recordMilestone(actorUid, st.turnNumber, '開拓地建設');
-          sound.playWoodThud();
-          this.addLog(`🏠 ${st.players[actorUid].name} が新しい開拓地を建設しました。`);
-          this.syncPublicCountsFromVault();
-          analytics.recordBuildAction(actorUid, st, 'SETTLEMENT', vertexId);
-          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
-        } else if (mode === 'CITY') {
-          const cityCount = Object.values(st.board.buildings).filter(b => b.ownerUid === actorUid && b.type === 'city').length;
-          if (cityCount >= 4) {
-            if (actorUid === this.localUid) appUI.showToast('都市の上限（4都市）に達しています。', 'warn');
-            return;
-          }
-          if (!secretVault.spendResources(actorUid, { wheat: 2, ore: 3 })) return;
-          st.board.buildings[vertexId] = { ownerUid: actorUid, type: 'city' };
-          if (actorUid === this.localUid) this.placementMode = null;
-          else if (this.remotePlacementModeByUid) this.remotePlacementModeByUid[actorUid] = null;
-          analytics.statsByUid[actorUid].builtCities += 1;
-          analytics.statsByUid[actorUid].totalSpentOnBuild += 5;
-          analytics.recordMilestone(actorUid, st.turnNumber, '都市昇格');
-          sound.playWoodThud();
-          this.addLog(`🏰 ${st.players[actorUid].name} が開拓地を都市へ昇格させました！`);
-          this.syncPublicCountsFromVault();
-          analytics.recordBuildAction(actorUid, st, 'CITY', vertexId);
-          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
-        }
-      }
-
-      onEdgeClick(edgeId, actorUid = this.localUid, explicitMode = null, skipConfirm = false) {
-        const st = this.publicState;
-        if (!st || st.activeUid !== actorUid) return;
-
-        const resolveDirectEdge = () => (st.status === 'playing' && st.phase === 'MAIN' && !st.board.roads[edgeId]) ? 'ROAD' : null;
-        const resolvedMode = explicitMode || ((actorUid === this.localUid)
-          ? (st.status === 'setup' ? st.phase : (this.placementMode || resolveDirectEdge()))
-          : (st.status === 'setup' ? st.phase : (st.phase === 'ROAD_BUILDING' ? 'ROAD_BUILDING' : (this.remotePlacementModeByUid?.[actorUid] || resolveDirectEdge()))));
-        const valid = this.getValidEdgesForPlacement(resolvedMode, actorUid);
-        if (!valid.includes(edgeId)) return;
-
-        // ローカルプレイヤーの操作時はワンタップ確定せず一度確認ステップを挟む
-        if (actorUid === this.localUid && !skipConfirm) {
-          const isSamePending = this.pendingBuildConfirm
-            && this.pendingBuildConfirm.kind === 'edge'
-            && this.pendingBuildConfirm.targetId === edgeId
-            && this.pendingBuildConfirm.mode === resolvedMode;
-          if (!isSamePending) {
-            this.requestBuildConfirmation('edge', edgeId, resolvedMode);
-            return;
-          }
-          this.pendingBuildConfirm = null;
-        }
-
-        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          if (!resolvedMode) return;
-          if (resolvedMode === 'ROAD') {
-            this.placementMode = null;
-            appUI.renderAll();
-          }
-          onlineManager.sendActionToHost({ type: 'EDGE_CLICK', edgeId, mode: resolvedMode });
-          return;
-        }
-
-        const mode = resolvedMode;
-
-        if (mode === 'INITIAL_ROAD') {
-          this.placeInitialRoad(actorUid, edgeId);
-        } else if (mode === 'ROAD') {
-          const roadCount = Object.values(st.board.roads).filter(r => r.ownerUid === actorUid).length;
-          if (roadCount >= 15) {
-            if (actorUid === this.localUid) appUI.showToast('街道の上限（15本）に達しています。', 'warn');
-            return;
-          }
-          if (!secretVault.spendResources(actorUid, { wood: 1, brick: 1 })) return;
-          st.board.roads[edgeId] = { ownerUid: actorUid };
-          if (actorUid === this.localUid) this.placementMode = null;
-          else if (this.remotePlacementModeByUid) this.remotePlacementModeByUid[actorUid] = null;
-          analytics.statsByUid[actorUid].builtRoads += 1;
-          analytics.statsByUid[actorUid].totalSpentOnBuild += 2;
-          sound.playWoodThud();
-          this.addLog(`🛤️ ${st.players[actorUid].name} が街道を建設しました。`);
-          this.syncPublicCountsFromVault();
-          analytics.recordBuildAction(actorUid, st, 'ROAD', edgeId);
-          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
-        } else if (mode === 'ROAD_BUILDING') {
-          st.board.roads[edgeId] = { ownerUid: actorUid };
-          st.roadBuildingRemaining = Math.max(0, (st.roadBuildingRemaining || 1) - 1);
-          analytics.statsByUid[actorUid].builtRoads += 1;
-          sound.playWoodThud();
-          this.addLog(`🛤️ ${st.players[actorUid].name} が街道建設カードにより無料の街道を配置しました。`);
-          this.syncPublicCountsFromVault();
-          analytics.recordBuildAction(actorUid, st, 'ROAD_BUILDING', edgeId);
-          if (this.checkVictoryCondition()) return;
-
-          const nextValid = this.getValidEdgesForPlacement('ROAD_BUILDING', actorUid);
-          if (st.roadBuildingRemaining <= 0 || nextValid.length === 0) {
-            st.roadBuildingRemaining = 0;
-            st.phase = st.dice[0] === null ? 'ROLL' : 'MAIN';
-            if (actorUid === this.localUid) this.placementMode = null;
-            else if (this.remotePlacementModeByUid) this.remotePlacementModeByUid[actorUid] = null;
-          }
-          this.syncAfterHostAction();
-        }
-      }
-
-      onHexClick(hexId, actorUid = this.localUid) {
-        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          onlineManager.sendActionToHost({ type: 'HEX_CLICK', hexId });
-          return;
-        }
-        const st = this.publicState;
-        if (!st || st.activeUid !== actorUid) return;
-        const mode = (actorUid === this.localUid) ? this.placementMode : (st.phase === 'ROBBER_MOVE' ? 'ROBBER' : null);
-        if (mode !== 'ROBBER') return;
-        if (hexId === st.board.robberHexId) {
-          if (actorUid === this.localUid) appUI.showToast('現在とは別のヘクスへ盗賊を移動してください。', 'warn');
-          return;
-        }
-        this.moveRobberToHex(actorUid, hexId);
-      }
-
-      syncAfterHostAction() {
-        if (this.mode === 'online' && onlineManager.isHost) {
-          onlineManager.broadcastGameState();
-        }
-        appUI.renderAll();
-      }
-      handleRollDice(actorUid = this.localUid) {
-        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
-          onlineManager.sendActionToHost({ type: 'ROLL_DICE' });
-          return;
-        }
-        const st = this.publicState;
-        if (!st || st.status !== 'playing' || st.activeUid !== actorUid || st.phase !== 'ROLL') return;
-        this.rollDiceForPlayer(actorUid);
       }
 
       placeInitialSettlement(uid, vertexId) {
         const st = this.publicState;
+        const vObj = st.board.vertices[vertexId];
+        if (!vObj) return;
+
         st.board.buildings[vertexId] = { ownerUid: uid, type: 'settlement' };
         st.lastInitialSettlementVertex = vertexId;
         analytics.recordInitialSettlement(uid, vertexId, st.board);
 
-        // 2軒目の初期開拓地（スネークドラフト後半4手）は隣接タイルから初期資源を獲得
+        // 2軒目の初期開拓地（setupStepIndex >= 4）では隣接タイルから初期資源を獲得
         if (st.setupStepIndex >= 4) {
-          const vObj = st.board.vertices[vertexId];
-          const initialGain = {};
+          const delta = {};
           vObj.hexIds.forEach(hid => {
             const hex = st.board.hexes.find(h => h.id === hid);
             if (hex && hex.resource !== 'desert') {
-              initialGain[hex.resource] = (initialGain[hex.resource] || 0) + 1;
+              delta[hex.resource] = (delta[hex.resource] || 0) + 1;
             }
           });
-          secretVault.addResources(uid, initialGain);
-          const totalInitCards = Object.values(initialGain).reduce((a, b) => a + b, 0);
-          if (analytics.statsByUid[uid]) {
-            analytics.statsByUid[uid].totalGained += totalInitCards;
+          if (Object.keys(delta).length > 0) {
+            secretVault.addResources(uid, delta);
+            if (analytics.statsByUid[uid]) {
+              analytics.statsByUid[uid].totalGained += Object.values(delta).reduce((a, b) => a + b, 0);
+            }
           }
         }
 
         sound.playWoodThud();
-        this.addLog(`🚩 ${st.players[uid].name} が初期開拓地を配置しました。`);
+        this.addLog(`🏠 ${st.players[uid].name} が初期開拓地を配置しました。`);
         st.phase = 'INITIAL_ROAD';
         this.syncPublicCountsFromVault();
         this.prepareTurnState();
@@ -2612,6 +2191,16 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
         this.syncPublicCountsFromVault();
         this.prepareTurnState();
+      }
+
+      handleRollDice(actorUid = this.localUid) {
+        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
+          onlineManager.sendActionToHost({ type: 'ROLL_DICE' });
+          return;
+        }
+        const st = this.publicState;
+        if (!st || st.status !== 'playing' || st.activeUid !== actorUid || st.phase !== 'ROLL') return;
+        this.rollDiceForPlayer(actorUid);
       }
 
       rollDiceForPlayer(uid) {
@@ -2773,12 +2362,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           discarded: { ...discardPick },
           total: requiredAmt
         });
-        delete st.pendingDiscards[uid];
         const detailStr = this.formatResourceDelta(discardPick);
         this.addLog(`⚠️ ${st.players[uid].name} が7のバーストで【${detailStr}】（計${requiredAmt}枚）を破棄しました。`);
-        if (uid === this.localUid) {
-          appUI.showToast(`破棄した資源: ${detailStr}（計${requiredAmt}枚）`, 'info');
-        }
+
+        delete st.pendingDiscards[uid];
         this.syncPublicCountsFromVault();
 
         if (Object.keys(st.pendingDiscards).length === 0) {
@@ -2786,6 +2373,55 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           this.prepareTurnState();
         } else {
           this.syncAfterHostAction();
+        }
+      }
+
+      prepareTurnState() {
+        const st = this.publicState;
+        if (!st) return;
+        if (this.checkVictoryCondition()) return;
+
+        if (st.activeUid === this.localUid && st.status !== 'finished') {
+          if (st.status === 'setup') {
+            this.placementMode = st.phase;
+          } else if (st.phase === 'ROBBER_MOVE') {
+            this.placementMode = 'ROBBER';
+          } else if (st.phase === 'ROAD_BUILDING') {
+            this.placementMode = 'ROAD_BUILDING';
+          } else if (st.phase !== 'MAIN') {
+            this.placementMode = null;
+          }
+        } else {
+          this.placementMode = null;
+        }
+
+        this.syncAfterHostAction();
+
+        const activePlayer = st.players[st.activeUid];
+        // CPUのターンの場合は思考タイマーをセット（ソロ、またはオンラインのホストが代行）
+        const canRunCpu = (this.mode === 'solo') || (this.mode === 'online' && onlineManager.isHost);
+        if (activePlayer && activePlayer.isCpu && canRunCpu && st.phase !== 'DISCARD' && st.status !== 'finished') {
+          if (this.cpuTimer) clearTimeout(this.cpuTimer);
+          const isTurnOpeningStep = (st.phase === 'ROLL' || st.phase === 'INITIAL_SETTLEMENT');
+          // 対戦開始演出(4.0秒)・手番表示(3.0秒)やサイコロ出目カットイン完了後にCPUが行動するよう調整
+          let delayMs = isTurnOpeningStep ? 1500 : 750;
+          if (this.isMatchOpening) {
+            delayMs = 5400;
+          } else if (this.justRolledDice) {
+            delayMs = this.justHadResourceGain ? 4400 : 2350;
+          } else if (this.justPlayedDevCard) {
+            delayMs = 2400;
+          }
+          this.isMatchOpening = false;
+          this.justRolledDice = false;
+          this.justHadResourceGain = false;
+          this.justPlayedDevCard = false;
+          this.cpuTimer = setTimeout(() => this.executeCpuTurnStep(), delayMs);
+        } else {
+          this.isMatchOpening = false;
+          this.justRolledDice = false;
+          this.justHadResourceGain = false;
+          this.justPlayedDevCard = false;
         }
       }
 
@@ -3492,6 +3128,475 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           this.advanceToNextTurn();
         }
       }
+
+      /* -----------------------------------------------------------------------
+         8. 盤面タップ・2段階建設確認・ルール検証・勝利点計算ヘルパー
+         ----------------------------------------------------------------------- */
+      onVertexClick(vertexId, actorUid = this.localUid, explicitMode = null) {
+        const st = this.publicState;
+        if (!st || st.status === 'finished' || st.activeUid !== actorUid) return;
+
+        let mode = explicitMode;
+        if (!mode) {
+          if (st.status === 'setup' && st.phase === 'INITIAL_SETTLEMENT') {
+            mode = 'INITIAL_SETTLEMENT';
+          } else if (actorUid === this.localUid && this.placementMode) {
+            mode = this.placementMode;
+          } else if (st.status === 'playing' && st.phase === 'MAIN') {
+            const direct = this.getDirectBuildableSpots(actorUid);
+            if (direct.cities.includes(vertexId)) mode = 'CITY';
+            else if (direct.settlements.includes(vertexId)) mode = 'SETTLEMENT';
+          }
+        }
+        if (!mode) return;
+        if (!this.getValidVerticesForPlacement(mode, actorUid).includes(vertexId)) return;
+
+        if (actorUid === this.localUid) {
+          const p = this.pendingBuildConfirm;
+          if (p && p.kind === 'vertex' && p.targetId === vertexId && p.mode === mode) {
+            this.executeConfirmedVertexPlacement(actorUid, vertexId, mode);
+          } else {
+            this.pendingBuildConfirm = { kind: 'vertex', targetId: vertexId, mode };
+            appUI.renderAll();
+          }
+          return;
+        }
+
+        this.executeConfirmedVertexPlacement(actorUid, vertexId, mode);
+      }
+
+      executeConfirmedVertexPlacement(actorUid, vertexId, mode) {
+        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
+          onlineManager.sendActionToHost({ type: 'VERTEX_CLICK', vertexId, mode });
+          this.pendingBuildConfirm = null;
+          this.placementMode = null;
+          appUI.renderAll();
+          return;
+        }
+
+        const st = this.publicState;
+        if (!st || st.activeUid !== actorUid) return;
+        if (!this.getValidVerticesForPlacement(mode, actorUid).includes(vertexId)) return;
+
+        if (mode === 'INITIAL_SETTLEMENT') {
+          this.pendingBuildConfirm = null;
+          this.placeInitialSettlement(actorUid, vertexId);
+        } else if (mode === 'SETTLEMENT') {
+          if (!secretVault.spendResources(actorUid, { wood: 1, brick: 1, sheep: 1, wheat: 1 })) {
+            if (actorUid === this.localUid) appUI.showToast('資源が足りません。', 'warn');
+            return;
+          }
+          st.board.buildings[vertexId] = { ownerUid: actorUid, type: 'settlement' };
+          analytics.statsByUid[actorUid].builtSettlements += 1;
+          analytics.statsByUid[actorUid].totalSpentOnBuild += 4;
+          sound.playWoodThud();
+          this.addLog(`🏠 ${st.players[actorUid].name} が開拓地を建設しました。`);
+          if (actorUid === this.localUid) {
+            this.placementMode = null;
+            this.pendingBuildConfirm = null;
+          }
+          this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'SETTLEMENT', vertexId);
+          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
+        } else if (mode === 'CITY') {
+          if (!secretVault.spendResources(actorUid, { wheat: 2, ore: 3 })) {
+            if (actorUid === this.localUid) appUI.showToast('資源が足りません。', 'warn');
+            return;
+          }
+          st.board.buildings[vertexId] = { ownerUid: actorUid, type: 'city' };
+          analytics.statsByUid[actorUid].builtCities += 1;
+          analytics.statsByUid[actorUid].totalSpentOnBuild += 5;
+          sound.playWoodThud();
+          this.addLog(`🏰 ${st.players[actorUid].name} が都市へ昇格しました！`);
+          if (actorUid === this.localUid) {
+            this.placementMode = null;
+            this.pendingBuildConfirm = null;
+          }
+          this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'CITY', vertexId);
+          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
+        }
+      }
+
+      onEdgeClick(edgeId, actorUid = this.localUid, explicitMode = null) {
+        const st = this.publicState;
+        if (!st || st.status === 'finished' || st.activeUid !== actorUid) return;
+
+        let mode = explicitMode;
+        if (!mode) {
+          if (st.status === 'setup' && st.phase === 'INITIAL_ROAD') {
+            mode = 'INITIAL_ROAD';
+          } else if (st.phase === 'ROAD_BUILDING') {
+            mode = 'ROAD_BUILDING';
+          } else if (actorUid === this.localUid && this.placementMode) {
+            mode = this.placementMode;
+          } else if (st.status === 'playing' && st.phase === 'MAIN') {
+            mode = 'ROAD';
+          }
+        }
+        if (!mode) return;
+        if (!this.getValidEdgesForPlacement(mode, actorUid).includes(edgeId)) return;
+
+        if (actorUid === this.localUid) {
+          const p = this.pendingBuildConfirm;
+          if (p && p.kind === 'edge' && p.targetId === edgeId && p.mode === mode) {
+            this.executeConfirmedEdgePlacement(actorUid, edgeId, mode);
+          } else {
+            this.pendingBuildConfirm = { kind: 'edge', targetId: edgeId, mode };
+            appUI.renderAll();
+          }
+          return;
+        }
+
+        this.executeConfirmedEdgePlacement(actorUid, edgeId, mode);
+      }
+
+      executeConfirmedEdgePlacement(actorUid, edgeId, mode) {
+        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
+          onlineManager.sendActionToHost({ type: 'EDGE_CLICK', edgeId, mode });
+          this.pendingBuildConfirm = null;
+          if (mode !== 'ROAD_BUILDING') this.placementMode = null;
+          appUI.renderAll();
+          return;
+        }
+
+        const st = this.publicState;
+        if (!st || st.activeUid !== actorUid) return;
+        if (!this.getValidEdgesForPlacement(mode, actorUid).includes(edgeId)) return;
+
+        if (mode === 'INITIAL_ROAD') {
+          this.pendingBuildConfirm = null;
+          this.placeInitialRoad(actorUid, edgeId);
+        } else if (mode === 'ROAD') {
+          if (!secretVault.spendResources(actorUid, { wood: 1, brick: 1 })) {
+            if (actorUid === this.localUid) appUI.showToast('資源が足りません。', 'warn');
+            return;
+          }
+          st.board.roads[edgeId] = { ownerUid: actorUid };
+          analytics.statsByUid[actorUid].builtRoads += 1;
+          analytics.statsByUid[actorUid].totalSpentOnBuild += 2;
+          sound.playWoodThud();
+          this.addLog(`🛤️ ${st.players[actorUid].name} が街道を建設しました。`);
+          if (actorUid === this.localUid) {
+            this.placementMode = null;
+            this.pendingBuildConfirm = null;
+          }
+          this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'ROAD', edgeId);
+          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
+        } else if (mode === 'ROAD_BUILDING') {
+          st.board.roads[edgeId] = { ownerUid: actorUid };
+          analytics.statsByUid[actorUid].builtRoads += 1;
+          sound.playWoodThud();
+          st.roadBuildingRemaining = Math.max(0, (st.roadBuildingRemaining || 1) - 1);
+          this.addLog(`🛤️ ${st.players[actorUid].name} が「街道建設」で街道を配置しました。`);
+          this.syncPublicCountsFromVault();
+          analytics.recordBuildAction(actorUid, st, 'ROAD_BUILDING', edgeId);
+
+          if (st.roadBuildingRemaining <= 0 || this.getValidEdgesForPlacement('ROAD_BUILDING', actorUid).length === 0) {
+            st.roadBuildingRemaining = 0;
+            st.phase = (st.dice[0] === null ? 'ROLL' : 'MAIN');
+            if (actorUid === this.localUid) {
+              this.placementMode = null;
+              this.pendingBuildConfirm = null;
+            }
+          } else if (actorUid === this.localUid) {
+            this.pendingBuildConfirm = null;
+          }
+          if (!this.checkVictoryCondition()) this.syncAfterHostAction();
+        }
+      }
+
+      confirmPendingBuild() {
+        const pending = this.pendingBuildConfirm;
+        if (!pending) return;
+        if (pending.kind === 'vertex') {
+          this.executeConfirmedVertexPlacement(this.localUid, pending.targetId, pending.mode);
+        } else if (pending.kind === 'edge') {
+          this.executeConfirmedEdgePlacement(this.localUid, pending.targetId, pending.mode);
+        }
+      }
+
+      cancelPendingBuild() {
+        this.pendingBuildConfirm = null;
+        appUI.renderAll();
+      }
+
+      onHexClick(hexId, actorUid = this.localUid) {
+        if (this.mode === 'online' && !onlineManager.isHost && actorUid === this.localUid) {
+          onlineManager.sendActionToHost({ type: 'HEX_CLICK', hexId });
+          this.placementMode = null;
+          return;
+        }
+        const st = this.publicState;
+        if (!st || st.activeUid !== actorUid || st.phase !== 'ROBBER_MOVE') return;
+        if (hexId === st.board.robberHexId) return;
+        this.moveRobberToHex(actorUid, hexId);
+      }
+
+      getValidVerticesForPlacement(mode, uid) {
+        const st = this.publicState;
+        if (!st) return [];
+        const { vertices, buildings, roads } = st.board;
+
+        if (mode === 'INITIAL_SETTLEMENT') {
+          return Object.values(vertices)
+            .filter(v => !buildings[v.id] && !v.neighborVertexIds.some(nv => buildings[nv]))
+            .map(v => v.id);
+        }
+
+        if (mode === 'SETTLEMENT') {
+          const ownSettlements = Object.values(buildings).filter(b => b.ownerUid === uid && b.type === 'settlement').length;
+          if (ownSettlements >= 5) return [];
+          return Object.values(vertices)
+            .filter(v => {
+              if (buildings[v.id]) return false;
+              if (v.neighborVertexIds.some(nv => buildings[nv])) return false;
+              return v.edgeIds.some(eid => roads[eid]?.ownerUid === uid);
+            })
+            .map(v => v.id);
+        }
+
+        if (mode === 'CITY') {
+          const ownCities = Object.values(buildings).filter(b => b.ownerUid === uid && b.type === 'city').length;
+          if (ownCities >= 4) return [];
+          return Object.entries(buildings)
+            .filter(([, b]) => b.ownerUid === uid && b.type === 'settlement')
+            .map(([vid]) => vid);
+        }
+
+        return [];
+      }
+
+      getValidEdgesForPlacement(mode, uid) {
+        const st = this.publicState;
+        if (!st) return [];
+        const { vertices, edges, buildings, roads } = st.board;
+
+        if (mode === 'INITIAL_ROAD') {
+          const anchorV = st.lastInitialSettlementVertex;
+          if (!anchorV || !vertices[anchorV]) return [];
+          return vertices[anchorV].edgeIds.filter(eid => !roads[eid]);
+        }
+
+        if (mode === 'ROAD' || mode === 'ROAD_BUILDING') {
+          const ownRoads = Object.values(roads).filter(r => r.ownerUid === uid).length;
+          if (ownRoads >= 15) return [];
+          return Object.values(edges)
+            .filter(edge => {
+              if (roads[edge.id]) return false;
+              return [edge.v1, edge.v2].some(vid => {
+                const bld = buildings[vid];
+                if (bld) return bld.ownerUid === uid;
+                const vObj = vertices[vid];
+                return vObj && vObj.edgeIds.some(adjEid => adjEid !== edge.id && roads[adjEid]?.ownerUid === uid);
+              });
+            })
+            .map(e => e.id);
+        }
+
+        return [];
+      }
+
+      getDirectBuildableSpots(uid) {
+        const myPriv = secretVault.getOwnPrivateView(uid);
+        const res = myPriv.resources || {};
+        return {
+          roads: (res.wood >= 1 && res.brick >= 1)
+            ? this.getValidEdgesForPlacement('ROAD', uid)
+            : [],
+          settlements: (res.wood >= 1 && res.brick >= 1 && res.sheep >= 1 && res.wheat >= 1)
+            ? this.getValidVerticesForPlacement('SETTLEMENT', uid)
+            : [],
+          cities: (res.wheat >= 2 && res.ore >= 3)
+            ? this.getValidVerticesForPlacement('CITY', uid)
+            : []
+        };
+      }
+
+      syncPublicCountsFromVault() {
+        const st = this.publicState;
+        if (!st) return;
+        st.deckCount = secretVault.getDeckCount();
+        st.turnOrder.forEach(uid => {
+          const summary = secretVault.getPublicSummaryCounts(uid);
+          if (st.players[uid]) {
+            st.players[uid].resourceCount = summary.resourceCount;
+            st.players[uid].devCardCount = summary.devCardCount;
+          }
+        });
+        this.recalculateAllVictoryPoints();
+      }
+
+      computeLongestRoadForPlayer(uid) {
+        const st = this.publicState;
+        if (!st) return 0;
+        const { vertices, edges, buildings, roads } = st.board;
+        const ownEdgeIds = Object.entries(roads)
+          .filter(([, r]) => r.ownerUid === uid)
+          .map(([eid]) => eid);
+        if (ownEdgeIds.length === 0) return 0;
+
+        let maxLen = 0;
+        const dfs = (currentEdgeId, enteredVertexId, visited) => {
+          if (visited.size > maxLen) maxLen = visited.size;
+          const edge = edges[currentEdgeId];
+          if (!edge) return;
+          const exitVertexId = edge.v1 === enteredVertexId ? edge.v2 : edge.v1;
+          const bld = buildings[exitVertexId];
+          if (bld && bld.ownerUid !== uid) return;
+
+          const vObj = vertices[exitVertexId];
+          if (!vObj) return;
+          vObj.edgeIds.forEach(nextEid => {
+            if (!visited.has(nextEid) && roads[nextEid]?.ownerUid === uid) {
+              visited.add(nextEid);
+              dfs(nextEid, exitVertexId, visited);
+              visited.delete(nextEid);
+            }
+          });
+        };
+
+        ownEdgeIds.forEach(startEid => {
+          const e = edges[startEid];
+          if (!e) return;
+          dfs(startEid, e.v1, new Set([startEid]));
+          dfs(startEid, e.v2, new Set([startEid]));
+        });
+
+        return maxLen;
+      }
+
+      recalculateAllVictoryPoints() {
+        const st = this.publicState;
+        if (!st) return;
+
+        st.turnOrder.forEach(uid => {
+          st.players[uid].longestRoadLength = this.computeLongestRoadForPlayer(uid);
+        });
+
+        // 最長交易路（5本以上）判定
+        let prevRoadHolder = st.longestRoadHolder;
+        if (prevRoadHolder && st.players[prevRoadHolder].longestRoadLength < 5) {
+          prevRoadHolder = null;
+        }
+        let bestRoadLen = prevRoadHolder ? st.players[prevRoadHolder].longestRoadLength : 4;
+        let nextRoadHolder = prevRoadHolder;
+        let tieAtTop = false;
+        st.turnOrder.forEach(uid => {
+          const len = st.players[uid].longestRoadLength;
+          if (len > bestRoadLen) {
+            bestRoadLen = len;
+            nextRoadHolder = uid;
+            tieAtTop = false;
+          } else if (len === bestRoadLen && uid !== nextRoadHolder && !prevRoadHolder) {
+            tieAtTop = true;
+          }
+        });
+        if (!prevRoadHolder && tieAtTop) nextRoadHolder = null;
+        if (nextRoadHolder !== st.longestRoadHolder) {
+          st.longestRoadHolder = nextRoadHolder;
+          if (nextRoadHolder) {
+            this.addLog(`🛤️ ${st.players[nextRoadHolder].name} が【最長交易路 (+2 VP)】を獲得しました！`);
+            analytics.recordMilestone(nextRoadHolder, st.turnNumber, '最長交易路獲得');
+          }
+        }
+
+        // 最大騎士力（3枚以上）判定
+        let prevArmyHolder = st.largestArmyHolder;
+        let bestKnights = prevArmyHolder ? st.players[prevArmyHolder].knightsPlayed : 2;
+        let nextArmyHolder = prevArmyHolder;
+        st.turnOrder.forEach(uid => {
+          const k = st.players[uid].knightsPlayed;
+          if (k > bestKnights) {
+            bestKnights = k;
+            nextArmyHolder = uid;
+          }
+        });
+        if (nextArmyHolder !== st.largestArmyHolder) {
+          st.largestArmyHolder = nextArmyHolder;
+          if (nextArmyHolder) {
+            this.addLog(`⚔️ ${st.players[nextArmyHolder].name} が【最大騎士力 (+2 VP)】を獲得しました！`);
+            analytics.recordMilestone(nextArmyHolder, st.turnNumber, '最大騎士力獲得');
+          }
+        }
+
+        // 各プレイヤーの公開VP合計を更新
+        st.turnOrder.forEach(uid => {
+          let vp = 0;
+          Object.values(st.board.buildings).forEach(b => {
+            if (b.ownerUid === uid) vp += (b.type === 'city' ? 2 : 1);
+          });
+          st.players[uid].hasLongestRoad = (st.longestRoadHolder === uid);
+          st.players[uid].hasLargestArmy = (st.largestArmyHolder === uid);
+          if (st.players[uid].hasLongestRoad) vp += 2;
+          if (st.players[uid].hasLargestArmy) vp += 2;
+          st.players[uid].publicVP = vp;
+        });
+      }
+
+      checkVictoryCondition() {
+        const st = this.publicState;
+        if (!st) return false;
+        if (st.status === 'finished') return true;
+
+        const checkOrder = [st.activeUid, ...st.turnOrder.filter(u => u !== st.activeUid)];
+        const winnerUid = checkOrder.find(uid => {
+          const p = st.players[uid];
+          if (!p) return false;
+          return (p.publicVP + secretVault.getSecretVpCount(uid)) >= 10;
+        });
+
+        if (!winnerUid) return false;
+
+        st.status = 'finished';
+        st.winnerUid = winnerUid;
+        this.placementMode = null;
+        this.pendingBuildConfirm = null;
+
+        const revealed = {};
+        st.turnOrder.forEach(u => {
+          revealed[u] = secretVault.getSecretVpCount(u);
+        });
+        st.revealedSecretVps = revealed;
+
+        sound.playVictory();
+        this.addLog(`👑 ${st.players[winnerUid].name} が10勝利点に到達し、勝利しました！`);
+        this.syncAfterHostAction();
+        appUI.showVictoryModal(winnerUid);
+        return true;
+      }
+
+      syncAfterHostAction() {
+        if (this.mode === 'online' && onlineManager.isHost) {
+          onlineManager.broadcastGameState();
+        }
+        appUI.renderAll();
+      }
+
+      addLog(text) {
+        const st = this.publicState;
+        if (!st) return;
+        st.logs = st.logs || [];
+        st.logs.unshift({
+          id: (st.logs[0]?.id || 0) + 1,
+          text,
+          time: this.nowStr()
+        });
+        if (st.logs.length > 60) st.logs.length = 60;
+      }
+
+      formatResourceDelta(deltaMap) {
+        return RESOURCE_KEYS
+          .filter(k => (deltaMap?.[k] || 0) > 0)
+          .map(k => `${RESOURCES[k].emoji}${RESOURCES[k].label}×${deltaMap[k]}`)
+          .join('・');
+      }
+
+      nowStr() {
+        const d = new Date();
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
     }
 
     const gameController = new CatanGameController();
@@ -3511,6 +3616,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.currentRoomId = null;
         this.isHost = false;
         this.seats = [];
+        this.starterChoice = 'random';
         this.localUid = this.getOrCreateSessionUid();
         this.joinRetryTimer = null;
         this.connectRetryTimer = null;
@@ -3677,13 +3783,14 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.peer.on('open', () => {
           this.isHost = true;
           this.currentRoomId = roomId;
+          this.starterChoice = 'random';
           gameController.roomId = roomId;
           gameController.localUid = this.localUid;
           gameController.remotePlacementModeByUid = {};
           this.seats = [{ uid: this.localUid, name: playerName, isCpu: false, seatIndex: 0 }];
 
           statusPill.textContent = 'ホスト待機中';
-          this.renderWaitingRoom({ roomId, hostUid: this.localUid, seats: this.seats });
+          this.renderWaitingRoom({ roomId, hostUid: this.localUid, seats: this.seats, starterChoice: this.starterChoice });
           appUI.showToast(`部屋 ${roomId} を作成しました！招待URLを友達に共有してください。`, 'success');
         });
 
@@ -3795,16 +3902,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
                   return;
                 }
                 sendJoinHandshake();
-              }, 1000);
+              }, 1200);
             });
 
             conn.on('data', (raw) => {
               if (this.hostConn !== conn) return;
               this.unwrapIncomingPacket(raw, (msg) => this.handleGuestReceiveData(msg));
-            });
-
-            conn.on('error', (err) => {
-              console.warn('Guest DataConnection error:', err);
             });
 
             conn.on('close', () => {
@@ -3813,8 +3916,15 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
                 clearInterval(this.joinRetryTimer);
                 this.joinRetryTimer = null;
               }
-              statusPill.textContent = '切断されました';
-              appUI.showToast('ホストとの接続が切断されました。再度「参加」を押すと復帰できます。', 'warn');
+              if (gameController.publicState) {
+                appUI.showToast('ホストとの通信が切断されました。再接続を試みています...', 'warn');
+              } else {
+                statusPill.textContent = '接続切断';
+              }
+            });
+
+            conn.on('error', (err) => {
+              console.warn('Guest DataConnection error:', err);
             });
           };
 
@@ -3822,27 +3932,30 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
           if (this.connectRetryTimer) clearInterval(this.connectRetryTimer);
           this.connectRetryTimer = setInterval(() => {
-            if (this.hostConn && this.hostConn.open) {
+            if ((this.hostConn && this.hostConn.open) || connectAttempt >= 5) {
               clearInterval(this.connectRetryTimer);
               this.connectRetryTimer = null;
-              return;
-            }
-            if (connectAttempt >= 5) {
-              clearInterval(this.connectRetryTimer);
-              this.connectRetryTimer = null;
-              statusPill.textContent = '接続タイムアウト';
-              appUI.showToast('ホストへ接続できませんでした。部屋IDと通信状況を確認してください。', 'warn');
+              if ((!this.hostConn || !this.hostConn.open) && connectAttempt >= 5) {
+                statusPill.textContent = '接続失敗';
+                appUI.showToast('部屋が見つからないか、ホストに接続できませんでした。部屋IDを確認してください。', 'warn');
+              }
               return;
             }
             openDataConnection();
-          }, 4200);
+          }, 3000);
         });
 
         this.peer.on('error', (err) => {
-          console.warn('Peer join error:', err);
+          console.warn('Peer guest error:', err);
           statusPill.textContent = '接続エラー';
-          appUI.showToast('オンライン接続でエラーが発生しました。もう一度お試しください。', 'warn');
+          appUI.showToast('ホストへの接続に失敗しました。部屋IDを確認してください。', 'warn');
         });
+      }
+
+      setStarterChoice(val) {
+        if (!this.isHost) return;
+        this.starterChoice = val || 'random';
+        this.broadcastWaitingRoom();
       }
 
       broadcastWaitingRoom() {
@@ -3851,7 +3964,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           type: 'ROOM_UPDATE',
           roomId: this.currentRoomId,
           hostUid: this.localUid,
-          seats: this.seats
+          seats: this.seats,
+          starterChoice: this.starterChoice || 'random'
         };
         this.renderWaitingRoom(payload);
         this.guestConns.forEach((conn) => {
@@ -3865,6 +3979,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         const roomIdText = document.getElementById('waitingRoomIdText');
         const seatsList = document.getElementById('waitingSeatsList');
         const startBtn = document.getElementById('btnStartOnlineGame');
+        const starterSelect = document.getElementById('selectOnlineStarter');
+        const guestStarterLabel = document.getElementById('guestOnlineStarterLabel');
 
         if (!joinControls || !waitingRoom) return;
         joinControls.classList.add('hidden');
@@ -3872,28 +3988,71 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (roomIdText) roomIdText.textContent = payload.roomId || this.currentRoomId || '------';
 
         const activeSeats = Array.isArray(payload.seats) ? payload.seats : [];
+        const starterChoice = payload.starterChoice || 'random';
+        const seatPosLabels = ['左上(席1)', '右上(席2)', '右下(席3)', '左下(席4)'];
+        // 四角時計回り視覚順（左上=0, 右上=1, 左下=3, 右下=2 の2x2グリッド配置）
+        const gridDisplayOrder = [0, 1, 3, 2];
+
         if (seatsList) {
           seatsList.innerHTML = '';
-          for (let i = 0; i < 4; i++) {
+          gridDisplayOrder.forEach(i => {
             const seat = activeSeats.find(s => s.seatIndex === i) || activeSeats[i];
             const palette = PLAYER_PALETTES[i];
+            const isChosenStarter = starterChoice !== 'random' && Number(starterChoice) === i;
             const card = document.createElement('div');
-            card.className = 'p-2.5 rounded-xl bg-mahogany-900/90 border border-brass-600/40 flex items-center gap-2';
+            card.className = `p-2.5 rounded-xl bg-mahogany-900/90 border ${isChosenStarter ? 'border-amber-400 ring-1 ring-amber-400/70' : 'border-brass-600/40'} flex items-center justify-between gap-1.5`;
             if (seat) {
               card.innerHTML = `
-                <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${palette.hex}"></span>
-                <div class="min-w-0">
-                  <div class="font-bold text-parchment-100 truncate">${seat.name}</div>
-                  <div class="text-[10px] text-brass-400">${seat.uid === payload.hostUid ? 'ホスト' : '参加者'}</div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${palette.hex}"></span>
+                  <div class="min-w-0">
+                    <div class="font-bold text-parchment-100 truncate">${seat.name}</div>
+                    <div class="text-[10px] text-brass-400">${seatPosLabels[i]} • ${seat.uid === payload.hostUid ? 'ホスト' : '参加者'}</div>
+                  </div>
                 </div>
+                ${isChosenStarter ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/25 border border-amber-400 text-amber-200 text-[9px] font-extrabold flex-shrink-0">1番手</span>' : ''}
               `;
             } else {
               card.innerHTML = `
-                <span class="w-3 h-3 rounded-full flex-shrink-0 bg-mahogany-700 border border-dashed border-brass-600/50"></span>
-                <div class="text-parchment-300/60 italic">空き枠（開始時にCPU補充）</div>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-3 h-3 rounded-full flex-shrink-0 bg-mahogany-700 border border-dashed border-brass-600/50"></span>
+                  <div class="min-w-0">
+                    <div class="text-parchment-300/65 italic truncate">CPU補充枠</div>
+                    <div class="text-[10px] text-brass-400/70">${seatPosLabels[i]}</div>
+                  </div>
+                </div>
+                ${isChosenStarter ? '<span class="px-1.5 py-0.5 rounded bg-amber-500/25 border border-amber-400 text-amber-200 text-[9px] font-extrabold flex-shrink-0">1番手</span>' : ''}
               `;
             }
             seatsList.appendChild(card);
+          });
+        }
+
+        if (starterSelect && guestStarterLabel) {
+          if (this.isHost) {
+            starterSelect.classList.remove('hidden');
+            guestStarterLabel.classList.add('hidden');
+            // 選択肢ラベルを現在の参加者名に更新
+            Array.from(starterSelect.options).forEach(opt => {
+              if (opt.value === 'random') {
+                opt.textContent = 'ランダム抽選';
+              } else {
+                const idx = Number(opt.value);
+                const s = activeSeats.find(x => x.seatIndex === idx) || activeSeats[idx];
+                opt.textContent = `${seatPosLabels[idx]}: ${s ? s.name : 'CPU'} から`;
+              }
+            });
+            starterSelect.value = starterChoice;
+          } else {
+            starterSelect.classList.add('hidden');
+            guestStarterLabel.classList.remove('hidden');
+            if (starterChoice === 'random') {
+              guestStarterLabel.textContent = 'ランダム抽選';
+            } else {
+              const idx = Number(starterChoice);
+              const s = activeSeats.find(x => x.seatIndex === idx) || activeSeats[idx];
+              guestStarterLabel.textContent = `${seatPosLabels[idx]} (${s ? s.name : 'CPU'}) から`;
+            }
           }
         }
 
@@ -4049,11 +4208,14 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           }
         }
 
-        gameController.initializeMatch(playerDefs);
+        const startSeatIndex = (!this.starterChoice || this.starterChoice === 'random')
+          ? Math.floor(Math.random() * 4)
+          : Math.min(3, Math.max(0, parseInt(this.starterChoice, 10) || 0));
+
+        gameController.initializeMatch(playerDefs, startSeatIndex);
         this.cachedBoardGeometry = null;
         this.ackedUids.clear();
         appUI.showGameScreen();
-        sound.playChime();
         this.broadcastGameState();
 
         if (this.startSyncRetryTimer) clearInterval(this.startSyncRetryTimer);
@@ -4271,8 +4433,10 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         this.lastTriggeredStealId = null;
         this.lastTriggeredDrawnDevId = null;
         this.lastTriggeredPlayedDevId = null;
+        this.lastAnnouncedMatchId = null;
         this.lastAnnouncedTurnKey = null;
         this.lastShownDiceSeq = 0;
+        this.matchStartAnim = null;
         this.turnBannerAnim = null;
         this.diceBannerAnim = null;
         this.devCardBannerAnim = null;
@@ -4454,9 +4618,7 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         if (gameController.mode === 'online') {
           onlineManager.leaveRoom();
         }
-        gameController.publicState = null;
-        gameController.placementMode = null;
-        gameController.pendingBuildConfirm = null;
+        this.lastAnnouncedMatchId = null;
         this.lastAnnouncedTurnKey = null;
         this.lastShownDiceSeq = 0;
         this.lastTriggeredDrawnDevId = null;
@@ -4467,6 +4629,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
         }
         this.analyticsUnlockedNotified = false;
         this.updateAnalyticsButtonState(null);
+        const matchStartOverlay = document.getElementById('matchStartOverlay');
+        if (matchStartOverlay) matchStartOverlay.innerHTML = '';
         const cutinOverlay = document.getElementById('turnCutinOverlay');
         if (cutinOverlay) cutinOverlay.innerHTML = '';
         const diceOverlay = document.getElementById('diceCutinOverlay');
@@ -4646,6 +4810,19 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           this.lastTriggeredRollId = gainEv.rollId;
         }
 
+        // 新規対局開始時の「4人四角配置＆火花散る」演出の検知
+        const isNewMatchStart = Boolean(st.matchId && st.matchId !== this.lastAnnouncedMatchId && st.status === 'setup' && st.setupStepIndex === 0);
+        if (isNewMatchStart) {
+          this.lastAnnouncedMatchId = st.matchId;
+          const firstTurnKey = `setup_${st.setupStepIndex}_${st.activeUid}`;
+          this.lastAnnouncedTurnKey = firstTurnKey;
+          this.showMatchStartCutin(st, () => {
+            if (gameController.publicState) {
+              this.showTurnBanner(gameController.publicState);
+            }
+          });
+        }
+
         const triggerDelayedGainVisuals = () => {
           const latestSt = gameController.publicState || st;
           this.activeGainHighlightUntil = Date.now() + 4400;
@@ -4679,8 +4856,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           triggerDelayedGainVisuals();
         }
 
-        // 手番切り替え時の「プレイヤー名の番」カットイン表示判定
-        if ((st.status === 'setup' || st.status === 'playing') && st.activeUid) {
+        // 手番切り替え時の「プレイヤー名の番」カットイン表示判定（対戦開始直後は火花演出の終了後に自動連鎖表示）
+        if (!isNewMatchStart && (st.status === 'setup' || st.status === 'playing') && st.activeUid) {
           const turnKey = st.status === 'setup'
             ? `setup_${st.setupStepIndex}_${st.activeUid}`
             : `play_${st.turnNumber}_${st.activeUid}`;
@@ -4841,12 +5018,12 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
 
         this.turnBannerAnim = cardEl.animate([
           { opacity: 0, transform: 'translateY(10px) scale(0.86)' },
-          { opacity: 1, transform: 'translateY(0) scale(1.03)', offset: 0.14 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.22 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.8 },
+          { opacity: 1, transform: 'translateY(0) scale(1.03)', offset: 0.09 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.15 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.86 },
           { opacity: 0, transform: 'translateY(-8px) scale(0.96)' }
         ], {
-          duration: 1850,
+          duration: 3000,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
@@ -4855,6 +5032,145 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
           overlay.innerHTML = '';
           this.turnBannerAnim = null;
         };
+      }
+
+      showMatchStartCutin(st, onComplete = null) {
+        const overlay = document.getElementById('matchStartOverlay');
+        if (!overlay || !st || !Array.isArray(st.turnOrder)) {
+          if (typeof onComplete === 'function') onComplete();
+          return;
+        }
+
+        if (this.matchStartAnim) {
+          try { this.matchStartAnim.cancel(); } catch (e) {}
+          this.matchStartAnim = null;
+        }
+
+        sound.playMatchStart();
+
+        // 四角レイアウト（左上=clockwiseSeat 0, 右上=clockwiseSeat 1, 左下=clockwiseSeat 3, 右下=clockwiseSeat 2）
+        const playersList = st.turnOrder.map(u => st.players[u]).filter(Boolean);
+        const byCornerSeat = (seatIdx) => playersList.find(p => (p.clockwiseSeat ?? p.seatIndex) === seatIdx) || playersList[seatIdx];
+        const quadSeats = [
+          { seat: 0, cornerLabel: '左上', player: byCornerSeat(0) },
+          { seat: 1, cornerLabel: '右上', player: byCornerSeat(1) },
+          { seat: 3, cornerLabel: '左下', player: byCornerSeat(3) },
+          { seat: 2, cornerLabel: '右下', player: byCornerSeat(2) }
+        ];
+
+        // 火花パーティクルHTMLを生成（中心と四角の4辺から全方向へ飛び散る）
+        let sparksHtml = '';
+        for (let i = 0; i < 36; i++) {
+          const angle = Math.round((360 / 36) * i + (Math.random() * 14 - 7));
+          const dist = Math.round(95 + Math.random() * 145);
+          const dur = (0.65 + Math.random() * 0.55).toFixed(2);
+          const delay = (Math.random() * 0.75).toFixed(2);
+          const originX = 50 + (Math.random() * 44 - 22);
+          const originY = 50 + (Math.random() * 44 - 22);
+          sparksHtml += `<span class="battle-spark" style="left:${originX}%; top:${originY}%; --spark-angle:${angle}deg; --spark-dist:${dist}px; --spark-dur:${dur}s; --spark-delay:${delay}s;"></span>`;
+        }
+
+        const cardsHtml = quadSeats.map(({ player }) => {
+          if (!player) return '';
+          const orderNum = st.turnOrder.indexOf(player.uid) + 1;
+          const isStarter = orderNum === 1;
+          const isMe = player.uid === gameController.localUid;
+          const accent = player.palette?.hex || '#f59e0b';
+
+          return `
+            <div class="relative rounded-2xl p-3 sm:p-4 bg-mahogany-950/95 border-2 transition-all shadow-xl flex flex-col justify-between min-h-[96px] sm:min-h-[112px]"
+                 style="border-color: ${isStarter ? '#fde047' : accent}; box-shadow: 0 8px 24px rgba(0,0,0,0.7), inset 0 0 14px ${accent}44;">
+              <div class="flex items-center justify-between gap-1.5">
+                <span class="px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-extrabold ${
+                  isStarter
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-mahogany-950 shadow'
+                    : 'bg-mahogany-800 border border-brass-500/50 text-parchment-200'
+                }">
+                  ${isStarter ? '🔥 1番手 START' : `${orderNum}番手`}
+                </span>
+                ${isMe ? '<span class="px-1.5 py-0.5 rounded bg-emerald-500/25 border border-emerald-400/60 text-emerald-200 text-[10px] font-extrabold">あなた</span>' : ''}
+              </div>
+              <div class="flex items-center gap-2 mt-2 min-w-0">
+                <span class="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full flex-shrink-0 border-2 border-white/80 shadow" style="background:${accent};"></span>
+                <div class="font-serif font-extrabold text-sm sm:text-lg text-parchment-50 truncate">
+                  ${player.name}
+                </div>
+              </div>
+              <div class="text-[10px] text-brass-400/90 mt-1 flex items-center justify-between">
+                <span>${player.archetypeLabel || '開拓者'}</span>
+                <span>↻ 時計回り</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        overlay.innerHTML = `
+          <div class="arena-spark-box relative w-full max-w-xl rounded-3xl bg-gradient-to-b from-mahogany-900/95 via-mahogany-950/98 to-black/95 border-2 border-amber-400/90 p-4 sm:p-6 overflow-hidden backdrop-blur-md">
+            <!-- 飛び散る火花レイヤー -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+              ${sparksHtml}
+            </div>
+
+            <!-- 上部タイトル -->
+            <div class="relative z-10 text-center mb-3 sm:mb-4">
+              <div class="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/60 text-amber-300 text-[10px] sm:text-xs font-extrabold tracking-widest uppercase">
+                <span>⚔️</span><span>PIONEERS OF THE ISLE • CLOCKWISE ORDER</span><span>⚔️</span>
+              </div>
+              <h2 class="font-serif font-extrabold text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-300 to-orange-300 mt-1 drop-shadow">
+                対戦開始！
+              </h2>
+            </div>
+
+            <!-- 4人四角配置グリッド + 中央スパークエンブレム -->
+            <div class="relative z-10 grid grid-cols-2 gap-3 sm:gap-5">
+              ${cardsHtml}
+
+              <!-- 四角の中央で火花が散るクロスエンブレム -->
+              <div class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-rose-600 border-2 border-yellow-100 shadow-[0_0_26px_rgba(251,191,36,0.95)] flex flex-col items-center justify-center text-mahogany-950">
+                <span class="text-lg sm:text-xl leading-none font-black">⚔️</span>
+                <span class="text-[9px] font-black tracking-tighter mt-0.5">↻ 順</span>
+              </div>
+            </div>
+
+            <!-- 下部進行ガイド -->
+            <div class="relative z-10 mt-3 sm:mt-4 text-center text-xs sm:text-sm font-bold text-amber-200">
+              🔥 <span class="text-white underline decoration-amber-400">${st.players[st.starterUid]?.name || '1番手'}</span> から時計回りに開拓をスタートします！
+            </div>
+          </div>
+        `;
+
+        const boxEl = overlay.firstElementChild;
+        if (!boxEl || typeof boxEl.animate !== 'function') {
+          setTimeout(() => {
+            overlay.innerHTML = '';
+            if (typeof onComplete === 'function') onComplete();
+          }, 4000);
+          return;
+        }
+
+        let finished = false;
+        const finishMatchStart = () => {
+          if (finished) return;
+          finished = true;
+          overlay.innerHTML = '';
+          this.matchStartAnim = null;
+          if (typeof onComplete === 'function') onComplete();
+        };
+
+        this.matchStartAnim = boxEl.animate([
+          { opacity: 0, transform: 'scale(0.84)' },
+          { opacity: 1, transform: 'scale(1.03)', offset: 0.08 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.14 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.88 },
+          { opacity: 0, transform: 'scale(0.95)' }
+        ], {
+          duration: 4000,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        });
+
+        this.matchStartAnim.onfinish = finishMatchStart;
+        setTimeout(finishMatchStart, 4050);
       }
 
       showDiceCutin(st, d1, d2, onComplete = null) {
@@ -5093,18 +5409,22 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
       }
 
       renderCornerPlayerZones(st) {
-        const slotIds = ['cornerSlot0', 'cornerSlot1', 'cornerSlot2', 'cornerSlot3'];
-        slotIds.forEach((slotId, idx) => {
+        // 時計回り座席対応: 0=左上(cornerSlot0), 1=右上(cornerSlot1), 2=右下(cornerSlot3), 3=左下(cornerSlot2)
+        const cwSlotMap = ['cornerSlot0', 'cornerSlot1', 'cornerSlot3', 'cornerSlot2'];
+        const playersList = st.turnOrder.map(u => st.players[u]).filter(Boolean);
+
+        cwSlotMap.forEach((slotId, cwSeatIdx) => {
           const slotEl = document.getElementById(slotId);
           if (!slotEl) return;
-          const uid = st.turnOrder[idx];
-          if (!uid || !st.players[uid]) {
+          const p = playersList.find(pl => (pl.clockwiseSeat ?? pl.seatIndex) === cwSeatIdx) || playersList[cwSeatIdx];
+          if (!p) {
             slotEl.innerHTML = '';
             return;
           }
-          const p = st.players[uid];
+          const uid = p.uid;
           const isTurn = st.activeUid === uid && st.status !== 'finished';
           const isMe = uid === gameController.localUid;
+          const turnOrderNum = st.turnOrder.indexOf(uid) + 1;
           const secretBonusVp = isMe
             ? secretVault.getSecretVpCount(uid)
             : (st.revealedSecretVps?.[uid] || 0);
@@ -5116,7 +5436,8 @@ match /artifacts/{appId}/public/data/pioneers_rooms/{roomId} {
                 ? 'bg-parchment-100/95 text-mahogany-950 border-amber-400 ring-2 ring-amber-400/90'
                 : 'bg-mahogany-950/88 text-parchment-100 border-brass-600/60'
             }">
-              <div class="flex items-center gap-1.5 min-w-0">
+              <div class="flex items-center gap-1 min-w-0">
+                <span class="px-1 rounded bg-brass-600/30 text-[9px] font-mono font-extrabold flex-shrink-0">${turnOrderNum}</span>
                 <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white/70" style="background:${p.palette.hex}"></span>
                 <span class="font-bold text-[11px] sm:text-xs truncate">${p.name}</span>
                 ${isMe ? '<span class="px-1 py-0.2 rounded bg-amber-500/25 border border-amber-500/50 text-[9px] font-extrabold flex-shrink-0">自分</span>' : ''}
