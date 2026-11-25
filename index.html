@@ -298,7 +298,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v5.1
+              v5.2
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -5091,7 +5091,7 @@
             } else if (resp.status === 'counter') {
               statusHtml = `
                 <div class="text-xs font-extrabold text-purple-900">🔄 別条件を逆提案</div>
-                <div class="text-[11px] text-mahogany-900">あなた渡す: ${formatResourceBundle(resp.counterGive)} ⇄ あなた得る: ${formatResourceBundle(resp.counterWant)}</div>
+                <div class="text-xs text-mahogany-900"> ${formatResourceBundle(resp.counterGive)} を渡す ⇄ ${formatResourceBundle(resp.counterWant)} を得る</div>
               `;
               const canAcceptCounter = canAfford(gameController.myHand, resp.counterGive);
               actionBtn = `<button onclick="gameController.acceptTradePartner('${rUid}')" ${canAcceptCounter ? '' : 'disabled'} class="brass-btn px-3 py-1.5 rounded-xl font-extrabold text-xs">🤝 この条件で成立</button>`;
