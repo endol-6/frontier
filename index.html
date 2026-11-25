@@ -1053,7 +1053,7 @@
         </button>
         <button id="victoryTabBtn_tab4" onclick="appUI.switchVictoryTab('tab4')"
           class="py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition text-parchment-200 hover:bg-white/10">
-          🧠 AI分析
+          🤖 AI分析
         </button>
       </div>
 
@@ -1772,7 +1772,7 @@
           </div>
 
           <div class="rounded-2xl bg-amber-900/15 p-3.5 border border-amber-800/35 space-y-2">
-            <div class="font-extrabold text-xs text-amber-950">🧠 AI戦略コーチング診断</div>
+            <div class="font-extrabold text-xs text-amber-950">🤖 AI戦略コーチング診断</div>
             <div class="space-y-1.5 text-xs text-mahogany-950 leading-relaxed">
               ${advices.map(a => `<div>${a}</div>`).join('')}
             </div>
@@ -2542,6 +2542,7 @@
         this.lastShownStealId = null;
         this.lastShownAwardId = null;
         this.lastShownBuildEffectId = null;
+        this.lastShownRobberMoveId = null;
         this.lastShownVictoryId = null;
         this.lastShownDiscardAnimId = null;
 
@@ -2594,6 +2595,7 @@
         this.lastShownStealId = null;
         this.lastShownAwardId = null;
         this.lastShownBuildEffectId = null;
+        this.lastShownRobberMoveId = null;
         this.lastShownVictoryId = null;
         this.lastShownDiscardAnimId = null;
 
@@ -2670,6 +2672,7 @@
           lastStealEvent: null,
           lastAwardEvent: null,
           lastBuildEvent: null,
+          lastRobberMoveEvent: null,
           winnerUid: null,
           revealedSecretVps: {},
           logs: [`🏝️ 開拓決戦が開始されました！（配置: ${MAP_PRESET_LABELS[mapPreset] || 'スタンダード'} / 1番手: ${players[setupSequence[0]].name}）`]
@@ -2874,7 +2877,7 @@
           };
           st.phase = 'INITIAL_ROAD';
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(950);
+          this.pushStateAndRender(2350);
           return;
         }
 
@@ -2908,12 +2911,12 @@
             st.devCardPlayedThisTurn = false;
             this.addLog(`⚔️ 初期配置が完了！本戦を開始します（${st.players[st.currentTurnUid].name} の手番）`);
             this.updateAwardsAndVictory();
-            this.pushStateAndRender(3300);
+            this.pushStateAndRender(4500);
           } else {
             st.currentTurnUid = st.setupSequence[st.setupStepIndex];
             st.phase = 'INITIAL_SETTLEMENT';
             this.updateAwardsAndVictory();
-            this.pushStateAndRender(3300);
+            this.pushStateAndRender(4500);
           }
           return;
         }
@@ -2934,7 +2937,7 @@
             playerColor: p.palette.hex
           };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender();
+          this.pushStateAndRender(2250);
           return;
         }
 
@@ -2955,7 +2958,7 @@
             playerColor: p.palette.hex
           };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(1250);
+          this.pushStateAndRender(2350);
           return;
         }
 
@@ -2976,7 +2979,7 @@
             playerColor: p.palette.hex
           };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(1350);
+          this.pushStateAndRender(2400);
           return;
         }
 
@@ -2999,14 +3002,21 @@
             playerColor: p.palette.hex
           };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(1350);
+          this.pushStateAndRender(2400);
           return;
         }
 
         if (mode === 'ROBBER' && st.phase === 'ROBBER_MOVE') {
           if (targetId === st.board.robberHexId) return;
+          const prevRobberHexId = st.board.robberHexId;
           st.board.robberHexId = targetId;
           const hex = st.board.hexes.find(h => h.id === targetId);
+          st.lastRobberMoveEvent = {
+            id: `robmove_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            fromHexId: prevRobberHexId,
+            toHexId: targetId,
+            moverName: p.name
+          };
           this.addLog(`🦹 ${p.name} が盗賊を移動させました。`);
 
           // 隣接する他プレイヤーで手札を1枚以上持つ対象を抽出
@@ -3027,14 +3037,23 @@
 
           if (victims.length === 0) {
             st.phase = st.hasRolledThisTurn ? 'MAIN_ACTIONS' : 'ROLL_DICE';
-            this.pushStateAndRender(1100);
+            this.pushStateAndRender(2200);
           } else if (p.isCpu) {
             const chosen = victims.sort((a, b) => st.players[b.uid].publicVP - st.players[a.uid].publicVP)[0];
-            this.executeStealFrom(uid, chosen.uid);
+            this.pushStateAndRender(2600);
+            setTimeout(() => {
+              if (this.publicState && this.publicState.status !== 'finished') {
+                this.executeStealFrom(uid, chosen.uid);
+              }
+            }, 1650);
           } else {
             st.pendingStealTargets = { thiefUid: uid, victims };
             if (uid === this.localUid) {
-              appUI.openStealTargetModal(victims);
+              setTimeout(() => {
+                if (this.publicState?.pendingStealTargets?.thiefUid === this.localUid) {
+                  appUI.openStealTargetModal(victims);
+                }
+              }, 1550);
             }
             this.pushStateAndRender();
           }
@@ -3131,10 +3150,10 @@
 
           if (Object.keys(st.pendingDiscards).length > 0) {
             st.phase = 'DISCARD_WAIT';
-            this.pushStateAndRender(1800);
+            this.pushStateAndRender(4400);
           } else {
             st.phase = 'ROBBER_MOVE';
-            this.pushStateAndRender(2650);
+            this.pushStateAndRender(4500);
           }
           return;
         }
@@ -3198,12 +3217,12 @@
             hexDeliveries
           };
           st.phase = 'MAIN_ACTIONS';
-          // サイコロカットイン(1.25s) + タイル明滅(1.15s) + スムーズ飛行(1.45s) に合わせたテンポの良い待機
-          this.pushStateAndRender(3950);
+          // サイコロ回転＆静止＆フェードアウト(2.05s) + タイル明滅(1.15s) + タイル上静止＆飛行(2.45s)
+          this.pushStateAndRender(5650);
         } else {
           this.addLog(`🎲 ${roller.name} が【 ${sum} 】を出しました（産出なし）。`);
           st.phase = 'MAIN_ACTIONS';
-          this.pushStateAndRender(1550);
+          this.pushStateAndRender(2550);
         }
       }
 
@@ -4316,7 +4335,16 @@
           this.showMatchStartCutin(st);
         }
 
-        // 2. 手番切り替えカットイン (3.0s)
+        // 1B. 街道・開拓地・都市の完成時盤面発光＆全員通知
+        let buildEffectTriggered = false;
+        const buildEv = st.lastBuildEvent;
+        if (buildEv && buildEv.id !== gameController.lastShownBuildEffectId) {
+          gameController.lastShownBuildEffectId = buildEv.id;
+          buildEffectTriggered = true;
+          this.triggerBuildCompletionEffect(buildEv);
+        }
+
+        // 2. 手番切り替えカットイン（建設演出と同時発生時は建設発光完了後に表示）
         const turnKey = `${st.matchId}_${st.status}_${st.setupStepIndex}_${st.turnNumber}_${st.currentTurnUid}`;
         if (turnKey !== gameController.lastShownTurnKey) {
           gameController.lastShownTurnKey = turnKey;
@@ -4324,6 +4352,8 @@
           if (p) {
             if (matchStartTriggered) {
               setTimeout(() => this.showTurnBanner(p), 3950);
+            } else if (buildEffectTriggered) {
+              setTimeout(() => this.showTurnBanner(p), 2150);
             } else {
               this.showTurnBanner(p);
             }
@@ -4332,14 +4362,21 @@
 
         // 3. サイコロ出目カットイン → 完了後に資源産出3段階演出または7盗賊カットイン
         const diceEv = st.lastDiceEvent;
+        let diceSevenTriggered = false;
         if (diceEv && diceEv.id !== gameController.lastShownDiceId) {
           gameController.lastShownDiceId = diceEv.id;
           const gainSnapshot = st.lastDiceGainEvent ? JSON.parse(JSON.stringify(st.lastDiceGainEvent)) : null;
           const isSeven = diceEv.sum === 7;
+          if (isSeven) diceSevenTriggered = true;
 
           this.showDiceCutin(diceEv, () => {
             if (isSeven) {
-              this.showRobber7Cutin(diceEv.rollerName);
+              this.showRobber7Cutin(diceEv.rollerName, () => {
+                const curSt = gameController.publicState;
+                if (curSt?.phase === 'DISCARD_WAIT' && curSt.pendingDiscards?.[gameController.localUid] > 0 && !this.activeXrayModalId) {
+                  this.openDiscardModal(curSt.pendingDiscards[gameController.localUid]);
+                }
+              });
             } else if (gainSnapshot && gainSnapshot.hexDeliveries && gainSnapshot.hexDeliveries.length > 0) {
               this.runResourceProductionSequence(gainSnapshot);
             }
@@ -4353,6 +4390,13 @@
           gameController.lastShownDevCutinId = devEv.id;
           devCardTriggered = true;
           this.showDevCardCutin('use', devEv.playerName, devEv.cardType, devEv.playerColor);
+        }
+
+        // 4B. 盗賊のゆっくり移動アニメーション
+        const robMoveEv = st.lastRobberMoveEvent;
+        if (robMoveEv && robMoveEv.id !== gameController.lastShownRobberMoveId) {
+          gameController.lastShownRobberMoveId = robMoveEv.id;
+          this.animateRobberMove(robMoveEv);
         }
 
         // 5. 他プレイヤー同士の盗賊強奪アニメーション（第三者視認用）
@@ -4379,19 +4423,16 @@
           }
         }
 
-        // 6B. 街道・開拓地・都市の完成時盤面発光＆全員通知
-        const buildEv = st.lastBuildEvent;
-        if (buildEv && buildEv.id !== gameController.lastShownBuildEffectId) {
-          gameController.lastShownBuildEffectId = buildEv.id;
-          this.triggerBuildCompletionEffect(buildEv);
-        }
-
         // 7. 交渉モーダル自動制御
         this.syncTradeModals();
 
-        // 8. 7バースト破棄モーダル自動制御
-        if (st.phase === 'DISCARD_WAIT' && st.pendingDiscards?.[gameController.localUid] > 0 && !this.activeXrayModalId) {
-          this.openDiscardModal(st.pendingDiscards[gameController.localUid]);
+        // 8. 7バースト破棄モーダル自動制御（7直後はサイコロ→襲来カットイン終了後に開く）
+        if (!diceSevenTriggered && st.phase === 'DISCARD_WAIT' && st.pendingDiscards?.[gameController.localUid] > 0 && !this.activeXrayModalId) {
+          const diceOverlay = document.getElementById('diceCutinOverlay');
+          const isCutinActive = diceOverlay && diceOverlay.innerHTML.trim() !== '';
+          if (!isCutinActive) {
+            this.openDiscardModal(st.pendingDiscards[gameController.localUid]);
+          }
         }
 
         // 8A. 手札バースト時に資源が島へ捨てられるアニメーション演出
@@ -4399,7 +4440,7 @@
         if (discAnimEv && discAnimEv.id !== gameController.lastShownDiscardAnimId) {
           gameController.lastShownDiscardAnimId = discAnimEv.id;
           const entriesSnapshot = JSON.parse(JSON.stringify(discAnimEv.entries || []));
-          const delayMs = discAnimEv.fromDice7 ? 2650 : 120;
+          const delayMs = discAnimEv.fromDice7 ? 4150 : 120;
           setTimeout(() => this.animateDiscardToIsland(entriesSnapshot), delayMs);
         }
 
@@ -4407,16 +4448,20 @@
         if (st.pendingStealTargets && st.pendingStealTargets.thiefUid === gameController.localUid) {
           const stealModal = document.getElementById('stealTargetModal');
           if (stealModal && stealModal.classList.contains('hidden')) {
-            this.openStealTargetModal(st.pendingStealTargets.victims);
+            setTimeout(() => {
+              if (gameController.publicState?.pendingStealTargets?.thiefUid === gameController.localUid) {
+                this.openStealTargetModal(gameController.publicState.pendingStealTargets.victims);
+              }
+            }, 1550);
           }
         }
 
-        // 9. 10VP勝利リザルトモーダル（特別賞カットイン完了後に表示して被りを防止）
+        // 9. 10VP勝利リザルトモーダル（特別賞カットイン・建築演出完了後に表示して被りを防止）
         if (st.status === 'finished' && st.winnerUid && st.matchId !== gameController.lastShownVictoryId) {
           gameController.lastShownVictoryId = st.matchId;
           const victoryDelay = awardTriggered
             ? (awardDelay + 3550)
-            : (devCardTriggered ? 3150 : 650);
+            : (devCardTriggered ? 3150 : (buildEffectTriggered ? 2250 : 650));
           setTimeout(() => this.showVictoryModal(st.winnerUid, 'tab1'), victoryDelay);
         }
       }
@@ -4551,31 +4596,61 @@
         }
 
         const isSeven = diceEv.sum === 7;
-        const durationMs = isSeven ? 550 : 1250;
+        const rollPhaseMs = 600;
+        const durationMs = 2050;
 
         overlay.innerHTML = `
           <div class="rounded-3xl bg-mahogany-950/95 border-[3px] border-amber-400 px-6 py-5 sm:px-8 sm:py-6 text-center shadow-[0_20px_54px_rgba(0,0,0,0.9)] backdrop-blur-md">
             <div class="text-xs font-extrabold text-amber-300 mb-2">🎲 ${diceEv.rollerName} のダイスロール</div>
             <div class="flex items-center justify-center gap-3 my-2">
-              <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg">
-                ${this.buildDicePipsHtml(diceEv.d1)}
+              <div id="cutinDie1" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg animate-dice">
+                ${this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1)}
               </div>
               <span class="text-2xl font-black text-amber-300">＋</span>
-              <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg">
-                ${this.buildDicePipsHtml(diceEv.d2)}
+              <div id="cutinDie2" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg animate-dice">
+                ${this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1)}
               </div>
             </div>
-            <div class="mt-2 font-serif font-black text-3xl sm:text-4xl ${isSeven ? 'text-red-400' : 'text-amber-300'}">
-              合計 【 ${diceEv.sum} 】
+            <div id="cutinDiceSumLabel" class="mt-2 font-serif font-black text-2xl sm:text-3xl text-amber-200/85">
+              ダイス回転中...
             </div>
           </div>
         `;
+
+        // 最初の600msは出目をシャッフル表示し、その後確定した目でピタッと静止
+        const shuffleTimer = setInterval(() => {
+          const d1El = document.getElementById('cutinDie1');
+          const d2El = document.getElementById('cutinDie2');
+          if (d1El) d1El.innerHTML = this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1);
+          if (d2El) d2El.innerHTML = this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1);
+        }, 75);
+
+        const settleTimer = setTimeout(() => {
+          clearInterval(shuffleTimer);
+          const d1El = document.getElementById('cutinDie1');
+          const d2El = document.getElementById('cutinDie2');
+          const sumEl = document.getElementById('cutinDiceSumLabel');
+          if (d1El) {
+            d1El.classList.remove('animate-dice');
+            d1El.innerHTML = this.buildDicePipsHtml(diceEv.d1);
+          }
+          if (d2El) {
+            d2El.classList.remove('animate-dice');
+            d2El.innerHTML = this.buildDicePipsHtml(diceEv.d2);
+          }
+          if (sumEl) {
+            sumEl.className = `mt-2 font-serif font-black text-3xl sm:text-4xl ${isSeven ? 'text-red-400' : 'text-amber-300'}`;
+            sumEl.textContent = `合計 【 ${diceEv.sum} 】`;
+          }
+        }, rollPhaseMs);
 
         const cardEl = overlay.firstElementChild;
         let done = false;
         const finish = () => {
           if (done) return;
           done = true;
+          clearInterval(shuffleTimer);
+          clearTimeout(settleTimer);
           overlay.innerHTML = '';
           if (onComplete) onComplete();
         };
@@ -4586,23 +4661,26 @@
         }
 
         this.diceCutinAnim = cardEl.animate([
-          { opacity: 0, transform: 'scale(0.8)' },
-          { opacity: 1, transform: 'scale(1.05)', offset: 0.16 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.25 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.82 },
-          { opacity: 0, transform: 'scale(0.92)' }
+          { opacity: 0, transform: 'scale(0.84)' },
+          { opacity: 1, transform: 'scale(1.03)', offset: 0.1 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.28 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.8 },
+          { opacity: 0, transform: 'scale(0.94)' }
         ], {
           duration: durationMs,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
         this.diceCutinAnim.onfinish = finish;
-        setTimeout(finish, durationMs + 50);
+        setTimeout(finish, durationMs + 60);
       }
 
-      showRobber7Cutin(rollerName) {
+      showRobber7Cutin(rollerName, onComplete) {
         const overlay = document.getElementById('diceCutinOverlay');
-        if (!overlay) return;
+        if (!overlay) {
+          if (onComplete) onComplete();
+          return;
+        }
 
         overlay.innerHTML = `
           <div class="w-full max-w-md rounded-3xl border-[3px] border-red-500 px-6 py-6 text-center shadow-[0_24px_60px_rgba(220,38,38,0.65)] backdrop-blur-md"
@@ -4635,9 +4713,10 @@
           if (done) return;
           done = true;
           overlay.innerHTML = '';
+          if (onComplete) onComplete();
         };
         if (!cardEl || typeof cardEl.animate !== 'function') {
-          setTimeout(finish, 3000);
+          setTimeout(finish, 2100);
           return;
         }
         cardEl.animate([
@@ -4647,14 +4726,14 @@
           { opacity: 1, transform: 'scale(1)', offset: 0.82 },
           { opacity: 0, transform: 'scale(0.94)' }
         ], {
-          duration: 2050,
+          duration: 2100,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         }).onfinish = finish;
-        setTimeout(finish, 2100);
+        setTimeout(finish, 2150);
       }
 
-      /* 3段階資源獲得演出: ①タイル素早く2回明滅(1.15s) → ②カード出現＆プレイヤーゾーンへ滑らか飛行(1.45s) */
+      /* 3段階資源獲得演出: ①タイル素早く2回明滅(1.15s) → ②カード出現＆タイル上で1秒静止＆プレイヤーゾーンへ滑らか飛行(2.45s) */
       runResourceProductionSequence(gainSnapshot) {
         const st = gameController.publicState;
         if (!st) return;
@@ -4694,7 +4773,7 @@
         }, 1150);
       }
 
-      /* 街道・開拓地・都市完成時の盤面発光エフェクト＆全員通知バナー */
+      /* 街道・開拓地・都市完成時の建物・街道シルエット発光エフェクト */
       triggerBuildCompletionEffect(buildEv) {
         const st = gameController.publicState;
         const fxLayer = document.getElementById('layerBuildEffects');
@@ -4720,10 +4799,26 @@
             const my = (a.y + b.y) / 2;
             fxLayer.innerHTML = `
               <g class="build-flash-road">
-                <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#fef08a" stroke-width="15" stroke-linecap="round"/>
-                <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${colorHex}" stroke-width="9" stroke-linecap="round"/>
-                <g transform="translate(${mx}, ${my - 16})">
-                  <rect x="-36" y="-11" width="72" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.5"/>
+                <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#fef08a" stroke-width="16" stroke-linecap="round"/>
+                <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${colorHex}" stroke-width="10" stroke-linecap="round"/>
+                <g transform="translate(${mx}, ${my - 17})">
+                  <rect x="-38" y="-11" width="76" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.6"/>
+                  <text x="0" y="1" text-anchor="middle" fill="#fef08a" font-size="9.5" font-weight="900">${labelText}</text>
+                </g>
+              </g>
+            `;
+          }
+        } else if (buildEv.buildType === 'city') {
+          const v = vById[buildEv.targetId];
+          if (v) {
+            fxLayer.innerHTML = `
+              <g transform="translate(${v.x}, ${v.y})" class="build-flash-spot">
+                <!-- 都市シルエット自体を大きく黄金発光 -->
+                <path d="M-15 13 V-4 L-4 -14 L7 -4 V3 H15 V13 Z" fill="#fef08a" stroke="#fde047" stroke-width="3.5" stroke-linejoin="round" opacity="0.85"/>
+                <path d="M-12 10 V-3 L-3 -11 L6 -3 V2 H12 V10 Z" fill="${colorHex}" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round"/>
+                <circle cx="-3" cy="-2" r="2.4" fill="#fef08a"/>
+                <g transform="translate(0, -25)">
+                  <rect x="-40" y="-11" width="80" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.6"/>
                   <text x="0" y="1" text-anchor="middle" fill="#fef08a" font-size="9.5" font-weight="900">${labelText}</text>
                 </g>
               </g>
@@ -4734,10 +4829,11 @@
           if (v) {
             fxLayer.innerHTML = `
               <g transform="translate(${v.x}, ${v.y})" class="build-flash-spot">
-                <circle cx="0" cy="0" r="22" fill="rgba(253, 224, 71, 0.35)" stroke="#fef08a" stroke-width="3"/>
-                <circle cx="0" cy="0" r="14" fill="none" stroke="${colorHex}" stroke-width="3.5"/>
+                <!-- 開拓地（家）シルエット自体を大きく黄金発光 -->
+                <polygon points="0,-15 13,-3 13,12 -13,12 -13,-3" fill="#fef08a" stroke="#fde047" stroke-width="3.5" stroke-linejoin="round" opacity="0.85"/>
+                <polygon points="0,-11 10,-2 10,9 -10,9 -10,-2" fill="${colorHex}" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round"/>
                 <g transform="translate(0, -24)">
-                  <rect x="-40" y="-11" width="80" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.5"/>
+                  <rect x="-42" y="-11" width="84" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.6"/>
                   <text x="0" y="1" text-anchor="middle" fill="#fef08a" font-size="9.5" font-weight="900">${labelText}</text>
                 </g>
               </g>
@@ -4745,20 +4841,65 @@
           }
         }
 
-        // 画面上部バナーにも建築通知を表示
-        const banner = document.getElementById('diceGainBanner');
-        const content = document.getElementById('diceGainBannerContent');
-        if (banner && content && !st.lastDiscardSummaryEvent) {
-          content.textContent = `${labelText}！ ${buildEv.playerName} が新たな拠点を築きました`;
-          banner.classList.remove('hidden');
+        setTimeout(() => {
+          if (fxLayer) fxLayer.innerHTML = '';
+        }, 2250);
+      }
+
+      /* 盗賊移動時のゆっくり移動軌跡＆到着強調アニメーション */
+      animateRobberMove(robMoveEv) {
+        const st = gameController.publicState;
+        const fxLayer = document.getElementById('layerBuildEffects');
+        if (!st || !fxLayer || !robMoveEv) return;
+
+        const fromHex = st.board.hexes.find(h => h.id === robMoveEv.fromHexId);
+        const toHex = st.board.hexes.find(h => h.id === robMoveEv.toHexId);
+        if (!toHex) return;
+
+        const startX = fromHex ? fromHex.cx : toHex.cx;
+        const startY = fromHex ? fromHex.cy : toHex.cy - 40;
+        const endX = toHex.cx;
+        const endY = toHex.cy;
+
+        fxLayer.innerHTML = `
+          <g>
+            <!-- 移動軌跡の赤い破線ライン -->
+            <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}"
+                  stroke="#ef4444" stroke-width="4" stroke-dasharray="7 5" stroke-linecap="round" opacity="0.85"/>
+            <!-- 到着タイルの赤い警告パルス枠 -->
+            <polygon points="${this.getHexPolygonPoints(endX, endY, toHex.radius - 2)}"
+                     fill="rgba(239, 68, 68, 0.34)" stroke="#f87171" stroke-width="4" class="hex-blink-overlay"/>
+            <!-- 移動する盗賊マーカー -->
+            <g id="movingRobberFx" transform="translate(${startX}, ${startY})">
+              <circle cx="0" cy="0" r="22" fill="rgba(220, 38, 38, 0.35)" stroke="#fef08a" stroke-width="2.5"/>
+              <path d="M-10 14 C-10 0, 10 0, 10 14 Z" fill="#991b1b" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="0" cy="-4" r="8" fill="#111827" stroke="#fef08a" stroke-width="2"/>
+              <circle cx="-3" cy="-5" r="1.5" fill="#fde047"/>
+              <circle cx="3" cy="-5" r="1.5" fill="#fde047"/>
+              <g transform="translate(0, -24)">
+                <rect x="-38" y="-10" width="76" height="17" rx="8.5" fill="#450a0a" stroke="#f87171" stroke-width="1.5"/>
+                <text x="0" y="1.5" text-anchor="middle" fill="#fecaca" font-size="9.5" font-weight="900">🦹 盗賊移動</text>
+              </g>
+            </g>
+          </g>
+        `;
+
+        const moverEl = document.getElementById('movingRobberFx');
+        if (moverEl && typeof moverEl.animate === 'function') {
+          moverEl.animate([
+            { transform: `translate(${startX}px, ${startY}px) scale(1.15)` },
+            { transform: `translate(${endX}px, ${endY}px) scale(1.22)`, offset: 0.78 },
+            { transform: `translate(${endX}px, ${endY}px) scale(1.0)` }
+          ], {
+            duration: 1550,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards'
+          });
         }
 
         setTimeout(() => {
           if (fxLayer) fxLayer.innerHTML = '';
-          if (banner && !gameController.publicState?.lastDiscardSummaryEvent) {
-            banner.classList.add('hidden');
-          }
-        }, 2350);
+        }, 1850);
       }
 
       getResourceCardIllustrationSvg(resKey) {
@@ -4880,12 +5021,12 @@
 
         const anim = cardEl.animate([
           { opacity: 0, transform: 'translate(-50%, -42%) scale(0.75)' },
-          { opacity: 1, transform: 'translate(-50%, -66%) scale(1.1)', offset: 0.16 },
-          { opacity: 1, transform: 'translate(-50%, -66%) scale(1.04)', offset: 0.32 },
-          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - 22}px)) scale(0.96)`, offset: 0.72 },
+          { opacity: 1, transform: 'translate(-50%, -68%) scale(1.12)', offset: 0.08 },
+          { opacity: 1, transform: 'translate(-50%, -68%) scale(1.08)', offset: 0.52 },
+          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.96)`, offset: 0.78 },
           { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
         ], {
-          duration: 1450,
+          duration: 2450,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
@@ -5569,14 +5710,8 @@
         const isMyTurn = st.currentTurnUid === gameController.localUid;
         const currPlayer = st.players[st.currentTurnUid];
 
-        if (st.lastDiscardSummaryEvent) {
-          const banner = document.getElementById('diceGainBanner');
-          const content = document.getElementById('diceGainBannerContent');
-          content.textContent = st.lastDiscardSummaryEvent.summaryText;
-          banner.classList.remove('hidden');
-        } else {
-          document.getElementById('diceGainBanner').classList.add('hidden');
-        }
+        // マップ上部の常駐バナーは常に非表示にして視界を妨げない
+        document.getElementById('diceGainBanner').classList.add('hidden');
 
         const btnAi = document.getElementById('btnOpenAnalytics');
         const lockBadge = document.getElementById('analyticsLockBadge');
@@ -5777,14 +5912,24 @@
           `;
         }).join('');
 
-        // 5. 盗賊駒レイヤー
+        // 5. 盗賊駒レイヤー（高視認性レッド＆ゴールドデザイン）
         const layerRobber = document.getElementById('layerRobber');
         const rHex = board.hexes.find(h => h.id === board.robberHexId);
         layerRobber.innerHTML = rHex ? `
-          <g transform="translate(${rHex.cx + 18}, ${rHex.cy - 2})" filter="url(#pieceShadow)">
-            <ellipse cx="0" cy="12" rx="9" ry="4" fill="rgba(0,0,0,0.5)"/>
-            <path d="M-7 11 C-7 1, 7 1, 7 11 Z" fill="#1e293b" stroke="#f87171" stroke-width="1.6"/>
-            <circle cx="0" cy="-3" r="6" fill="#0f172a" stroke="#f87171" stroke-width="1.6"/>
+          <g transform="translate(${rHex.cx + 15}, ${rHex.cy - 2})" filter="url(#pieceShadow)">
+            <!-- 赤い警告オーラリング -->
+            <circle cx="0" cy="3" r="16" fill="rgba(220, 38, 38, 0.28)" stroke="#f87171" stroke-width="1.8" stroke-dasharray="4 2"/>
+            <ellipse cx="0" cy="14" rx="11" ry="4.5" fill="rgba(0,0,0,0.65)"/>
+            <!-- 盗賊のマントとフード -->
+            <path d="M-9.5 13 C-9.5 0, 9.5 0, 9.5 13 Z" fill="#991b1b" stroke="#ffffff" stroke-width="2"/>
+            <path d="M-5.5 13 C-5.5 3, 5.5 3, 5.5 13 Z" fill="#1e293b"/>
+            <circle cx="0" cy="-4.5" r="7.5" fill="#111827" stroke="#fef08a" stroke-width="2"/>
+            <!-- 光る目 -->
+            <circle cx="-2.6" cy="-5" r="1.4" fill="#fde047"/>
+            <circle cx="2.6" cy="-5" r="1.4" fill="#fde047"/>
+            <!-- 盗賊ラベルバッジ -->
+            <rect x="-14" y="13" width="28" height="10" rx="5" fill="#7f1d1d" stroke="#fef08a" stroke-width="1.1"/>
+            <text x="0" y="20.2" text-anchor="middle" fill="#fef08a" font-size="7.2" font-weight="900">盗賊</text>
           </g>
         ` : '';
 
