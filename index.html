@@ -409,7 +409,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v5.4
+              v5.8
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -2911,12 +2911,12 @@
             st.devCardPlayedThisTurn = false;
             this.addLog(`⚔️ 初期配置が完了！本戦を開始します（${st.players[st.currentTurnUid].name} の手番）`);
             this.updateAwardsAndVictory();
-            this.pushStateAndRender(4500);
+            this.pushStateAndRender(2400);
           } else {
             st.currentTurnUid = st.setupSequence[st.setupStepIndex];
             st.phase = 'INITIAL_SETTLEMENT';
             this.updateAwardsAndVictory();
-            this.pushStateAndRender(4500);
+            this.pushStateAndRender(2400);
           }
           return;
         }
@@ -3150,10 +3150,10 @@
 
           if (Object.keys(st.pendingDiscards).length > 0) {
             st.phase = 'DISCARD_WAIT';
-            this.pushStateAndRender(4400);
+            this.pushStateAndRender(5200);
           } else {
             st.phase = 'ROBBER_MOVE';
-            this.pushStateAndRender(4500);
+            this.pushStateAndRender(5300);
           }
           return;
         }
@@ -3217,12 +3217,12 @@
             hexDeliveries
           };
           st.phase = 'MAIN_ACTIONS';
-          // サイコロ回転＆静止＆フェードアウト(2.05s) + タイル明滅(1.15s) + タイル上静止＆飛行(2.45s)
-          this.pushStateAndRender(5650);
+          // サイコロ1回転減速着地＆1.6秒静止＆フェードアウト(3.3s) + タイル明滅(1.15s) + 複数枚カード静止＆連続飛行(2.05s)
+          this.pushStateAndRender(6500);
         } else {
           this.addLog(`🎲 ${roller.name} が【 ${sum} 】を出しました（産出なし）。`);
           st.phase = 'MAIN_ACTIONS';
-          this.pushStateAndRender(2550);
+          this.pushStateAndRender(3750);
         }
       }
 
@@ -3731,7 +3731,7 @@
         st.currentTurnUid = st.turnOrder[nextIdx];
         if (nextIdx === 0) st.turnNumber += 1;
 
-        this.pushStateAndRender(3200);
+        this.pushStateAndRender(2200);
       }
 
       updateAwardsAndVictory() {
@@ -4153,6 +4153,7 @@
         this.matchStartAnim = null;
         this.turnBannerAnim = null;
         this.diceCutinAnim = null;
+        this.diceTimers = [];
         this.specialAwardAnim = null;
         this.activeVictoryTab = 'tab1';
 
@@ -4440,7 +4441,7 @@
         if (discAnimEv && discAnimEv.id !== gameController.lastShownDiscardAnimId) {
           gameController.lastShownDiscardAnimId = discAnimEv.id;
           const entriesSnapshot = JSON.parse(JSON.stringify(discAnimEv.entries || []));
-          const delayMs = discAnimEv.fromDice7 ? 4150 : 120;
+          const delayMs = discAnimEv.fromDice7 ? 4550 : 120;
           setTimeout(() => this.animateDiscardToIsland(entriesSnapshot), delayMs);
         }
 
@@ -4575,17 +4576,28 @@
         };
         this.turnBannerAnim = cardEl.animate([
           { opacity: 0, transform: 'translateY(14px) scale(0.88)' },
-          { opacity: 1, transform: 'translateY(0) scale(1.03)', offset: 0.12 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.2 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.85 },
+          { opacity: 1, transform: 'translateY(0) scale(1.03)', offset: 0.14 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.24 },
+          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.82 },
           { opacity: 0, transform: 'translateY(-10px) scale(0.95)' }
         ], {
-          duration: 3000,
+          duration: 2000,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
         this.turnBannerAnim.onfinish = cleanup;
-        setTimeout(cleanup, 3050);
+        setTimeout(cleanup, 2050);
+      }
+
+      clearDiceCutinTimers() {
+        if (this.diceTimers && this.diceTimers.length > 0) {
+          this.diceTimers.forEach(id => clearTimeout(id));
+          this.diceTimers = [];
+        }
+        if (this.diceCutinAnim) {
+          try { this.diceCutinAnim.cancel(); } catch (e) {}
+          this.diceCutinAnim = null;
+        }
       }
 
       showDiceCutin(diceEv, onComplete) {
@@ -4595,20 +4607,34 @@
           return;
         }
 
+        // 前回のサイコロ演出タイマー・アニメーションが残っていれば確実に破棄して重複ループを防ぐ
+        this.clearDiceCutinTimers();
+
         const isSeven = diceEv.sum === 7;
-        const rollPhaseMs = 600;
-        const durationMs = 2050;
+        // 0〜1200ms: 減速回転＆着地 → 1200〜2500ms: 確定出目で1.3秒完全静止 → 2500〜2850ms: フェードアウト（計2850ms）
+        const rollPhaseMs = 1200;
+        const durationMs = 2850;
+        let done = false;
+
+        const pickDifferentFace = (prev) => {
+          let n = Math.floor(Math.random() * 6) + 1;
+          if (n === prev) n = (n % 6) + 1;
+          return n;
+        };
+
+        let curFace1 = pickDifferentFace(diceEv.d1);
+        let curFace2 = pickDifferentFace(diceEv.d2);
 
         overlay.innerHTML = `
           <div class="rounded-3xl bg-mahogany-950/95 border-[3px] border-amber-400 px-6 py-5 sm:px-8 sm:py-6 text-center shadow-[0_20px_54px_rgba(0,0,0,0.9)] backdrop-blur-md">
             <div class="text-xs font-extrabold text-amber-300 mb-2">🎲 ${diceEv.rollerName} のダイスロール</div>
-            <div class="flex items-center justify-center gap-3 my-2">
-              <div id="cutinDie1" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg animate-dice">
-                ${this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1)}
+            <div class="flex items-center justify-center gap-4 my-2">
+              <div id="cutinDie1" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg">
+                ${this.buildDicePipsHtml(curFace1)}
               </div>
               <span class="text-2xl font-black text-amber-300">＋</span>
-              <div id="cutinDie2" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg animate-dice">
-                ${this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1)}
+              <div id="cutinDie2" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg">
+                ${this.buildDicePipsHtml(curFace2)}
               </div>
             </div>
             <div id="cutinDiceSumLabel" class="mt-2 font-serif font-black text-2xl sm:text-3xl text-amber-200/85">
@@ -4617,62 +4643,112 @@
           </div>
         `;
 
-        // 最初の600msは出目をシャッフル表示し、その後確定した目でピタッと静止
-        const shuffleTimer = setInterval(() => {
-          const d1El = document.getElementById('cutinDie1');
-          const d2El = document.getElementById('cutinDie2');
-          if (d1El) d1El.innerHTML = this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1);
-          if (d2El) d2El.innerHTML = this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1);
-        }, 75);
+        const d1El = document.getElementById('cutinDie1');
+        const d2El = document.getElementById('cutinDie2');
 
+        // 1回転コロッと転がりながら減速して着地する一方向アニメーション（ループなし）
+        if (d1El && typeof d1El.animate === 'function') {
+          d1El.animate([
+            { transform: 'translateY(-14px) rotate(-360deg) scale(0.86)' },
+            { transform: 'translateY(4px) rotate(-95deg) scale(1.06)', offset: 0.58 },
+            { transform: 'translateY(-4px) rotate(-18deg) scale(1.02)', offset: 0.84 },
+            { transform: 'translateY(0px) rotate(0deg) scale(1)' }
+          ], {
+            duration: rollPhaseMs,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards'
+          });
+        }
+        if (d2El && typeof d2El.animate === 'function') {
+          d2El.animate([
+            { transform: 'translateY(-14px) rotate(360deg) scale(0.86)' },
+            { transform: 'translateY(4px) rotate(95deg) scale(1.06)', offset: 0.58 },
+            { transform: 'translateY(-4px) rotate(18deg) scale(1.02)', offset: 0.84 },
+            { transform: 'translateY(0px) rotate(0deg) scale(1)' }
+          ], {
+            duration: rollPhaseMs,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards'
+          });
+        }
+
+        // 出目は等速ループではなく徐々に間隔を広げて減速チェンジし、1200msで確定出目にピタッと止まる
+        const faceChangeTimes = [170, 380, 640, 930];
+        faceChangeTimes.forEach(ms => {
+          const tId = setTimeout(() => {
+            if (done) return;
+            curFace1 = pickDifferentFace(curFace1);
+            curFace2 = pickDifferentFace(curFace2);
+            const el1 = document.getElementById('cutinDie1');
+            const el2 = document.getElementById('cutinDie2');
+            if (el1) el1.innerHTML = this.buildDicePipsHtml(curFace1);
+            if (el2) el2.innerHTML = this.buildDicePipsHtml(curFace2);
+          }, ms);
+          this.diceTimers.push(tId);
+        });
+
+        // 1200ms: 着地＆出目確定（軽くバウンドした後は完全静止）
         const settleTimer = setTimeout(() => {
-          clearInterval(shuffleTimer);
-          const d1El = document.getElementById('cutinDie1');
-          const d2El = document.getElementById('cutinDie2');
+          if (done) return;
+          const el1 = document.getElementById('cutinDie1');
+          const el2 = document.getElementById('cutinDie2');
           const sumEl = document.getElementById('cutinDiceSumLabel');
-          if (d1El) {
-            d1El.classList.remove('animate-dice');
-            d1El.innerHTML = this.buildDicePipsHtml(diceEv.d1);
+          if (el1) {
+            el1.innerHTML = this.buildDicePipsHtml(diceEv.d1);
+            if (typeof el1.animate === 'function') {
+              el1.animate([
+                { transform: 'scale(1.13)' },
+                { transform: 'scale(1)' }
+              ], { duration: 160, easing: 'ease-out', fill: 'forwards' });
+            }
           }
-          if (d2El) {
-            d2El.classList.remove('animate-dice');
-            d2El.innerHTML = this.buildDicePipsHtml(diceEv.d2);
+          if (el2) {
+            el2.innerHTML = this.buildDicePipsHtml(diceEv.d2);
+            if (typeof el2.animate === 'function') {
+              el2.animate([
+                { transform: 'scale(1.13)' },
+                { transform: 'scale(1)' }
+              ], { duration: 160, easing: 'ease-out', fill: 'forwards' });
+            }
           }
           if (sumEl) {
             sumEl.className = `mt-2 font-serif font-black text-3xl sm:text-4xl ${isSeven ? 'text-red-400' : 'text-amber-300'}`;
             sumEl.textContent = `合計 【 ${diceEv.sum} 】`;
           }
         }, rollPhaseMs);
+        this.diceTimers.push(settleTimer);
 
         const cardEl = overlay.firstElementChild;
-        let done = false;
         const finish = () => {
           if (done) return;
           done = true;
-          clearInterval(shuffleTimer);
-          clearTimeout(settleTimer);
+          this.clearDiceCutinTimers();
           overlay.innerHTML = '';
           if (onComplete) onComplete();
         };
 
         if (!cardEl || typeof cardEl.animate !== 'function') {
-          setTimeout(finish, durationMs);
+          const fallbackTimer = setTimeout(finish, durationMs);
+          this.diceTimers.push(fallbackTimer);
           return;
         }
 
+        // 0〜1200ms: 回転着地、1200ms〜2500ms(0.42〜0.88): 1.3秒完全静止、2500〜2850ms: フェードアウト
         this.diceCutinAnim = cardEl.animate([
-          { opacity: 0, transform: 'scale(0.84)' },
-          { opacity: 1, transform: 'scale(1.03)', offset: 0.1 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.28 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.8 },
-          { opacity: 0, transform: 'scale(0.94)' }
+          { opacity: 0, transform: 'scale(0.88)' },
+          { opacity: 1, transform: 'scale(1.02)', offset: 0.08 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.15 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.42 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.88 },
+          { opacity: 0, transform: 'scale(0.95)' }
         ], {
           duration: durationMs,
-          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          easing: 'ease-out',
           fill: 'forwards'
         });
         this.diceCutinAnim.onfinish = finish;
-        setTimeout(finish, durationMs + 60);
+        const hardStopTimer = setTimeout(finish, durationMs + 50);
+        this.diceTimers.push(hardStopTimer);
       }
 
       showRobber7Cutin(rollerName, onComplete) {
@@ -4681,6 +4757,7 @@
           if (onComplete) onComplete();
           return;
         }
+        this.clearDiceCutinTimers();
 
         overlay.innerHTML = `
           <div class="w-full max-w-md rounded-3xl border-[3px] border-red-500 px-6 py-6 text-center shadow-[0_24px_60px_rgba(220,38,38,0.65)] backdrop-blur-md"
@@ -4716,7 +4793,8 @@
           if (onComplete) onComplete();
         };
         if (!cardEl || typeof cardEl.animate !== 'function') {
-          setTimeout(finish, 2100);
+          const fb = setTimeout(finish, 1800);
+          this.diceTimers.push(fb);
           return;
         }
         cardEl.animate([
@@ -4726,11 +4804,227 @@
           { opacity: 1, transform: 'scale(1)', offset: 0.82 },
           { opacity: 0, transform: 'scale(0.94)' }
         ], {
-          duration: 2100,
+          duration: 1800,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         }).onfinish = finish;
-        setTimeout(finish, 2150);
+        const hs = setTimeout(finish, 1850);
+        this.diceTimers.push(hs);
+      }
+
+      showDiceCutin(diceEv, onComplete) {
+        const overlay = document.getElementById('diceCutinOverlay');
+        if (!overlay) {
+          if (onComplete) onComplete();
+          return;
+        }
+
+        // 前回のサイコロ演出タイマー・アニメーションが残っていれば確実に破棄
+        this.clearDiceCutinTimers();
+
+        const isSeven = diceEv.sum === 7;
+        // 0〜1300ms: 1回転(360°)しながら徐々に減速して着地
+        // 1300〜2900ms: 確定した出目で1.6秒間ピタッと完全静止
+        // 2900〜3300ms: ウィンドウ全体が滑らかにフェードアウト（計3300ms）
+        const rollPhaseMs = 1300;
+        const durationMs = 3300;
+        let done = false;
+
+        const pickDifferentFace = (prev) => {
+          let n = Math.floor(Math.random() * 6) + 1;
+          if (n === prev) n = (n % 6) + 1;
+          return n;
+        };
+
+        let curFace1 = pickDifferentFace(diceEv.d1);
+        let curFace2 = pickDifferentFace(diceEv.d2);
+
+        overlay.innerHTML = `
+          <div class="rounded-3xl bg-mahogany-950/95 border-[3px] border-amber-400 px-6 py-5 sm:px-8 sm:py-6 text-center shadow-[0_20px_54px_rgba(0,0,0,0.9)] backdrop-blur-md">
+            <div class="text-xs font-extrabold text-amber-300 mb-2">🎲 ${diceEv.rollerName} のダイスロール</div>
+            <div class="flex items-center justify-center gap-4 my-2">
+              <div id="cutinDie1" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg will-change-transform">
+                ${this.buildDicePipsHtml(curFace1)}
+              </div>
+              <span class="text-2xl font-black text-amber-300">＋</span>
+              <div id="cutinDie2" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg will-change-transform">
+                ${this.buildDicePipsHtml(curFace2)}
+              </div>
+            </div>
+            <div id="cutinDiceSumLabel" class="mt-2 font-serif font-black text-2xl sm:text-3xl text-amber-200/85">
+              ダイス回転中...
+            </div>
+          </div>
+        `;
+
+        const d1El = document.getElementById('cutinDie1');
+        const d2El = document.getElementById('cutinDie2');
+
+        // 最初は勢いよく転がり、後半にかけて明確に減速しながら360°（1回転）して0°で停止するキーフレーム
+        if (d1El && typeof d1El.animate === 'function') {
+          d1El.animate([
+            { transform: 'translateX(-18px) translateY(-16px) rotate(-360deg) scale(0.84)', offset: 0 },
+            { transform: 'translateX(-8px) translateY(5px) rotate(-135deg) scale(1.06)', offset: 0.35 },
+            { transform: 'translateX(-2px) translateY(-3px) rotate(-36deg) scale(1.02)', offset: 0.68 },
+            { transform: 'translateX(0px) translateY(0px) rotate(-6deg) scale(1.0)', offset: 0.88 },
+            { transform: 'translateX(0px) translateY(0px) rotate(0deg) scale(1.0)', offset: 1.0 }
+          ], {
+            duration: rollPhaseMs,
+            easing: 'ease-out',
+            fill: 'forwards'
+          });
+        }
+        if (d2El && typeof d2El.animate === 'function') {
+          d2El.animate([
+            { transform: 'translateX(18px) translateY(-16px) rotate(360deg) scale(0.84)', offset: 0 },
+            { transform: 'translateX(8px) translateY(5px) rotate(135deg) scale(1.06)', offset: 0.35 },
+            { transform: 'translateX(2px) translateY(-3px) rotate(36deg) scale(1.02)', offset: 0.68 },
+            { transform: 'translateX(0px) translateY(0px) rotate(6deg) scale(1.0)', offset: 0.88 },
+            { transform: 'translateX(0px) translateY(0px) rotate(0deg) scale(1.0)', offset: 1.0 }
+          ], {
+            duration: rollPhaseMs,
+            easing: 'ease-out',
+            fill: 'forwards'
+          });
+        }
+
+        // 出目切り替え間隔も最初は速く→徐々に間隔を広げて減速し、1300msで確定出目にピタッと停止
+        const faceChangeTimes = [110, 240, 410, 630, 920];
+        faceChangeTimes.forEach(ms => {
+          const tId = setTimeout(() => {
+            if (done) return;
+            curFace1 = pickDifferentFace(curFace1);
+            curFace2 = pickDifferentFace(curFace2);
+            const el1 = document.getElementById('cutinDie1');
+            const el2 = document.getElementById('cutinDie2');
+            if (el1) el1.innerHTML = this.buildDicePipsHtml(curFace1);
+            if (el2) el2.innerHTML = this.buildDicePipsHtml(curFace2);
+          }, ms);
+          this.diceTimers.push(tId);
+        });
+
+        // 1300ms: 着地＆出目確定（以降はフェードアウトまで完全静止）
+        const settleTimer = setTimeout(() => {
+          if (done) return;
+          const el1 = document.getElementById('cutinDie1');
+          const el2 = document.getElementById('cutinDie2');
+          const sumEl = document.getElementById('cutinDiceSumLabel');
+          if (el1) {
+            el1.innerHTML = this.buildDicePipsHtml(diceEv.d1);
+            if (typeof el1.animate === 'function') {
+              el1.animate([
+                { transform: 'scale(1.12)' },
+                { transform: 'scale(1)' }
+              ], { duration: 150, easing: 'ease-out', fill: 'forwards' });
+            }
+          }
+          if (el2) {
+            el2.innerHTML = this.buildDicePipsHtml(diceEv.d2);
+            if (typeof el2.animate === 'function') {
+              el2.animate([
+                { transform: 'scale(1.12)' },
+                { transform: 'scale(1)' }
+              ], { duration: 150, easing: 'ease-out', fill: 'forwards' });
+            }
+          }
+          if (sumEl) {
+            sumEl.className = `mt-2 font-serif font-black text-3xl sm:text-4xl ${isSeven ? 'text-red-400' : 'text-amber-300'}`;
+            sumEl.textContent = `合計 【 ${diceEv.sum} 】`;
+          }
+        }, rollPhaseMs);
+        this.diceTimers.push(settleTimer);
+
+        const cardEl = overlay.firstElementChild;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          this.clearDiceCutinTimers();
+          overlay.innerHTML = '';
+          if (onComplete) onComplete();
+        };
+
+        if (!cardEl || typeof cardEl.animate !== 'function') {
+          const fallbackTimer = setTimeout(finish, durationMs);
+          this.diceTimers.push(fallbackTimer);
+          return;
+        }
+
+        // 0〜1300ms: 回転減速着地、1300〜2900ms(0.39〜0.88): 1.6秒間完全静止、2900〜3300ms: フェードアウト
+        this.diceCutinAnim = cardEl.animate([
+          { opacity: 0, transform: 'scale(0.9)' },
+          { opacity: 1, transform: 'scale(1)', offset: 0.08 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.39 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.88 },
+          { opacity: 0, transform: 'scale(0.96)' }
+        ], {
+          duration: durationMs,
+          easing: 'ease-out',
+          fill: 'forwards'
+        });
+        this.diceCutinAnim.onfinish = finish;
+        const hardStopTimer = setTimeout(finish, durationMs + 50);
+        this.diceTimers.push(hardStopTimer);
+      }
+
+      showRobber7Cutin(rollerName, onComplete) {
+        const overlay = document.getElementById('diceCutinOverlay');
+        if (!overlay) {
+          if (onComplete) onComplete();
+          return;
+        }
+        this.clearDiceCutinTimers();
+
+        overlay.innerHTML = `
+          <div class="w-full max-w-md rounded-3xl border-[3px] border-red-500 px-6 py-6 text-center shadow-[0_24px_60px_rgba(220,38,38,0.65)] backdrop-blur-md"
+               style="background: linear-gradient(180deg, #450a0a 0%, #1c0f08 55%, #090402 100%);">
+            <div class="inline-block px-3 py-0.5 rounded-full bg-red-500/25 border border-red-400 text-red-200 text-xs font-extrabold tracking-widest">
+              ⚠️ ROBBER ATTACK
+            </div>
+            <div class="my-3">
+              <svg viewBox="0 0 120 96" class="w-28 h-24 mx-auto drop-shadow-[0_6px_16px_rgba(0,0,0,0.85)]">
+                <circle cx="60" cy="48" r="42" fill="rgba(239,68,68,0.18)" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5 3"/>
+                <path d="M32 82 C34 54, 44 44, 60 44 C76 44, 86 54, 88 82 Z" fill="#1e293b" stroke="#f87171" stroke-width="2"/>
+                <circle cx="60" cy="34" r="16" fill="#0f172a" stroke="#f87171" stroke-width="2"/>
+                <path d="M46 31 Q60 22 74 31 L70 38 Q60 34 50 38 Z" fill="#dc2626"/>
+                <circle cx="54" cy="35" r="2.2" fill="#fef08a"/>
+                <circle cx="66" cy="35" r="2.2" fill="#fef08a"/>
+              </svg>
+            </div>
+            <h3 class="font-serif font-black text-2xl sm:text-3xl text-red-300">
+              盗賊襲来！
+            </h3>
+            <p class="text-xs sm:text-sm text-parchment-200 mt-1.5 font-bold">
+              手札8枚以上は半分破棄！${rollerName} が盗賊を移動します。
+            </p>
+          </div>
+        `;
+
+        const cardEl = overlay.firstElementChild;
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          overlay.innerHTML = '';
+          if (onComplete) onComplete();
+        };
+        if (!cardEl || typeof cardEl.animate !== 'function') {
+          const fb = setTimeout(finish, 1850);
+          this.diceTimers.push(fb);
+          return;
+        }
+        cardEl.animate([
+          { opacity: 0, transform: 'scale(0.82)' },
+          { opacity: 1, transform: 'scale(1.04)', offset: 0.14 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.24 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.82 },
+          { opacity: 0, transform: 'scale(0.94)' }
+        ], {
+          duration: 1850,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        }).onfinish = finish;
+        const hs = setTimeout(finish, 1900);
+        this.diceTimers.push(hs);
       }
 
       /* 3段階資源獲得演出: ①タイル素早く2回明滅(1.15s) → ②カード出現＆タイル上で1秒静止＆プレイヤーゾーンへ滑らか飛行(2.45s) */
@@ -4765,9 +5059,23 @@
             const hex = hById[deliv.hexId];
             if (!hex) return;
             const entries = Object.entries(deliv.gains);
-            entries.forEach(([uid, amt], idx) => {
-              const offsetX = (idx - (entries.length - 1) / 2) * 24;
-              this.spawnHoldAndFlyResourceCard(hex.cx + offsetX, hex.cy, uid, deliv.resKey, amt);
+            entries.forEach(([uid, amt], playerIdx) => {
+              const playerBaseOffsetX = (playerIdx - (entries.length - 1) / 2) * 26;
+              // 同じプレイヤーが複数枚獲得する場合は、+2表記ではなく獲得枚数分のカードを生成して順番に飛ばす
+              for (let cardIdx = 0; cardIdx < amt; cardIdx++) {
+                const fanOffsetX = (cardIdx - (amt - 1) / 2) * 13;
+                const fanOffsetY = (cardIdx - (amt - 1) / 2) * -7;
+                const fanTiltDeg = (cardIdx - (amt - 1) / 2) * 8;
+                const staggerDelayMs = cardIdx * 190;
+                this.spawnHoldAndFlyResourceCard(
+                  hex.cx + playerBaseOffsetX + fanOffsetX,
+                  hex.cy + fanOffsetY,
+                  uid,
+                  deliv.resKey,
+                  staggerDelayMs,
+                  fanTiltDeg
+                );
+              }
             });
           });
         }, 1150);
@@ -4975,7 +5283,7 @@
         </svg>`;
       }
 
-      spawnHoldAndFlyResourceCard(svgX, svgY, targetUid, resKey, amount) {
+      spawnHoldAndFlyResourceCard(svgX, svgY, targetUid, resKey, staggerDelayMs = 0, tiltDeg = 0) {
         const viewport = document.getElementById('boardViewport');
         const flyLayer = document.getElementById('flyingResourceLayer');
         const svg = document.getElementById('catanBoardSvg');
@@ -5006,11 +5314,8 @@
         cardEl.style.left = `${startX}px`;
         cardEl.style.top = `${startY}px`;
         cardEl.innerHTML = `
-          <div class="relative">
+          <div>
             ${this.getResourceCardIllustrationSvg(resKey)}
-            <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-amber-400 border border-mahogany-950 text-mahogany-950 font-black text-[11px] leading-tight shadow">
-              +${amount}
-            </span>
           </div>
           <span class="text-[9px] font-extrabold text-mahogany-950 leading-none mt-0.5">${resMeta ? resMeta.name : ''}</span>
         `;
@@ -5020,13 +5325,14 @@
         const dy = endY - startY;
 
         const anim = cardEl.animate([
-          { opacity: 0, transform: 'translate(-50%, -42%) scale(0.75)' },
-          { opacity: 1, transform: 'translate(-50%, -68%) scale(1.12)', offset: 0.08 },
-          { opacity: 1, transform: 'translate(-50%, -68%) scale(1.08)', offset: 0.52 },
-          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.96)`, offset: 0.78 },
-          { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
+          { opacity: 0, transform: `translate(-50%, -42%) rotate(${tiltDeg}deg) scale(0.75)` },
+          { opacity: 1, transform: `translate(-50%, -68%) rotate(${tiltDeg}deg) scale(1.1)`, offset: 0.08 },
+          { opacity: 1, transform: `translate(-50%, -68%) rotate(${tiltDeg}deg) scale(1.06)`, offset: 0.5 },
+          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) rotate(0deg) scale(0.95)`, offset: 0.78 },
+          { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(0deg) scale(0.68)` }
         ], {
-          duration: 2450,
+          duration: 2350,
+          delay: staggerDelayMs,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
