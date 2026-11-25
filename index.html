@@ -4,6 +4,58 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>開拓者たちの島 — 戦略ボードゲーム</title>
+  <script>
+    // サンドボックス環境（Canvas等）で外部WebSocket接続がCSP制限された場合のSecurityError防止ガード
+    (function () {
+      window.__peerWsBlocked = false;
+      const OrigWebSocket = window.WebSocket;
+      if (!OrigWebSocket) {
+        window.__peerWsBlocked = true;
+        return;
+      }
+      function SafeWebSocket(url, protocols) {
+        try {
+          return protocols !== undefined
+            ? new OrigWebSocket(url, protocols)
+            : new OrigWebSocket(url);
+        } catch (err) {
+          if (String(url).includes('peerjs')) {
+            window.__peerWsBlocked = true;
+            window.dispatchEvent(new CustomEvent('peerjs-ws-blocked', { detail: err }));
+            const dummy = {
+              url: String(url),
+              readyState: 3,
+              bufferedAmount: 0,
+              extensions: '',
+              protocol: '',
+              binaryType: 'blob',
+              onopen: null,
+              onmessage: null,
+              onerror: null,
+              onclose: null,
+              send() {},
+              close() {},
+              addEventListener() {},
+              removeEventListener() {},
+              dispatchEvent() { return false; }
+            };
+            setTimeout(() => {
+              if (typeof dummy.onerror === 'function') dummy.onerror(err);
+              if (typeof dummy.onclose === 'function') dummy.onclose({ code: 1006, reason: 'Sandbox WebSocket restricted', wasClean: false });
+            }, 0);
+            return dummy;
+          }
+          throw err;
+        }
+      }
+      SafeWebSocket.prototype = OrigWebSocket.prototype;
+      SafeWebSocket.CONNECTING = OrigWebSocket.CONNECTING;
+      SafeWebSocket.OPEN = OrigWebSocket.OPEN;
+      SafeWebSocket.CLOSING = OrigWebSocket.CLOSING;
+      SafeWebSocket.CLOSED = OrigWebSocket.CLOSED;
+      window.WebSocket = SafeWebSocket;
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"
     onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js';document.head.appendChild(s);"></script>
@@ -187,7 +239,49 @@
     }
     .hex-blink-overlay {
       pointer-events: none;
-      animation: hexBlinkTwice 2.6s ease-in-out forwards;
+      animation: hexBlinkTwice 1.25s ease-in-out forwards;
+    }
+
+    /* 街道・開拓地・都市の完成時発光アニメーション */
+    @keyframes buildFlashPulse {
+      0% {
+        opacity: 0;
+        transform: scale(0.65);
+      }
+      20% {
+        opacity: 1;
+        transform: scale(1.22);
+      }
+      45% {
+        opacity: 0.35;
+        transform: scale(0.95);
+      }
+      72% {
+        opacity: 1;
+        transform: scale(1.28);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.45);
+      }
+    }
+    .build-flash-spot {
+      transform-box: fill-box;
+      transform-origin: center;
+      pointer-events: none;
+      animation: buildFlashPulse 2.3s ease-out forwards;
+    }
+
+    @keyframes roadFlashBlink {
+      0% { opacity: 0; stroke-width: 6; }
+      22% { opacity: 0.98; stroke-width: 16; }
+      48% { opacity: 0.25; stroke-width: 8; }
+      74% { opacity: 1; stroke-width: 17; }
+      100% { opacity: 0; stroke-width: 6; }
+    }
+    .build-flash-road {
+      pointer-events: none;
+      animation: roadFlashBlink 2.3s ease-out forwards;
     }
 
     /* サイコロ回転アニメ */
@@ -289,8 +383,25 @@
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
       <!-- 左側: タイトル & バージョンバッジ -->
       <div class="flex items-center gap-2 min-w-0">
-        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-mahogany-950 font-serif font-black text-base sm:text-lg shadow border border-amber-200 flex-shrink-0">
-          島
+        <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-sky-500 via-sky-700 to-indigo-950 flex items-center justify-center shadow border border-amber-300/80 flex-shrink-0 overflow-hidden" aria-label="開拓者たちの島アイコン">
+          <svg viewBox="0 0 40 40" class="w-full h-full">
+            <!-- 太陽 -->
+            <circle cx="30" cy="10" r="4.5" fill="#fde047" />
+            <!-- 海面 -->
+            <rect x="0" y="25" width="40" height="15" fill="#0284c7" />
+            <path d="M2 29 Q10 27 18 29 T34 29" fill="none" stroke="#bae6fd" stroke-width="1.3" stroke-linecap="round" />
+            <path d="M6 34 Q14 32 22 34 T38 34" fill="none" stroke="#7dd3fc" stroke-width="1.1" stroke-linecap="round" />
+            <!-- 砂浜と緑の島 -->
+            <path d="M5 26 C8 19, 32 19, 35 26 Z" fill="#facc15" />
+            <path d="M8 25 C11 17, 29 17, 32 25 Z" fill="#16a34a" />
+            <!-- ヤシの木 -->
+            <path d="M16 21 Q14 14 17 10" fill="none" stroke="#78350f" stroke-width="2" stroke-linecap="round" />
+            <path d="M17 10 Q11 9 9 13" fill="none" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M17 10 Q22 8 24 12" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M17 10 Q15 5 12 7" fill="none" stroke="#86efac" stroke-width="1.6" stroke-linecap="round" />
+            <!-- 小さな開拓地 -->
+            <polygon points="24,16 28,19 28,23 20,23 20,19" fill="#ef4444" stroke="#ffffff" stroke-width="0.9" />
+          </svg>
         </div>
         <div class="min-w-0">
           <div class="flex items-center gap-1.5">
@@ -298,7 +409,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v5.2
+              v5.4
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -357,7 +468,7 @@
           <span>🏝️ HEXAGON STRATEGY BOARD GAME</span>
         </div>
         <h2 class="font-serif font-black text-2xl sm:text-3xl text-amber-200 tracking-wide">
-          開拓者たちの島 — 群島制覇戦
+          ～開拓者たちの島～
         </h2>
         <p class="text-xs sm:text-sm text-parchment-200">
           資源を集め、街道と都市を築き、最初に <strong class="text-amber-300">10勝利点 (VP)</strong> を獲得した開拓者が勝利します。
@@ -386,7 +497,7 @@
         </div>
         <div>
           <label class="block text-xs font-extrabold text-mahogany-900 mb-1">シンボルカラー</label>
-          <div id="colorPickerRow" class="flex items-center gap-2.5 pt-1"></div>
+          <div id="colorPickerRow" class="flex flex-wrap items-center gap-2 pt-1"></div>
         </div>
       </div>
 
@@ -399,25 +510,33 @@
               <h3 class="font-serif font-extrabold text-lg text-mahogany-950">⚔️ ソロ対戦（vs 3 CPU）</h3>
             </div>
             <p class="text-xs text-mahogany-800 leading-relaxed">
-              3人のCPUと4人対戦を行います。開始手番とCPUの強さを設定して対戦を始められます。
+              3人のCPUと4人対戦を行います。開始手番・CPUの強さ・マップ配置を設定して対戦を始められます。
             </p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
-                <label class="block text-xs font-extrabold text-mahogany-900 mb-1">🎯 1番手（開始順）</label>
-                <select id="soloStarterSelect" class="w-full px-3 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
-                  <option value="0">あなた（1番手から開始）</option>
-                  <option value="1">CPU 1（赤の開拓団）から開始</option>
-                  <option value="2">CPU 2（青の航海士）から開始</option>
-                  <option value="3">CPU 3（緑の森林守）から開始</option>
+                <label class="block text-xs font-extrabold text-mahogany-900 mb-1">🎯 1番手</label>
+                <select id="soloStarterSelect" class="w-full px-2.5 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
+                  <option value="0">あなた</option>
+                  <option value="1">CPU 1（島の開拓団）</option>
+                  <option value="2">CPU 2（大海原の航海士）</option>
+                  <option value="3">CPU 3（古の森の賢者）</option>
                   <option value="random">ランダムに決定</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-extrabold text-mahogany-900 mb-1">🤖 CPUの強さ</label>
-                <select id="soloCpuDifficultySelect" class="w-full px-3 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
+                <select id="soloCpuDifficultySelect" class="w-full px-2.5 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
                   <option value="easy">初級（のんびり開拓）</option>
                   <option value="normal" selected>中級（標準戦術）</option>
                   <option value="hard">上級（戦略マスター）</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-extrabold text-mahogany-900 mb-1">🗺️ マップ配置</label>
+                <select id="soloMapPresetSelect" class="w-full px-2.5 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
+                  <option value="standard" selected>スタンダード（公式配置）</option>
+                  <option value="advanced">ベテラン（砂漠外周）</option>
+                  <option value="master">マスター（砂漠内周）</option>
                 </select>
               </div>
             </div>
@@ -434,7 +553,7 @@
               <h3 class="font-serif font-extrabold text-lg text-mahogany-950">🌐 オンライン対戦（2〜4人）</h3>
             </div>
             <p class="text-xs text-mahogany-800 leading-relaxed">
-              ルームを作成して招待コードを共有するか、友達のルームコードを入力して参加します（不足人数はCPU補充可能）。
+              ルームを作成して招待コードを共有するか、友達のルームコードを入力して参加します（不足人数はCPUになります）。
             </p>
             <div class="flex gap-2">
               <input id="inputJoinRoomCode" type="text" maxlength="8" placeholder="招待コード入力"
@@ -451,46 +570,76 @@
       </div>
 
       <!-- オンライン待機室パネル -->
-      <div id="onlineWaitingPanel" class="hidden rounded-2xl bg-mahogany-950 text-parchment-100 p-4 sm:p-5 border-2 border-amber-400 space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-brass-600/40 pb-3">
-          <div>
-            <div class="text-xs text-amber-300 font-bold">オンライン対戦ルーム待機室</div>
-            <div class="flex items-center gap-2 mt-0.5">
-              <span class="text-sm text-parchment-300">ルームID:</span>
-              <span id="waitingRoomCode" class="font-mono font-black text-xl text-amber-300 tracking-widest">------</span>
-              <button onclick="appUI.copyInviteLink()" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400 text-amber-200 text-xs font-bold">
-                🔗 招待リンクをコピー
-              </button>
-            </div>
+      <div id="onlineWaitingPanel" class="hidden mt-4 rounded-2xl bg-mahogany-950 text-parchment-100 p-4 sm:p-5 border-2 border-amber-400 space-y-3">
+        <div class="space-y-2 border-b border-brass-600/40 pb-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-sm sm:text-base text-amber-300 font-extrabold">🏰 オンライン対戦ルーム待機室</div>
+            <span id="waitingRoleBadge" class="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs sm:text-sm font-bold whitespace-nowrap">
+              ホスト待機中
+            </span>
           </div>
-          <span id="waitingRoleBadge" class="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs font-bold">
-            ホスト待機中
-          </span>
+          <div class="flex items-center justify-between gap-2 flex-nowrap">
+            <div class="flex items-center gap-1.5 whitespace-nowrap min-w-0">
+              <span class="text-sm sm:text-base text-parchment-300 font-bold">ルームID:</span>
+              <span id="waitingRoomCode" class="font-mono font-black text-lg sm:text-2xl text-amber-300 tracking-wider">------</span>
+            </div>
+            <button onclick="appUI.copyInviteLink()" class="px-3 py-1.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400 text-amber-200 text-xs sm:text-sm font-extrabold whitespace-nowrap flex-shrink-0">
+              🔗 招待リンクをコピー
+            </button>
+          </div>
         </div>
 
-        <div id="waitingSeatsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        <!-- ルーム入室後のリアルタイム名前・カラー変更バー -->
+        <div class="rounded-xl bg-mahogany-900/90 border border-brass-500/45 p-3 space-y-2">
+          <div class="text-xs sm:text-sm font-extrabold text-amber-300">🎨 あなたの名前・シンボルカラー変更</div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <input id="waitingPlayerNameInput" type="text" maxlength="12"
+                onchange="onlineManager.updateMyRoomProfile(this.value, null)"
+                onblur="onlineManager.updateMyRoomProfile(this.value, null)"
+                class="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-mahogany-950 border border-brass-500/70 text-parchment-100 font-bold text-sm focus:outline-none focus:border-amber-400"
+                placeholder="開拓者名..." />
+              <button onclick="onlineManager.updateMyRoomProfile(document.getElementById('waitingPlayerNameInput').value, null)"
+                class="px-3 py-1.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400 text-amber-200 text-xs sm:text-sm font-extrabold whitespace-nowrap flex-shrink-0">
+                反映
+              </button>
+            </div>
+            <div id="waitingColorPickerRow" class="flex flex-wrap items-center gap-1.5"></div>
+          </div>
+        </div>
 
-        <!-- ホスト専用: 開始プレイヤー選択 & CPU強さ選択 & ゲーム開始 -->
-        <div id="hostStartControls" class="hidden flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-2 border-t border-brass-600/40">
-          <div class="flex flex-wrap items-center gap-3">
+        <div id="waitingSeatsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+
+        <!-- ホスト専用: 開始プレイヤー選択 & CPU強さ選択 & マップ配置選択 & ゲーム開始 -->
+        <div id="hostStartControls" class="hidden flex flex-col gap-2.5 pt-2 border-t border-brass-600/40">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div class="flex items-center gap-1.5">
-              <label class="text-xs font-bold text-amber-300 whitespace-nowrap">🎯 1番手:</label>
+              <label class="text-xs sm:text-sm font-bold text-amber-300 whitespace-nowrap">🎯 1番手:</label>
               <select id="onlineStarterSelect" onchange="onlineManager.setStarterChoice(this.value)"
-                class="px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs font-bold">
+                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs sm:text-sm font-bold">
                 <option value="0">座席1（ホスト）から開始</option>
               </select>
             </div>
             <div class="flex items-center gap-1.5">
-              <label class="text-xs font-bold text-amber-300 whitespace-nowrap">🤖 CPU強さ:</label>
+              <label class="text-xs sm:text-sm font-bold text-amber-300 whitespace-nowrap">🤖 CPU:</label>
               <select id="onlineCpuDifficultySelect" onchange="onlineManager.setCpuDifficulty(this.value)"
-                class="px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs font-bold">
+                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs sm:text-sm font-bold">
                 <option value="easy">初級（のんびり開拓）</option>
                 <option value="normal" selected>中級（標準戦術）</option>
                 <option value="hard">上級（戦略マスター）</option>
               </select>
             </div>
+            <div class="flex items-center gap-1.5">
+              <label class="text-xs sm:text-sm font-bold text-amber-300 whitespace-nowrap">🗺️ 配置:</label>
+              <select id="onlineMapPresetSelect" onchange="onlineManager.setMapPreset(this.value)"
+                class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs sm:text-sm font-bold">
+                <option value="standard" selected>スタンダード（公式）</option>
+                <option value="advanced">上級（砂漠外周）</option>
+                <option value="master">マスター（砂漠内周）</option>
+              </select>
+            </div>
           </div>
-          <button onclick="onlineManager.startOnlineMatch()" class="brass-btn px-5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm">
+          <button onclick="onlineManager.startOnlineMatch()" class="brass-btn w-full py-2.5 rounded-xl font-extrabold text-sm sm:text-base">
             🔥 4人で対戦を開始する（空席はCPU補充）
           </button>
         </div>
@@ -504,7 +653,7 @@
     <!-- 左・中央カラム: 盤面エリア + アクション操作 -->
     <div class="flex-1 flex flex-col gap-2 min-w-0">
 
-      <!-- 盤面ビューポート（四隅プレイヤーゾーン・ズームバー・各種カットイン内包） -->
+      <!-- 盤面ビューポート（四隅プレイヤーゾーン・各種カットイン内包） -->
       <div id="boardViewport" class="ocean-viewport relative w-full h-[58vh] min-h-[410px] sm:h-[64vh] sm:min-h-[480px] rounded-3xl border-2 border-brass-500/70 overflow-hidden shadow-2xl">
 
         <!-- 四隅プレイヤーゾーン (0:左上, 1:右上, 2:右下, 3:左下 — 時計回り) -->
@@ -513,19 +662,12 @@
         <div id="cornerZone2" class="absolute bottom-2 right-2 z-20 w-[116px] sm:w-[168px] pointer-events-none"></div>
         <div id="cornerZone3" class="absolute bottom-2 left-2 z-20 w-[116px] sm:w-[168px] pointer-events-none"></div>
 
-        <!-- 下部中央: コンパクトズーム操作（四隅プレイヤー表示と重ならない配置） -->
-        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 px-2 py-0.5 rounded-full bg-mahogany-950/90 border border-brass-500/55 backdrop-blur-sm shadow-lg">
-          <button onclick="appUI.adjustBoardZoom(-0.18)" class="w-6 h-6 rounded-full bg-mahogany-800 hover:bg-mahogany-700 text-amber-200 font-bold text-xs flex items-center justify-center">－</button>
-          <button onclick="appUI.resetBoardTransform()" class="px-1.5 py-0.5 rounded-full bg-mahogany-900 text-parchment-200 text-[10px] font-bold">標準</button>
-          <button onclick="appUI.adjustBoardZoom(0.18)" class="w-6 h-6 rounded-full bg-mahogany-800 hover:bg-mahogany-700 text-amber-200 font-bold text-xs flex items-center justify-center">＋</button>
-        </div>
-
-        <!-- 7バースト破棄通知バナー -->
+        <!-- 7バースト破棄・建築通知バナー -->
         <div id="diceGainBanner" class="hidden absolute top-14 sm:top-3 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-md pointer-events-none">
           <div id="diceGainBannerContent" class="px-3 py-1 rounded-2xl bg-mahogany-950/95 border border-amber-400/80 text-amber-200 text-[11px] sm:text-xs font-extrabold shadow-xl text-center break-words"></div>
         </div>
 
-        <!-- 盤面SVG（上下に余裕を持たせた viewBox・ドラッグ移動なし） -->
+        <!-- 盤面SVG（スマホは2段階拡大倍率で固定・PCは標準倍率） -->
         <svg id="catanBoardSvg" viewBox="-330 -360 660 720" class="w-full h-full touch-manipulation">
           <defs>
             <filter id="tileShadow" filterUnits="userSpaceOnUse" x="-400" y="-400" width="800" height="800">
@@ -541,6 +683,7 @@
             <g id="layerHexHighlights"></g>
             <g id="layerRoads"></g>
             <g id="layerSettlements"></g>
+            <g id="layerBuildEffects"></g>
             <g id="layerRobber"></g>
             <g id="layerBuildSpots"></g>
             <g id="layerBuildPreview"></g>
@@ -758,15 +901,12 @@
       <!-- 逆提案エディタ（折りたたみ） -->
       <div id="counterOfferEditor" class="hidden rounded-2xl bg-amber-900/10 border border-amber-800/40 p-3 space-y-2.5">
         <div class="text-xs font-extrabold text-mahogany-950">🔄 別条件を逆提案する</div>
+        <div id="counterFixedGiveBox" class="rounded-xl bg-white/80 px-3 py-2 border border-brass-600/30"></div>
         <div>
-          <div class="text-[11px] font-bold text-mahogany-800 mb-1">あなたが渡す資源:</div>
-          <div id="counterGiveGrid" class="grid grid-cols-5 gap-1"></div>
-        </div>
-        <div>
-          <div class="text-[11px] font-bold text-mahogany-800 mb-1">あなたが欲しい資源:</div>
+          <div class="text-[11px] font-bold text-mahogany-800 mb-1">あなたが受け取る資源（種類・個数を指定）:</div>
           <div id="counterWantGrid" class="grid grid-cols-5 gap-1"></div>
         </div>
-        <button onclick="gameController.submitCounterOffer()" class="brass-btn w-full py-2.5 rounded-xl font-extrabold text-xs sm:text-sm">
+        <button id="btnSubmitCounterOffer" onclick="gameController.submitCounterOffer()" class="brass-btn w-full py-2.5 rounded-xl font-extrabold text-xs sm:text-sm">
           📤 この別条件を相手に逆提案する
         </button>
       </div>
@@ -853,65 +993,80 @@
   <!-- 盗賊強奪相手選択モーダル -->
   <div id="stealTargetModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
     <div class="parchment-panel rounded-3xl max-w-md w-full p-5 space-y-4">
-      <div class="border-b border-brass-600/30 pb-2">
+      <div class="flex items-center justify-between border-b border-brass-600/30 pb-2">
         <h3 class="font-serif font-extrabold text-lg text-mahogany-950">🦹 資源を奪う相手を選択</h3>
-        <p class="text-xs text-mahogany-800 mt-0.5">盗賊を置いたタイルに隣接する開拓者から1枚ランダムに奪います。</p>
+        <button onclick="appUI.enterXrayMode('stealTargetModal', '各プレイヤーの拠点状況を確認中')" class="px-2.5 py-1 rounded-xl bg-sky-800 text-white text-xs font-bold">
+          👁️ マップ透視
+        </button>
       </div>
-      <div id="stealTargetsList" class="space-y-2.5"></div>
+      <p class="text-xs sm:text-sm font-bold text-mahogany-800">
+        盗賊を置いたタイルに隣接する開拓者から、ランダムに資源カードを1枚奪います。
+      </p>
+      <div id="stealTargetsList" class="space-y-2"></div>
     </div>
   </div>
 
-  <!-- ==================== モーダル5: 勝利リザルトモーダル（特大祝福演出） ==================== -->
-  <div id="victoryModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-    <div id="victoryModalCard" class="arena-spark-box relative rounded-3xl max-w-2xl w-full bg-gradient-to-b from-mahogany-900 via-mahogany-950 to-black p-5 sm:p-8 space-y-5 text-center border-[3px] border-amber-300 overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.92),0_0_50px_rgba(250,204,21,0.55)]">
+  <!-- ==================== モーダル5: 勝利リザルトモーダル（4タブ統合戦績レポート） ==================== -->
+  <div id="victoryModal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 overflow-y-auto">
+    <div id="victoryModalCard" class="arena-spark-box relative rounded-3xl max-w-2xl w-full bg-gradient-to-b from-mahogany-900 via-mahogany-950 to-black p-3.5 sm:p-6 space-y-3 sm:space-y-4 text-center border-[3px] border-amber-300 overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.92),0_0_50px_rgba(250,204,21,0.55)] my-auto max-h-[94vh] flex flex-col">
       <!-- 黄金紙吹雪＆火花パーティクルレイヤー -->
       <div id="victoryParticlesLayer" class="absolute inset-0 overflow-hidden pointer-events-none"></div>
 
-      <div class="relative z-10 space-y-3">
-        <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-400/25 border border-amber-300/80 text-amber-200 text-xs sm:text-sm font-extrabold tracking-widest uppercase">
-          <span>🏆 CHAMPION OF THE ISLE</span><span>•</span><span>10 VP VICTORY</span>
-        </div>
-
-        <!-- 豪華王冠エンブレムSVG -->
-        <div class="py-1">
-          <svg viewBox="0 0 180 116" class="w-40 h-26 sm:w-52 sm:h-32 mx-auto drop-shadow-[0_8px_24px_rgba(250,204,21,0.75)]">
-            <circle cx="90" cy="58" r="52" fill="rgba(250, 204, 21, 0.14)" stroke="#fde047" stroke-width="1.6" stroke-dasharray="6 4"/>
-            <circle cx="90" cy="58" r="40" fill="rgba(245, 158, 11, 0.12)" stroke="#f59e0b" stroke-width="1.2"/>
-            <!-- 黄金の王冠 -->
-            <path d="M40 80 L48 36 L70 56 L90 24 L110 56 L132 36 L140 80 Z" fill="#f59e0b" stroke="#fef9c3" stroke-width="2.6" stroke-linejoin="round"/>
-            <path d="M48 80 L54 44 L70 60 L90 32 L110 60 L126 44 L132 80 Z" fill="#fbbf24"/>
-            <rect x="38" y="80" width="104" height="14" rx="4" fill="#b45309" stroke="#fef08a" stroke-width="2.2"/>
-            <!-- 宝石装飾 -->
-            <circle cx="48" cy="31" r="4.5" fill="#fef08a" stroke="#92400e" stroke-width="1.2"/>
-            <circle cx="90" cy="19" r="6" fill="#fef08a" stroke="#92400e" stroke-width="1.4"/>
-            <circle cx="132" cy="31" r="4.5" fill="#fef08a" stroke="#92400e" stroke-width="1.2"/>
-            <circle cx="68" cy="87" r="3.5" fill="#ef4444" stroke="#fef3c7" stroke-width="1"/>
-            <circle cx="90" cy="87" r="4.5" fill="#38bdf8" stroke="#fef3c7" stroke-width="1"/>
-            <circle cx="112" cy="87" r="3.5" fill="#10b981" stroke="#fef3c7" stroke-width="1"/>
+      <!-- コンパクト勝者バナー -->
+      <div class="relative z-10 space-y-1.5 flex-shrink-0">
+        <div class="flex items-center justify-center gap-2">
+          <svg viewBox="0 0 120 76" class="w-14 h-9 sm:w-20 sm:h-12 drop-shadow-[0_4px_12px_rgba(250,204,21,0.75)] flex-shrink-0">
+            <path d="M18 56 L24 22 L42 38 L60 12 L78 38 L96 22 L102 56 Z" fill="#f59e0b" stroke="#fef9c3" stroke-width="2.5" stroke-linejoin="round"/>
+            <rect x="16" y="56" width="88" height="11" rx="3.5" fill="#b45309" stroke="#fef08a" stroke-width="2"/>
+            <circle cx="60" cy="9" r="4.5" fill="#fef08a"/>
+            <circle cx="42" cy="61" r="2.8" fill="#ef4444"/>
+            <circle cx="60" cy="61" r="3.4" fill="#38bdf8"/>
+            <circle cx="78" cy="61" r="2.8" fill="#10b981"/>
           </svg>
+          <div class="text-left min-w-0">
+            <div id="victoryWinnerSubTag" class="text-[10px] sm:text-xs font-extrabold text-amber-300 tracking-wider truncate">
+              🏆 CHAMPION • 10 VP VICTORY
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="victoryWinnerColorDot" class="w-3.5 h-3.5 rounded-full border border-white flex-shrink-0" style="background:#f59e0b;"></span>
+              <h3 id="victoryWinnerName" class="font-serif font-extrabold text-xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-amber-300 to-yellow-100 truncate">
+                開拓者 の勝利！
+              </h3>
+            </div>
+          </div>
         </div>
-
-        <div class="flex items-center justify-center gap-2.5">
-          <span id="victoryWinnerColorDot" class="w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-lg" style="background:#f59e0b;"></span>
-          <span id="victoryWinnerSubTag" class="text-xs sm:text-sm font-extrabold text-amber-200 tracking-wider">群島の新たな覇者</span>
-        </div>
-
-        <h3 id="victoryWinnerName" class="font-serif font-extrabold text-3xl sm:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-amber-300 to-yellow-100 leading-tight drop-shadow py-1">
-          開拓者 の勝利！
-        </h3>
-        <p id="victorySubtitleText" class="text-xs sm:text-sm text-parchment-200 font-medium">
-          10勝利点に到達し、未知なる群島の開拓王となりました！
-        </p>
       </div>
 
-      <div id="victoryScoreBreakdown" class="relative z-10 p-3.5 sm:p-4 rounded-2xl bg-mahogany-950/90 border border-amber-400/50 text-left text-xs sm:text-sm space-y-2 shadow-inner"></div>
-
-      <div class="relative z-10 flex flex-col sm:flex-row gap-2.5 pt-1">
-        <button onclick="appUI.closeModal('victoryModal'); appUI.openAnalyticsModal();" class="brass-btn flex-1 py-3 sm:py-3.5 px-5 rounded-2xl font-extrabold text-sm sm:text-base shadow-xl">
-          📊 戦績・AIプレイ分析を見る
+      <!-- 4タブ切替ナビゲーション（スマホでも1行横並び・改行なし） -->
+      <div class="relative z-10 grid grid-cols-4 gap-1 bg-black/60 p-1 rounded-2xl border border-amber-500/45 flex-shrink-0">
+        <button id="victoryTabBtn_tab1" onclick="appUI.switchVictoryTab('tab1')"
+          class="py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition bg-amber-400 text-mahogany-950 shadow">
+          🏆 得点
         </button>
-        <button onclick="appUI.closeModal('victoryModal'); appUI.backToLobby();" class="py-3 sm:py-3.5 px-5 rounded-2xl bg-mahogany-800 hover:bg-mahogany-700 border border-brass-500/60 text-parchment-100 font-bold text-sm">
-          ロビーへ戻る
+        <button id="victoryTabBtn_tab2" onclick="appUI.switchVictoryTab('tab2')"
+          class="py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition text-parchment-200 hover:bg-white/10">
+          📦 資源
+        </button>
+        <button id="victoryTabBtn_tab3" onclick="appUI.switchVictoryTab('tab3')"
+          class="py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition text-parchment-200 hover:bg-white/10">
+          🦹 盗賊
+        </button>
+        <button id="victoryTabBtn_tab4" onclick="appUI.switchVictoryTab('tab4')"
+          class="py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition text-parchment-200 hover:bg-white/10">
+          🧠 AI分析
+        </button>
+      </div>
+
+      <!-- タブコンテンツ表示エリア -->
+      <div id="victoryTabPanel" class="relative z-10 flex-1 overflow-y-auto rounded-2xl bg-mahogany-950/90 border border-amber-400/45 p-2.5 sm:p-4 text-left shadow-inner"></div>
+
+      <!-- 下部アクションボタン -->
+      <div class="relative z-10 flex items-center gap-2 pt-0.5 flex-shrink-0">
+        <button onclick="appUI.closeModal('victoryModal')" class="py-2.5 px-3.5 rounded-2xl bg-mahogany-800 hover:bg-mahogany-700 border border-brass-500/50 text-parchment-200 font-bold text-xs sm:text-sm whitespace-nowrap">
+          🗺️ 盤面を見る
+        </button>
+        <button onclick="appUI.closeModal('victoryModal'); appUI.backToLobby();" class="brass-btn flex-1 py-2.5 px-4 rounded-2xl font-extrabold text-xs sm:text-sm shadow-xl whitespace-nowrap">
+          🧭 ロビーへ戻る
         </button>
       </div>
     </div>
@@ -931,54 +1086,58 @@
     </div>
   </div>
 
+  <!-- ==================== モーダル7: ロビー帰還確認モーダル ==================== -->
+  <div id="confirmLobbyModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="parchment-panel rounded-3xl max-w-sm w-full p-5 space-y-4 text-center">
+      <div class="space-y-1.5">
+        <div class="text-2xl">🧭</div>
+        <h3 class="font-serif font-extrabold text-lg text-mahogany-950">ロビーへ戻りますか？</h3>
+        <p class="text-xs sm:text-sm text-mahogany-800 leading-relaxed font-medium">
+          現在の対局進行は終了し、タイトル・対戦設定画面へ戻ります。
+        </p>
+      </div>
+      <div class="grid grid-cols-2 gap-2.5 pt-1">
+        <button onclick="appUI.closeModal('confirmLobbyModal')" class="py-2.5 px-3 rounded-xl bg-mahogany-900/15 hover:bg-mahogany-900/25 text-mahogany-950 font-extrabold text-xs sm:text-sm">
+          対局を続ける
+        </button>
+        <button onclick="appUI.closeModal('confirmLobbyModal'); appUI.backToLobby();" class="py-2.5 px-3 rounded-xl bg-red-800 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm shadow">
+          ロビーへ戻る
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ==========================================================================
-       1. 定数・マスタデータ定義
+       1. ゲーム定数・資源定義・ユーティリティ
        ========================================================================== */
-    const RESOURCES = {
-      wood:  { key: 'wood',  name: '木材', emoji: '🌲', color: '#15803d', bgHex: '#2d6a4f', lightBg: '#dcfce7' },
-      brick: { key: 'brick', name: 'レンガ', emoji: '🧱', color: '#b91c1c', bgHex: '#b5442a', lightBg: '#fee2e2' },
-      sheep: { key: 'sheep', name: '羊毛', emoji: '🐑', color: '#4d7c0f', bgHex: '#84a93c', lightBg: '#ecfccb' },
-      wheat: { key: 'wheat', name: '小麦', emoji: '🌾', color: '#b45309', bgHex: '#e0a92b', lightBg: '#fef3c7' },
-      ore:   { key: 'ore',   name: '鉱石', emoji: '⛰️', color: '#475569', bgHex: '#64748b', lightBg: '#f1f5f9' }
-    };
     const RESOURCE_KEYS = ['wood', 'brick', 'sheep', 'wheat', 'ore'];
 
-    const TERRAIN_INFO = {
-      wood:   { name: '森林', fill: '#2d6a4f', stroke: '#1b4332', emoji: '🌲' },
-      brick:  { name: '丘陵', fill: '#b5442a', stroke: '#7f2916', emoji: '🧱' },
-      sheep:  { name: '牧草地', fill: '#84a93c', stroke: '#4d6b18', emoji: '🐑' },
-      wheat:  { name: '畑', fill: '#e0a92b', stroke: '#9c7111', emoji: '🌾' },
-      ore:    { name: '山地', fill: '#64748b', stroke: '#334155', emoji: '⛰️' },
-      desert: { name: '砂漠', fill: '#d6c39c', stroke: '#9c8860', emoji: '🏜️' }
+    const RESOURCES = {
+      wood:  { name: '木材',   emoji: '🌲' },
+      brick: { name: 'レンガ', emoji: '🧱' },
+      sheep: { name: '羊毛',   emoji: '🐑' },
+      wheat: { name: '小麦',   emoji: '🌾' },
+      ore:   { name: '鉱石',   emoji: '⛰️' }
     };
 
     const PLAYER_PALETTES = [
-      { id: 'crimson', name: '真紅', hex: '#ef4444', dark: '#991b1b', light: '#fecaca' },
-      { id: 'azure',   name: '群青', hex: '#3b82f6', dark: '#1e40af', light: '#bfdbfe' },
-      { id: 'amber',   name: '黄金', hex: '#f59e0b', dark: '#92400e', light: '#fde68a' },
-      { id: 'emerald', name: '翡翠', hex: '#10b981', dark: '#065f46', light: '#a7f3d0' }
+      { id: 'crimson', name: 'クリムゾン',   hex: '#dc2626' },
+      { id: 'azure',   name: 'アズール',     hex: '#2563eb' },
+      { id: 'emerald', name: 'エメラルド',   hex: '#059669' },
+      { id: 'amber',   name: 'アンバー',     hex: '#d97706' },
+      { id: 'violet',  name: 'バイオレット', hex: '#7c3aed' },
+      { id: 'rose',    name: 'ローズ',       hex: '#db2777' },
+      { id: 'cyan',    name: 'シアン',       hex: '#0891b2' },
+      { id: 'slate',   name: 'オブシディアン', hex: '#475569' }
     ];
 
-    const BUILD_COSTS = {
-      road:       { wood: 1, brick: 1, sheep: 0, wheat: 0, ore: 0 },
-      settlement: { wood: 1, brick: 1, sheep: 1, wheat: 1, ore: 0 },
-      city:       { wood: 0, brick: 0, sheep: 0, wheat: 2, ore: 3 },
-      devCard:    { wood: 0, brick: 0, sheep: 1, wheat: 1, ore: 1 }
-    };
-
-    const DEV_CARD_META = {
-      knight:       { name: '騎士', desc: '盗賊を移動し、隣接プレイヤーから資源を1枚奪う。3枚以上で最大騎士力(+2VP)。' },
-      vp:           { name: '勝利点（大聖堂）', desc: 'ゲーム終了時まで伏せられる秘匿の1勝利点。10VP到達時に自動公開。' },
-      roadBuilding: { name: '街道建設', desc: '資源を消費せずに、盤面へ街道を2本まで無料で建設できる。' },
-      yearOfPlenty: { name: '発見（収穫）', desc: '銀行から好きな資源カードを2枚選んで手札に加える。' },
-      monopoly:     { name: '独占', desc: '資源を1種類宣言し、他のプレイヤー全員が持つその資源をすべて奪う。' }
-    };
-
-    const NUMBER_PIPS = {
-      2: 1, 3: 2, 4: 3, 5: 4, 6: 5,
-      8: 5, 9: 4, 10: 3, 11: 2, 12: 1
-    };
+    const CPU_BASE_NAMES = [
+      '島の開拓団',
+      '大海原の航海士',
+      '古の森の賢者',
+      '荒野の錬金術師'
+    ];
 
     const CPU_DIFFICULTY_LABELS = {
       easy: '初級',
@@ -986,26 +1145,76 @@
       hard: '上級'
     };
 
+    const MAP_PRESET_LABELS = {
+      standard: 'スタンダード',
+      advanced: '上級',
+      master: 'マスター'
+    };
+
+    const TERRAIN_INFO = {
+      wood:   { name: '森林',   emoji: '🌲', fill: '#166534', stroke: '#4ade80' },
+      brick:  { name: '丘陵',   emoji: '🧱', fill: '#9a3412', stroke: '#fb923c' },
+      sheep:  { name: '牧草地', emoji: '🐑', fill: '#4d7c0f', stroke: '#bef264' },
+      wheat:  { name: '畑',     emoji: '🌾', fill: '#b45309', stroke: '#fde047' },
+      ore:    { name: '山地',   emoji: '⛰️', fill: '#334155', stroke: '#94a3b8' },
+      desert: { name: '砂漠',   emoji: '🏜️', fill: '#d6b88d', stroke: '#fef3c7' }
+    };
+
+    const NUMBER_PIPS = {
+      2: 1, 3: 2, 4: 3, 5: 4, 6: 5,
+      8: 5, 9: 4, 10: 3, 11: 2, 12: 1
+    };
+
+    const BUILD_COSTS = {
+      road:       { wood: 1, brick: 1 },
+      settlement: { wood: 1, brick: 1, sheep: 1, wheat: 1 },
+      city:       { wheat: 2, ore: 3 },
+      devCard:    { sheep: 1, wheat: 1, ore: 1 }
+    };
+
+    const DEV_CARD_META = {
+      knight: {
+        name: '⚔️ 騎士',
+        desc: '盗賊を別のタイルへ移動させ、隣接する相手から資源を1枚奪います。3枚以上で最大騎士力(+2VP)。'
+      },
+      vp: {
+        name: '🏛️ 勝利点 (+1VP)',
+        desc: '獲得した瞬間に秘密の勝利点が+1点加算されます（10VP到達時に公開）。'
+      },
+      roadBuilding: {
+        name: '🛤️ 街道建設',
+        desc: '資源を消費せずに街道を2本まで無料で建設できます。'
+      },
+      yearOfPlenty: {
+        name: '🌾 発見',
+        desc: '銀行から好きな資源を合計2枚獲得します（同じ種類2枚も可）。'
+      },
+      monopoly: {
+        name: '👑 独占',
+        desc: '資源を1種類宣言し、他のプレイヤー全員からその資源をすべて奪います。'
+      }
+    };
+
     function emptyHand() {
       return { wood: 0, brick: 0, sheep: 0, wheat: 0, ore: 0 };
     }
 
     function totalHandCount(hand) {
-      if (!hand) return 0;
-      return RESOURCE_KEYS.reduce((sum, k) => sum + (hand[k] || 0), 0);
+      return RESOURCE_KEYS.reduce((sum, k) => sum + (hand?.[k] || 0), 0);
     }
 
     function canAfford(hand, cost) {
-      if (!hand || !cost) return false;
-      return RESOURCE_KEYS.every(k => (hand[k] || 0) >= (cost[k] || 0));
+      return RESOURCE_KEYS.every(k => (hand?.[k] || 0) >= (cost?.[k] || 0));
     }
 
     function formatResourceBundle(bundle) {
       if (!bundle) return 'なし';
       const parts = [];
       for (const k of RESOURCE_KEYS) {
-        const n = bundle[k] || 0;
-        if (n > 0) parts.push(`${RESOURCES[k].emoji}${RESOURCES[k].name}×${n}`);
+        const cnt = bundle[k] || 0;
+        if (cnt > 0) {
+          parts.push(`${RESOURCES[k].emoji}${RESOURCES[k].name}×${cnt}`);
+        }
       }
       return parts.length > 0 ? parts.join('・') : 'なし';
     }
@@ -1023,7 +1232,7 @@
        2. 盤面ジェネレーター（公式準拠バランス数字トークン・港・頂点/辺グラフ）
        ========================================================================== */
     class BoardGenerator {
-      static generateBoard() {
+      static generateBoard(mapPreset = 'standard') {
         const R = 48;
         const SQRT3 = Math.sqrt(3);
 
@@ -1037,20 +1246,10 @@
           }
         }
 
-        // 地形デッキ（19枚）
-        const terrains = shuffleArray([
-          'wood', 'wood', 'wood', 'wood',
-          'brick', 'brick', 'brick',
-          'sheep', 'sheep', 'sheep', 'sheep',
-          'wheat', 'wheat', 'wheat', 'wheat',
-          'ore', 'ore', 'ore',
-          'desert'
-        ]);
-
         // 公式標準の数字トークン列（反時計回りスパイラル配置で6と8が隣接しない）
         const officialNumbers = [5, 2, 6, 3, 8, 10, 9, 12, 11, 4, 8, 10, 9, 4, 5, 6, 3, 11];
 
-        // 外周6角のいずれかから開始する反時計回りスパイラル座標列
+        // 外周12ヘクス・内周6ヘクス・中央1ヘクス
         const corners = [
           { q: 0, r: -2 },
           { q: -2, r: 0 },
@@ -1083,9 +1282,51 @@
         const spiralCoords = [...rotatedOuter, ...rotatedInner, { q: 0, r: 0 }];
 
         const terrainMap = {};
-        axialCoords.forEach((c, idx) => {
-          terrainMap[`${c.q},${c.r}`] = terrains[idx];
-        });
+        const resourcePool18 = [
+          'wood', 'wood', 'wood', 'wood',
+          'brick', 'brick', 'brick',
+          'sheep', 'sheep', 'sheep', 'sheep',
+          'wheat', 'wheat', 'wheat', 'wheat',
+          'ore', 'ore', 'ore'
+        ];
+
+        if (mapPreset === 'standard') {
+          // スタンダード: 公式ルールブック推奨のバランス固定配置（砂漠は外周上部）
+          const standardFixedMap = {
+            '0,-2': 'desert',
+            '-1,-1': 'wood',   '-2,0': 'brick',  '-2,1': 'sheep',
+            '-2,2': 'wheat',   '-1,2': 'ore',    '0,2': 'wood',
+            '1,1': 'sheep',    '2,0': 'brick',   '2,-1': 'wheat',
+            '2,-2': 'ore',     '1,-2': 'sheep',
+            '0,-1': 'wheat',   '-1,0': 'ore',    '-1,1': 'wood',
+            '0,1': 'brick',    '1,0': 'sheep',   '1,-1': 'wheat',
+            '0,0': 'wood'
+          };
+          axialCoords.forEach(c => {
+            const k = `${c.q},${c.r}`;
+            terrainMap[k] = standardFixedMap[k] || 'wood';
+          });
+        } else if (mapPreset === 'master') {
+          // マスター: 砂漠を内周7タイル（中央＋内周リング6タイル）のいずれかにランダム配置
+          const inner7Keys = [...innerRing, { q: 0, r: 0 }].map(c => `${c.q},${c.r}`);
+          const desertKey = inner7Keys[Math.floor(Math.random() * inner7Keys.length)];
+          const shuffled18 = shuffleArray(resourcePool18);
+          let idx = 0;
+          axialCoords.forEach(c => {
+            const k = `${c.q},${c.r}`;
+            terrainMap[k] = (k === desertKey) ? 'desert' : shuffled18[idx++];
+          });
+        } else {
+          // 上級 (advanced): 砂漠を外周12タイルのいずれかに置いたランダム配置
+          const outer12Keys = outerRing.map(c => `${c.q},${c.r}`);
+          const desertKey = outer12Keys[Math.floor(Math.random() * outer12Keys.length)];
+          const shuffled18 = shuffleArray(resourcePool18);
+          let idx = 0;
+          axialCoords.forEach(c => {
+            const k = `${c.q},${c.r}`;
+            terrainMap[k] = (k === desertKey) ? 'desert' : shuffled18[idx++];
+          });
+        }
 
         const numberMap = {};
         let numIdx = 0;
@@ -1220,12 +1461,12 @@
           });
         }
 
-        return { hexes, vertices, edges, harbors, robberHexId };
+        return { hexes, vertices, edges, harbors, robberHexId, mapPreset };
       }
     }
 
     /* ==========================================================================
-       3. 非公開データ管理（手札・発展カード山札・秘匿VP）
+       3. 秘匿手札・銀行・発展カード山札管理（SecretVault）
        ========================================================================== */
     class SecretVault {
       constructor() {
@@ -1235,21 +1476,25 @@
         this.bank = { wood: 19, brick: 19, sheep: 19, wheat: 19, ore: 19 };
       }
 
-      initForPlayers(uids) {
+      initForPlayers(turnOrder) {
         this.hands = {};
         this.devHands = {};
         this.bank = { wood: 19, brick: 19, sheep: 19, wheat: 19, ore: 19 };
-        uids.forEach(uid => {
+
+        turnOrder.forEach(uid => {
           this.hands[uid] = emptyHand();
           this.devHands[uid] = [];
         });
-        this.devDeck = shuffleArray([
+
+        // 標準25枚の発展カード構成
+        const rawDeck = [
           ...Array(14).fill('knight'),
           ...Array(5).fill('vp'),
           ...Array(2).fill('roadBuilding'),
           ...Array(2).fill('yearOfPlenty'),
           ...Array(2).fill('monopoly')
-        ]);
+        ];
+        this.devDeck = shuffleArray(rawDeck);
       }
 
       getHand(uid) {
@@ -1262,35 +1507,74 @@
         return this.devHands[uid];
       }
 
-      getSecretVpCount(uid) {
-        return this.getDevHand(uid).filter(c => c.type === 'vp').length;
-      }
-
-      grantResource(uid, resKey, amount = 1) {
+      grantResource(uid, resKey, amount) {
         if (!RESOURCES[resKey] || amount <= 0) return 0;
-        const actual = Math.min(amount, this.bank[resKey] || 0);
-        if (actual <= 0) return 0;
-        this.bank[resKey] -= actual;
-        this.getHand(uid)[resKey] = (this.getHand(uid)[resKey] || 0) + actual;
-        return actual;
+        const hand = this.getHand(uid);
+        const available = Math.max(0, Math.min(amount, this.bank[resKey] ?? 19));
+        this.bank[resKey] = Math.max(0, (this.bank[resKey] ?? 19) - available);
+        hand[resKey] = (hand[resKey] || 0) + available;
+        return available;
       }
 
       spendBundle(uid, bundle) {
-        const h = this.getHand(uid);
+        if (!bundle) return;
+        const hand = this.getHand(uid);
         for (const k of RESOURCE_KEYS) {
           const amt = bundle[k] || 0;
           if (amt > 0) {
-            h[k] = Math.max(0, (h[k] || 0) - amt);
-            this.bank[k] = Math.min(19, (this.bank[k] || 0) + amt);
+            const actual = Math.min(hand[k] || 0, amt);
+            hand[k] = Math.max(0, (hand[k] || 0) - actual);
+            this.bank[k] = Math.min(19, (this.bank[k] || 0) + actual);
           }
         }
+      }
+
+      smartCpuDiscard(uid, reqCnt, difficulty = 'normal') {
+        const hand = this.getHand(uid);
+        const dropped = emptyHand();
+        let remaining = reqCnt;
+
+        while (remaining > 0 && totalHandCount(hand) > 0) {
+          const availableKeys = RESOURCE_KEYS.filter(k => (hand[k] || 0) > 0);
+          if (availableKeys.length === 0) break;
+
+          let chosenKey = availableKeys[0];
+          if (difficulty === 'easy') {
+            chosenKey = availableKeys[Math.floor(Math.random() * availableKeys.length)];
+          } else {
+            // 最も多く重複している資源から優先して破棄し、建設バランスを温存
+            availableKeys.sort((a, b) => (hand[b] || 0) - (hand[a] || 0));
+            chosenKey = availableKeys[0];
+          }
+
+          hand[chosenKey] -= 1;
+          this.bank[chosenKey] = Math.min(19, (this.bank[chosenKey] || 0) + 1);
+          dropped[chosenKey] += 1;
+          remaining -= 1;
+        }
+        return dropped;
+      }
+
+      stealRandomCard(victimUid, thiefUid) {
+        const vHand = this.getHand(victimUid);
+        const tHand = this.getHand(thiefUid);
+        const pool = [];
+        for (const k of RESOURCE_KEYS) {
+          const cnt = vHand[k] || 0;
+          for (let i = 0; i < cnt; i++) pool.push(k);
+        }
+        if (pool.length === 0) return null;
+        const stolenKey = pool[Math.floor(Math.random() * pool.length)];
+        vHand[stolenKey] -= 1;
+        tHand[stolenKey] = (tHand[stolenKey] || 0) + 1;
+        return stolenKey;
       }
 
       drawDevCard(uid, turnNumber) {
         if (this.devDeck.length === 0) return null;
         const type = this.devDeck.pop();
         const card = {
-          id: `dc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          id: `dev_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           type,
           boughtTurn: turnNumber
         };
@@ -1298,137 +1582,77 @@
         return card;
       }
 
-      stealRandomCard(victimUid, thiefUid) {
-        const vHand = this.getHand(victimUid);
-        const pool = [];
-        for (const k of RESOURCE_KEYS) {
-          for (let i = 0; i < (vHand[k] || 0); i++) pool.push(k);
-        }
-        if (pool.length === 0) return null;
-        const picked = pool[Math.floor(Math.random() * pool.length)];
-        vHand[picked] -= 1;
-        this.getHand(thiefUid)[picked] += 1;
-        return picked;
-      }
-
-      executeMonopoly(winnerUid, resKey) {
-        let totalCollected = 0;
-        for (const uid of Object.keys(this.hands)) {
-          if (uid === winnerUid) continue;
-          const cnt = this.hands[uid][resKey] || 0;
+      executeMonopoly(uid, resKey) {
+        const myHand = this.getHand(uid);
+        let stolenSum = 0;
+        for (const [otherUid, otherHand] of Object.entries(this.hands)) {
+          if (otherUid === uid) continue;
+          const cnt = otherHand[resKey] || 0;
           if (cnt > 0) {
-            this.hands[uid][resKey] = 0;
-            this.getHand(winnerUid)[resKey] += cnt;
-            totalCollected += cnt;
+            otherHand[resKey] = 0;
+            myHand[resKey] = (myHand[resKey] || 0) + cnt;
+            stolenSum += cnt;
           }
         }
-        return totalCollected;
+        return stolenSum;
       }
 
-      smartCpuDiscard(uid, discardCount, difficulty = 'normal') {
-        const h = this.getHand(uid);
-        const discarded = emptyHand();
-        let rem = discardCount;
-
-        if (difficulty === 'easy') {
-          while (rem > 0) {
-            const avail = RESOURCE_KEYS.filter(k => (h[k] || 0) > 0);
-            if (avail.length === 0) break;
-            const pick = avail[Math.floor(Math.random() * avail.length)];
-            h[pick] -= 1;
-            this.bank[pick] = Math.min(19, (this.bank[pick] || 0) + 1);
-            discarded[pick] += 1;
-            rem -= 1;
-          }
-          return discarded;
-        }
-
-        if (difficulty === 'hard') {
-          const reserve = (h.wheat >= 1 && h.ore >= 2)
-            ? { wood: 0, brick: 0, sheep: 0, wheat: 2, ore: 3 }
-            : { wood: 1, brick: 1, sheep: 1, wheat: 1, ore: 0 };
-          while (rem > 0) {
-            let bestKey = null;
-            let bestExcess = -999;
-            for (const k of RESOURCE_KEYS) {
-              if ((h[k] || 0) <= 0) continue;
-              const excess = (h[k] || 0) - (reserve[k] || 0);
-              if (excess > bestExcess) {
-                bestExcess = excess;
-                bestKey = k;
-              }
-            }
-            if (!bestKey) break;
-            h[bestKey] -= 1;
-            this.bank[bestKey] = Math.min(19, (this.bank[bestKey] || 0) + 1);
-            discarded[bestKey] += 1;
-            rem -= 1;
-          }
-          return discarded;
-        }
-
-        while (rem > 0) {
-          let maxKey = null;
-          let maxVal = 0;
-          for (const k of RESOURCE_KEYS) {
-            if ((h[k] || 0) > maxVal) {
-              maxVal = h[k];
-              maxKey = k;
-            }
-          }
-          if (!maxKey) break;
-          h[maxKey] -= 1;
-          this.bank[maxKey] = Math.min(19, (this.bank[maxKey] || 0) + 1);
-          discarded[maxKey] += 1;
-          rem -= 1;
-        }
-        return discarded;
+      getSecretVpCount(uid) {
+        return this.getDevHand(uid).filter(c => c.type === 'vp').length;
       }
     }
 
     /* ==========================================================================
-       4. 最長交易路グラフ計算エンジン
+       4. 最長交易路計算エンジン（LongestRoadCalculator）
        ========================================================================== */
     class LongestRoadCalculator {
       static computeForPlayer(uid, board, buildings) {
-        const playerEdges = board.edges.filter(e => buildings.roads[e.id]?.ownerUid === uid);
-        if (playerEdges.length === 0) return 0;
+        const myEdges = board.edges.filter(e => buildings.roads[e.id]?.ownerUid === uid);
+        if (myEdges.length === 0) return 0;
 
-        const adj = new Map();
-        playerEdges.forEach(e => {
-          if (!adj.has(e.v1)) adj.set(e.v1, []);
-          if (!adj.has(e.v2)) adj.set(e.v2, []);
-          adj.get(e.v1).push({ to: e.v2, edgeId: e.id });
-          adj.get(e.v2).push({ to: e.v1, edgeId: e.id });
+        const adjByVertex = {};
+        myEdges.forEach(e => {
+          if (!adjByVertex[e.v1]) adjByVertex[e.v1] = [];
+          if (!adjByVertex[e.v2]) adjByVertex[e.v2] = [];
+          adjByVertex[e.v1].push(e);
+          adjByVertex[e.v2].push(e);
         });
 
         let maxLen = 0;
-        const visitedEdges = new Set();
+        const visited = new Set();
 
-        const dfs = (currV, length) => {
-          if (length > maxLen) maxLen = length;
-          const neighbors = adj.get(currV) || [];
-          for (const next of neighbors) {
-            if (visitedEdges.has(next.edgeId)) continue;
-            // 他プレイヤーの開拓地・都市が途中の頂点にある場合は分断される
-            const occupant = buildings.settlements[currV];
-            if (length > 0 && occupant && occupant.ownerUid !== uid) continue;
-
-            visitedEdges.add(next.edgeId);
-            dfs(next.to, length + 1);
-            visitedEdges.delete(next.edgeId);
+        const dfs = (currVertex, isStart) => {
+          // 他プレイヤーの開拓地・都市がある頂点は通過不可（起点は除く）
+          if (!isStart) {
+            const b = buildings.settlements[currVertex];
+            if (b && b.ownerUid !== uid) {
+              return 0;
+            }
           }
+
+          let best = 0;
+          const edges = adjByVertex[currVertex] || [];
+          for (const edge of edges) {
+            if (visited.has(edge.id)) continue;
+            visited.add(edge.id);
+            const nextV = edge.v1 === currVertex ? edge.v2 : edge.v1;
+            const len = 1 + dfs(nextV, false);
+            if (len > best) best = len;
+            visited.delete(edge.id);
+          }
+          return best;
         };
 
-        for (const startV of adj.keys()) {
-          dfs(startV, 0);
+        for (const startV of Object.keys(adjByVertex)) {
+          const len = dfs(startV, true);
+          if (len > maxLen) maxLen = len;
         }
         return maxLen;
       }
     }
 
     /* ==========================================================================
-       5. 本格AI戦略コーチ＆戦績分析クラス
+       5. 戦績・AI戦略コーチング分析（AnalyticsTracker）
        ========================================================================== */
     class AnalyticsTracker {
       constructor() {
@@ -1436,158 +1660,270 @@
       }
 
       reset() {
-        this.initialSettlements = [];
-        this.buildTimeline = [];
-        this.diceRolls = [];
+        this.initialVertices = [];
+        this.buildHistory = [];
         this.tradesCount = 0;
-        this.robberHitsTaken = 0;
       }
 
       recordInitialSettlement(vertexId, board) {
-        const v = board.vertices.find(vx => vx.id === vertexId);
-        if (!v) return;
-        const hById = Object.fromEntries(board.hexes.map(h => [h.id, h]));
-        const hexes = v.hexIds.map(hid => hById[hid]).filter(Boolean);
-        const pips = hexes.reduce((s, h) => s + (NUMBER_PIPS[h.number] || 0), 0);
-        const terrains = hexes.map(h => h.terrain).filter(t => t !== 'desert');
-        this.initialSettlements.push({ vertexId, pips, terrains, harbor: v.harbor });
+        if (!this.initialVertices.includes(vertexId)) {
+          this.initialVertices.push(vertexId);
+        }
       }
 
-      recordBuild(turn, type, detail) {
-        this.buildTimeline.push({ turn, type, detail });
+      recordBuild(turn, type, desc) {
+        this.buildHistory.push({ turn, type, desc });
       }
 
       generateReport(st, localUid) {
         const me = st.players[localUid];
-        if (!me) return '<p>データがありません。</p>';
+        if (!me) return '<p>プレイヤーデータが見つかりません。</p>';
 
-        const hand = gameController.myHand || emptyHand();
-        const secVp = gameController.myDevHand.filter(c => c.type === 'vp').length;
+        const hById = Object.fromEntries(st.board.hexes.map(h => [h.id, h]));
+        const vById = Object.fromEntries(st.board.vertices.map(v => [v.id, v]));
+
+        // 自分の拠点の産出力（pip期待値）と資源バランスを集計
+        let totalPips = 0;
+        const resProductionPips = emptyHand();
+        let settlementCnt = 0;
+        let cityCnt = 0;
+
+        Object.entries(st.buildings.settlements).forEach(([vid, b]) => {
+          if (b.ownerUid !== localUid) return;
+          const mult = b.isCity ? 2 : 1;
+          if (b.isCity) cityCnt += 1;
+          else settlementCnt += 1;
+
+          vById[vid]?.hexIds.forEach(hid => {
+            const hex = hById[hid];
+            if (hex && hex.terrain !== 'desert') {
+              const p = (NUMBER_PIPS[hex.number] || 0) * mult;
+              totalPips += p;
+              resProductionPips[hex.terrain] += p;
+            }
+          });
+        });
+
+        const coveredTypes = RESOURCE_KEYS.filter(k => resProductionPips[k] > 0);
+        const missingTypes = RESOURCE_KEYS.filter(k => resProductionPips[k] === 0);
+        const secVp = secretVault.getSecretVpCount(localUid);
         const totalVp = me.publicVP + secVp;
-        const rates = gameController.getPlayerTradeRates(localUid);
 
-        // 初期配置評価
-        const totalInitPips = this.initialSettlements.reduce((s, x) => s + x.pips, 0);
-        const allInitTerrains = new Set(this.initialSettlements.flatMap(x => x.terrains));
-        const initHarbors = this.initialSettlements.map(x => x.harbor).filter(Boolean);
-
-        let initComment = '';
-        if (allInitTerrains.size >= 4 && totalInitPips >= 18) {
-          initComment = `初期2拠点で${allInitTerrains.size}種類の資源と合計産出期待値${totalInitPips}ピップを確保できており、序盤からバランス良く資源が回る立ち上がりです。`;
-        } else if (allInitTerrains.size <= 2) {
-          initComment = `初期配置の資源が${allInitTerrains.size}種類に偏っています。不足している資源のタイルや「3:1 / 2:1港」へ早めに街道を伸ばして補完するのが重要です。`;
+        // 戦略アドバイス生成
+        const advices = [];
+        if (missingTypes.length > 0) {
+          const names = missingTypes.map(k => `${RESOURCES[k].emoji}${RESOURCES[k].name}`).join('・');
+          advices.push(`⚠️ <strong>不足資源の補完:</strong> 現在 ${names} の産出拠点がありません。港レート（3:1 / 2:1）の確保や交渉で補いましょう。`);
         } else {
-          initComment = `初期2拠点の合計期待値は${totalInitPips}ピップ（資源${allInitTerrains.size}種）です。不足資源は交易や港の活用で補いましょう。`;
+          advices.push(`✨ <strong>全5資源カバー達成:</strong> すべての資源を自給できる理想的な拠点バランスです！`);
         }
 
-        // 現在の資源傾向とおすすめ方針の決定
-        const oreWheatScore = (hand.ore || 0) + (hand.wheat || 0) + (4 - me.citiesRemaining) * 2.5;
-        const woodBrickScore = (hand.wood || 0) + (hand.brick || 0) + Math.floor(me.longestRoadLength / 2);
-        const hasSpecializedHarbor = RESOURCE_KEYS.some(k => rates[k] === 2);
-
-        // 不足資源の特定
-        const missingResources = RESOURCE_KEYS.filter(k => (hand[k] || 0) === 0).map(k => `${RESOURCES[k].emoji}${RESOURCES[k].name}`);
-
-        let recommendedPolicyTitle = '';
-        let recommendedPolicyReason = '';
-        const actionSteps = [];
-
-        if (oreWheatScore >= woodBrickScore && me.citiesRemaining > 0 && me.settlementsRemaining < 5) {
-          recommendedPolicyTitle = '🏰 都市化＆発展カード集中方針（高効率VPルート）';
-          recommendedPolicyReason = '小麦・鉱石の供給または手持ちが整いつつあるため、既存開拓地の都市化と発展カード購入で確実に勝利点を積み上げる方針が最も勝率が高いです。';
-          actionSteps.push(`【最優先アクション】🌾小麦×2・⛰️鉱石×3 を集め、最も数字の強い開拓地（6・8・5・9隣接）を都市へ昇格させましょう（残り都市枠 ${me.citiesRemaining}）。`);
-          if (!me.hasLargestArmy && me.knightsPlayed >= 1) {
-            actionSteps.push(`【称号狙い】騎士を${me.knightsPlayed}枚使用済みです。発展カードを引いて3枚目の騎士を揃え「最大騎士力 (+2VP)」の奪取を狙いましょう。`);
-          }
-        } else if (woodBrickScore > oreWheatScore && me.roadsRemaining >= 3) {
-          recommendedPolicyTitle = '🛤️ 街道拡張＆最長交易路制覇方針（盤面支配ルート）';
-          recommendedPolicyReason = '木材・レンガの機動力を活かせる盤面状況です。良質な空き頂点への開拓地増設と連続街道の延長を同時に進める方針がおすすめです。';
-          if (!me.hasLongestRoad) {
-            const needRoads = Math.max(1, 5 - me.longestRoadLength);
-            actionSteps.push(`【最優先アクション】現在連続街道は${me.longestRoadLength}本です。あと${needRoads}本つなげて「最長交易路 (+2VP)」を先に獲得しましょう。`);
-          } else {
-            actionSteps.push(`【防衛アクション】「最長交易路 (+2VP)」を保持中です。他プレイヤーに追い抜かれないよう、分岐や延長で街道を1〜2本足しておくと安全です。`);
-          }
-          actionSteps.push('【拡張ルート】街道を伸ばす先は、未所持の資源タイル（特に小麦・鉱石）または「3:1 / 2:1港」の頂点を目指してください。');
-        } else {
-          recommendedPolicyTitle = '⛵ 港レート活用＆バランス開拓方針（柔軟ビルド型）';
-          recommendedPolicyReason = hasSpecializedHarbor
-            ? '2:1専門港を確保できているため、得意資源を港で不足資源へ変換しながら都市化と新規開拓を両立する方針が有効です。'
-            : '特定資源の偏りを交易と港確保で補いながら、手札7枚以下を保って堅実に拠点数を増やす方針がおすすめです。';
-          actionSteps.push('【最優先アクション】「3:1一般港」または自分の最多産出資源と一致する「2:1専門港」の頂点に開拓地を建て、交易効率を引き上げましょう。');
+        if (cityCnt === 0 && (resProductionPips.wheat > 0 || resProductionPips.ore > 0)) {
+          advices.push(`🏰 <strong>都市化の推奨:</strong> 🌾小麦×2・⛰️鉱石×3 を集めて高確率タイル隣接の開拓地を都市化すると、産出期待値とVPが一気に加速します。`);
+        }
+        if (!me.hasLongestRoad && me.longestRoadLength >= 3) {
+          advices.push(`🛤️ <strong>最長交易路チャンス:</strong> 現在の最長連続街道は <strong>${me.longestRoadLength}本</strong> です。あと数本伸ばせば +2VP の最長交易路ボーナス圏内です。`);
+        }
+        if (!me.hasLargestArmy && me.knightsPlayed >= 2) {
+          advices.push(`⚔️ <strong>最大騎士力リーチ:</strong> 騎士カードを <strong>${me.knightsPlayed}枚</strong> 使用済みです。3枚以上で +2VP の最大騎士力を獲得できます。`);
+        }
+        if (advices.length === 1) {
+          advices.push(`🎯 <strong>勝利への最短ルート:</strong> 現在 ${totalVp}VP（残り ${Math.max(0, 10 - totalVp)}VP）。発展カードの勝利点や都市化を組み合わせて10VP到達を狙いましょう！`);
         }
 
-        if (missingResources.length > 0) {
-          actionSteps.push(`【資源補完】現在手札に ${missingResources.slice(0, 3).join('・')} が不足しています。余剰資源でプレイヤー交渉か港交易を行いましょう。`);
-        }
-
-        // 共通の戦術補強アドバイス
-        const topOpponentVp = Math.max(0, ...st.turnOrder.filter(u => u !== localUid).map(u => st.players[u].publicVP));
-        if (topOpponentVp >= 7) {
-          actionSteps.push(`【警戒ライン】トップのライバルが公開${topOpponentVp}VPに到達しています。盗賊移動時はトッププレイヤーの高確率タイル（6・8など）を優先して止めましょう。`);
-        }
-        if (totalHandCount(hand) >= 6) {
-          actionSteps.push(`【バースト予防】現在手札が${totalHandCount(hand)}枚です。次の7で半分失わないよう、街道1本や発展カード1枚でも早めに消費しておきましょう。`);
-        }
-
-        const timelineHtml = this.buildTimeline.length > 0
-          ? this.buildTimeline.slice(-8).map(item => `
-              <div class="flex items-center justify-between gap-2 px-2.5 py-1 rounded-lg bg-white/70 border border-brass-600/20 text-xs">
-                <span class="font-bold text-amber-900 whitespace-nowrap flex-shrink-0">ターン ${item.turn}</span>
-                <span class="font-extrabold text-mahogany-950 truncate">${item.detail}</span>
-              </div>
-            `).join('')
-          : '<div class="text-xs text-mahogany-800">まだ建設履歴がありません。</div>';
+        const recentLogs = this.buildHistory.slice(-6).reverse().map(item =>
+          `<div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white/75 border border-brass-600/25 text-xs">
+            <span class="font-bold text-mahogany-950">${item.desc}</span>
+            <span class="text-[11px] font-mono text-amber-900">${item.turn === 0 ? '初期配置' : `T${item.turn}`}</span>
+          </div>`
+        ).join('') || '<div class="text-xs text-mahogany-800">まだ建設履歴がありません。</div>';
 
         return `
-          <div class="rounded-2xl bg-mahogany-950 text-parchment-100 p-3 sm:p-4 border border-amber-400/60 flex items-center justify-between gap-2 overflow-x-auto">
-            <div class="flex-shrink-0">
-              <div class="text-[10px] sm:text-[11px] text-amber-300 font-bold whitespace-nowrap">獲得勝利点</div>
-              <div class="font-serif font-black text-2xl sm:text-3xl text-white mt-0.5 whitespace-nowrap">${totalVp} <span class="text-sm sm:text-lg text-amber-300">VP</span></div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="rounded-2xl bg-white/80 p-3 border border-brass-600/35 text-center">
+              <div class="text-[11px] font-bold text-mahogany-800">総合勝利点</div>
+              <div class="font-serif font-black text-xl text-amber-900 mt-0.5">${totalVp} <span class="text-xs">/ 10 VP</span></div>
             </div>
-            <div class="grid grid-cols-3 gap-1 sm:gap-2.5 text-center flex-shrink-0">
-              <div class="px-1.5 sm:px-2.5 py-1 rounded-xl bg-mahogany-900 border border-brass-600/40 whitespace-nowrap">
-                <div class="text-[9px] sm:text-[10px] text-parchment-300">連続街道</div>
-                <div class="font-extrabold text-xs sm:text-sm text-amber-300">${me.longestRoadLength}本</div>
-              </div>
-              <div class="px-1.5 sm:px-2.5 py-1 rounded-xl bg-mahogany-900 border border-brass-600/40 whitespace-nowrap">
-                <div class="text-[9px] sm:text-[10px] text-parchment-300">騎士使用</div>
-                <div class="font-extrabold text-xs sm:text-sm text-amber-300">${me.knightsPlayed}回</div>
-              </div>
-              <div class="px-1.5 sm:px-2.5 py-1 rounded-xl bg-mahogany-900 border border-brass-600/40 whitespace-nowrap">
-                <div class="text-[9px] sm:text-[10px] text-parchment-300">交易回数</div>
-                <div class="font-extrabold text-xs sm:text-sm text-amber-300">${this.tradesCount}回</div>
-              </div>
+            <div class="rounded-2xl bg-white/80 p-3 border border-brass-600/35 text-center">
+              <div class="text-[11px] font-bold text-mahogany-800">産出期待値 (Pips)</div>
+              <div class="font-serif font-black text-xl text-emerald-900 mt-0.5">${totalPips} <span class="text-xs">pt</span></div>
+            </div>
+            <div class="rounded-2xl bg-white/80 p-3 border border-brass-600/35 text-center">
+              <div class="text-[11px] font-bold text-mahogany-800">拠点規模</div>
+              <div class="font-extrabold text-sm text-mahogany-950 mt-1">🏠${settlementCnt} / 🏰${cityCnt}</div>
+            </div>
+            <div class="rounded-2xl bg-white/80 p-3 border border-brass-600/35 text-center">
+              <div class="text-[11px] font-bold text-mahogany-800">資源カバー率</div>
+              <div class="font-serif font-black text-xl text-sky-900 mt-0.5">${coveredTypes.length} <span class="text-xs">/ 5 種</span></div>
             </div>
           </div>
 
-          <div class="rounded-2xl bg-amber-900/15 p-3.5 border-2 border-amber-700/40 space-y-2">
-            <div class="flex flex-wrap items-center gap-1.5">
-              <span class="px-2 py-0.5 rounded-md bg-mahogany-900 text-amber-300 text-[10px] font-extrabold whitespace-nowrap">おすすめ方針</span>
-              <span class="font-extrabold text-mahogany-950 text-xs sm:text-sm">${recommendedPolicyTitle}</span>
+          <div class="rounded-2xl bg-white/80 p-3.5 border border-brass-600/35 space-y-2">
+            <div class="font-extrabold text-xs text-mahogany-950">📊 資源別 産出期待値（数字トークン確率重み）</div>
+            <div class="grid grid-cols-5 gap-1.5">
+              ${RESOURCE_KEYS.map(k => `
+                <div class="rounded-xl bg-amber-900/10 p-2 text-center border border-brass-600/25">
+                  <div class="text-base">${RESOURCES[k].emoji}</div>
+                  <div class="text-[10px] font-bold text-mahogany-900">${RESOURCES[k].name}</div>
+                  <div class="font-black text-sm text-mahogany-950 mt-0.5">${resProductionPips[k]}</div>
+                </div>
+              `).join('')}
             </div>
-            <p class="text-xs text-mahogany-950 leading-relaxed font-medium">${recommendedPolicyReason}</p>
-            <ul class="list-disc pl-4 space-y-1 text-xs text-mahogany-950 font-bold">
-              ${actionSteps.map(t => `<li>${t}</li>`).join('')}
-            </ul>
           </div>
 
-          <div class="rounded-2xl bg-white/80 p-3.5 border border-brass-600/30 space-y-1.5">
-            <div class="font-extrabold text-mahogany-950 text-xs sm:text-sm">📍 初期配置＆資源バランス診断</div>
-            <p class="text-xs text-mahogany-900 leading-relaxed">${initComment}</p>
-            ${initHarbors.length > 0 ? `<div class="text-[11px] font-bold text-sky-900">⚓ 確保済みの港: ${initHarbors.join(', ')}</div>` : ''}
+          <div class="rounded-2xl bg-amber-900/15 p-3.5 border border-amber-800/35 space-y-2">
+            <div class="font-extrabold text-xs text-amber-950">🧠 AI戦略コーチング診断</div>
+            <div class="space-y-1.5 text-xs text-mahogany-950 leading-relaxed">
+              ${advices.map(a => `<div>${a}</div>`).join('')}
+            </div>
           </div>
 
           <div class="space-y-1.5">
-            <div class="font-extrabold text-mahogany-950 text-xs">📜 開拓タイムライン（直近）</div>
-            ${timelineHtml}
+            <div class="font-extrabold text-xs text-mahogany-950">🏗️ 直近の開拓・建設タイムライン（交易成立: ${this.tradesCount}回）</div>
+            ${recentLogs}
+          </div>
+        `;
+      }
+
+      /* 勝者決定後の4タブ目: 1〜3タブ目の戦績＋初期配置・戦略経過を踏まえたAI総括分析＆アドバイス */
+      generatePostMatchAiAnalysis(st, localUid) {
+        const me = st.players[localUid];
+        if (!me) return '<p class="text-xs text-parchment-200">戦績データが見つかりません。</p>';
+
+        const hById = Object.fromEntries(st.board.hexes.map(h => [h.id, h]));
+        const vById = Object.fromEntries(st.board.vertices.map(v => [v.id, v]));
+        const stats = st.matchStats || {};
+        const myStat = stats[localUid] || {};
+
+        // 1タブ目連動: 順位・最終得点・交易路・騎士力・VPカード
+        const rankedUids = [...st.turnOrder].sort((a, b) => {
+          const vpA = (st.players[a]?.publicVP || 0) + (st.revealedSecretVps?.[a] ?? 0);
+          const vpB = (st.players[b]?.publicVP || 0) + (st.revealedSecretVps?.[b] ?? 0);
+          return vpB - vpA;
+        });
+        const myRank = rankedUids.indexOf(localUid) + 1;
+        const mySecVp = st.revealedSecretVps?.[localUid] ?? secretVault.getSecretVpCount(localUid);
+        const myTotalVp = me.publicVP + mySecVp;
+        const winner = st.players[st.winnerUid];
+
+        // 2タブ目連動: 資源獲得量 vs 期待値 (%)
+        const gained = myStat.totalResourcesGained || 0;
+        const expected = myStat.expectedResources || 0;
+        const luckPct = expected > 0 ? Math.round(((gained - expected) / expected) * 100) : 0;
+        const luckSignStr = luckPct > 0 ? `+${luckPct}%` : `${luckPct}%`;
+        const gainedByRes = myStat.gainedByResource || emptyHand();
+        const zeroResTypes = RESOURCE_KEYS.filter(k => (gainedByRes[k] || 0) === 0);
+
+        // 3タブ目連動: 盗賊封鎖・被奪・強奪・バースト
+        const blocked = myStat.robberBlockedResources || 0;
+        const robbedBy = myStat.timesRobbedByOthers || 0;
+        const robbedOthers = myStat.timesRobbedOthers || 0;
+        const burstCnt = myStat.burstCount || 0;
+        const burstDrop = myStat.burstDiscardedCount || 0;
+
+        // 初期配置と拠点構成
+        let settlementCnt = 0;
+        let cityCnt = 0;
+        const ownedHarbors = new Set();
+        Object.entries(st.buildings.settlements).forEach(([vid, b]) => {
+          if (b.ownerUid !== localUid) return;
+          if (b.isCity) cityCnt += 1;
+          else settlementCnt += 1;
+          if (vById[vid]?.harbor) ownedHarbors.add(vById[vid].harbor);
+        });
+
+        let initPips = 0;
+        const initTerrains = new Set();
+        this.initialVertices.forEach(vid => {
+          vById[vid]?.hexIds.forEach(hid => {
+            const hex = hById[hid];
+            if (hex && hex.terrain !== 'desert') {
+              initPips += (NUMBER_PIPS[hex.number] || 0);
+              initTerrains.add(hex.terrain);
+            }
+          });
+        });
+
+        // 状況に応じた診断コメント生成
+        const tab1Summary = myRank === 1
+          ? `最終 <strong>${myTotalVp}VP</strong> で見事1位優勝！（開拓地${settlementCnt}・都市${cityCnt}${me.hasLongestRoad ? '・最長交易路+2VP' : ''}${me.hasLargestArmy ? '・最大騎士力+2VP' : ''}${mySecVp > 0 ? `・VP札+${mySecVp}VP` : ''}）`
+          : `最終 <strong>${myTotalVp}VP（${myRank}位）</strong>。勝者 ${winner?.name || ''} とは <strong>${Math.max(0, 10 - myTotalVp)}VP差</strong> でした（道長:${me.longestRoadLength}本 / 騎士:${me.knightsPlayed}回 / VP札:${mySecVp}点）。`;
+
+        const tab2Summary = luckPct >= 10
+          ? `総獲得 <strong>${gained}枚</strong>（期待値 ${expected.toFixed(1)} に対し <span class="text-emerald-300 font-extrabold">${luckSignStr}</span>）。ダイス目が噛み合い高い資源効率を発揮しました。`
+          : luckPct <= -10
+            ? `総獲得 <strong>${gained}枚</strong>（期待値 ${expected.toFixed(1)} に対し <span class="text-rose-300 font-extrabold">${luckSignStr}</span>）。出目の下振れが響き、手札のやりくりが難しい展開でした。`
+            : `総獲得 <strong>${gained}枚</strong>（期待値 ${expected.toFixed(1)} に対し <span class="text-amber-300 font-extrabold">${luckSignStr}</span>）。ほぼ確率通りの安定した資源供給でした。`;
+
+        const tab3Summary = `盗賊封鎖による機会損失は <strong>${blocked}枚</strong>、被強奪 <strong>${robbedBy}回</strong> / 強奪 <strong>${robbedOthers}回</strong>、7バースト <strong>${burstCnt}回（計${burstDrop}枚破棄）</strong>。`
+          + (burstDrop >= 6
+            ? `バーストによる手札破棄が重く、建設テンポを削がれました。`
+            : blocked >= 4
+              ? `主力タイルへの盗賊粘着による封鎖ダメージが大きめでした。`
+              : `盗賊・バースト被害は最小限に抑えられています。`);
+
+        const strategySummary = `初期配置の産出期待値は <strong>${initPips}pt（${initTerrains.size}資源カバー）</strong>`
+          + (ownedHarbors.size > 0 ? `、確保港: <strong>${Array.from(ownedHarbors).join('・')}</strong>。` : `、港接続なし。`)
+          + `中盤以降は都市化 <strong>${cityCnt}軒</strong>・交渉成立 <strong>${this.tradesCount}回</strong>・建設行動 <strong>${this.buildHistory.length}回</strong> を展開しました。`;
+
+        // 次回に向けた具体的アドバイス
+        const advices = [];
+        if (burstCnt >= 2 || burstDrop >= 5) {
+          advices.push(`🛡️ <strong>手札7枚以下キープの徹底:</strong> 7バーストで${burstDrop}枚失っています。手番終了時に8枚以上持ち越さないよう、街道建設や発展カード購入でこまめに消費しましょう。`);
+        }
+        if (cityCnt === 0) {
+          advices.push(`🏰 <strong>早期都市化で産出力2倍化:</strong> 今回は都市化0軒でした。🌾小麦と⛰️鉱石を優先確保して1軒でも都市化すると、10VPへの到達速度が劇的に向上します。`);
+        }
+        if (zeroResTypes.length > 0 && ownedHarbors.size === 0) {
+          const missNames = zeroResTypes.map(k => `${RESOURCES[k].emoji}${RESOURCES[k].name}`).join('・');
+          advices.push(`⛵ <strong>港ルートの確保:</strong> ${missNames} の獲得が0枚でした。偏った資源を活かすため、初期街道は2:1専門港または3:1港へ向けて伸ばすのが有効です。`);
+        }
+        if (blocked >= 3 && me.knightsPlayed === 0) {
+          advices.push(`⚔️ <strong>騎士カードによる盗賊解除:</strong> 盗賊封鎖で${blocked}枚分の資源を逃しました。主力タイルに盗賊を置かれた際は発展カードから騎士を引いて即解除を狙いましょう。`);
+        }
+        if (!me.hasLongestRoad && me.longestRoadLength >= 4) {
+          advices.push(`🛤️ <strong>最長交易路(+2VP)の押し切り:</strong> 交易路長${me.longestRoadLength}本とあと一歩でした。終盤の2VPボーナスは逆転の切り札になります。`);
+        }
+        if (advices.length === 0) {
+          advices.push(`🌟 <strong>盤石の開拓バランス:</strong> 初期配置の期待値・資源効率・盗賊対策のすべてが高水準です。次は上級マップや上級CPU相手に連勝を狙いましょう！`);
+        }
+
+        return `
+          <div class="space-y-2 text-[11px] sm:text-xs text-parchment-100 leading-relaxed">
+            <div class="rounded-xl bg-white/5 border border-amber-400/30 p-2.5">
+              <div class="font-extrabold text-amber-300 mb-0.5">🏆 得点・ボーナス総評（1タブ分析）</div>
+              <div>${tab1Summary}</div>
+            </div>
+
+            <div class="rounded-xl bg-white/5 border border-emerald-400/30 p-2.5">
+              <div class="font-extrabold text-emerald-300 mb-0.5">📦 資源効率・期待値収支（2タブ分析）</div>
+              <div>${tab2Summary}</div>
+              <div class="flex items-center justify-between gap-1 mt-1.5 pt-1.5 border-t border-white/10 text-[10px] sm:text-[11px]">
+                ${RESOURCE_KEYS.map(k => `<span class="px-1.5 py-0.5 rounded bg-black/40 whitespace-nowrap">${RESOURCES[k].emoji}${gainedByRes[k] || 0}</span>`).join('')}
+              </div>
+            </div>
+
+            <div class="rounded-xl bg-white/5 border border-rose-400/30 p-2.5">
+              <div class="font-extrabold text-rose-300 mb-0.5">🦹 盗賊・バースト影響（3タブ分析）</div>
+              <div>${tab3Summary}</div>
+            </div>
+
+            <div class="rounded-xl bg-white/5 border border-sky-400/30 p-2.5">
+              <div class="font-extrabold text-sky-300 mb-0.5">🧭 初期配置・戦略経過レビュー</div>
+              <div>${strategySummary}</div>
+            </div>
+
+            <div class="rounded-xl bg-amber-500/15 border border-amber-300/50 p-2.5 space-y-1">
+              <div class="font-extrabold text-amber-200">💡 AIコーチからの次回アドバイス</div>
+              ${advices.map(a => `<div class="text-parchment-100">${a}</div>`).join('')}
+            </div>
           </div>
         `;
       }
     }
 
     /* ==========================================================================
-       6. P2P オンライン通信マネージャ
+       6. P2P オンライン通信マネージャ（PeerJS + サンドボックス用ローカル通信フォールバック）
        ========================================================================== */
     class OnlineRoomManager {
       constructor() {
@@ -1599,7 +1935,12 @@
         this.seats = [];
         this.starterChoice = 0;
         this.cpuDifficulty = 'normal';
+        this.mapPreset = 'standard';
         this.isInMatch = false;
+        this.transportMode = 'peer'; // 'peer' | 'local'
+        this.localChannel = null;
+        this.storageHandler = null;
+        this.tabInstanceId = 'tab_' + Math.random().toString(36).slice(2, 8);
       }
 
       generateRoomCode() {
@@ -1622,14 +1963,90 @@
           try { this.peer.destroy(); } catch (e) {}
           this.peer = null;
         }
+        if (this.localChannel) {
+          try { this.localChannel.close(); } catch (e) {}
+          this.localChannel = null;
+        }
+        if (this.storageHandler) {
+          window.removeEventListener('storage', this.storageHandler);
+          this.storageHandler = null;
+        }
         this.isInMatch = false;
       }
 
-      createRoom() {
-        if (typeof Peer === 'undefined') {
-          appUI.showToast('通信ライブラリを読み込めませんでした。ソロ対戦はそのままプレイできます。');
-          return;
+      /* サンドボックス環境向け: 同ブラウザ／別タブ間リアルタイム通信ブリッジ */
+      initLocalRoomTransport(roomCode, asHost) {
+        this.transportMode = 'local';
+        if (this.localChannel) {
+          try { this.localChannel.close(); } catch (e) {}
+          this.localChannel = null;
         }
+        if (this.storageHandler) {
+          window.removeEventListener('storage', this.storageHandler);
+          this.storageHandler = null;
+        }
+
+        const channelName = `catan_isle_local_${roomCode}`;
+        const storageKey = `catan_isle_msg_${roomCode}`;
+
+        const onIncomingPacket = (packet) => {
+          if (!packet || packet.originTab === this.tabInstanceId) return;
+          if (asHost) {
+            this.handleHostPacket(packet.payload, (replyObj) => {
+              this.postLocalPacket(channelName, storageKey, replyObj);
+            });
+          } else {
+            this.handleGuestReceiveData(packet.payload);
+          }
+        };
+
+        if (typeof BroadcastChannel !== 'undefined') {
+          try {
+            this.localChannel = new BroadcastChannel(channelName);
+            this.localChannel.onmessage = (ev) => onIncomingPacket(ev.data);
+          } catch (e) {}
+        }
+
+        this.storageHandler = (ev) => {
+          if (ev.key !== storageKey || !ev.newValue) return;
+          try {
+            onIncomingPacket(JSON.parse(ev.newValue));
+          } catch (e) {}
+        };
+        window.addEventListener('storage', this.storageHandler);
+      }
+
+      postLocalPacket(channelName, storageKey, payload) {
+        const packet = {
+          originTab: this.tabInstanceId,
+          ts: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          payload
+        };
+        if (this.localChannel) {
+          try { this.localChannel.postMessage(packet); } catch (e) {}
+        }
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(packet));
+        } catch (e) {}
+      }
+
+      sendToLocalChannel(payload) {
+        if (!this.roomCode) return;
+        this.postLocalPacket(`catan_isle_local_${this.roomCode}`, `catan_isle_msg_${this.roomCode}`, payload);
+      }
+
+      activateHostWaitingUI(modeLabel) {
+        document.getElementById('onlineWaitingPanel').classList.remove('hidden');
+        document.getElementById('waitingRoomCode').textContent = this.roomCode;
+        document.getElementById('waitingRoleBadge').textContent = modeLabel;
+        document.getElementById('hostStartControls').classList.remove('hidden');
+        const mySeat = this.seats[0];
+        const waitNameInput = document.getElementById('waitingPlayerNameInput');
+        if (waitNameInput && mySeat) waitNameInput.value = mySeat.name;
+        this.renderWaitingRoom();
+      }
+
+      createRoom() {
         this.cleanup();
         this.isHost = true;
         this.roomCode = this.generateRoomCode();
@@ -1639,30 +2056,119 @@
         gameController.localUid = myUid;
         const diffSel = document.getElementById('onlineCpuDifficultySelect');
         this.cpuDifficulty = diffSel ? diffSel.value : 'normal';
+        const mapSel = document.getElementById('onlineMapPresetSelect');
+        this.mapPreset = mapSel ? mapSel.value : 'standard';
 
         this.seats = [
           { uid: myUid, name: myName, palette: myPalette, isCpu: false, isHost: true }
         ];
 
-        const peerId = `catan_isle_${this.roomCode}`;
-        this.peer = new Peer(peerId, { debug: 0 });
+        // 常にローカルタブ間同期も有効化しておき、PeerJS制限時は即フォールバック
+        this.initLocalRoomTransport(this.roomCode, true);
 
-        this.peer.on('open', () => {
-          document.getElementById('onlineWaitingPanel').classList.remove('hidden');
-          document.getElementById('waitingRoomCode').textContent = this.roomCode;
-          document.getElementById('waitingRoleBadge').textContent = '👑 ホスト待機中';
-          document.getElementById('hostStartControls').classList.remove('hidden');
-          this.renderWaitingRoom();
-          appUI.showToast(`ルーム ${this.roomCode} を作成しました！`);
-        });
+        if (typeof Peer === 'undefined' || window.__peerWsBlocked) {
+          this.transportMode = 'local';
+          this.activateHostWaitingUI('👑 ホスト待機中（ローカル通信）');
+          appUI.showToast(`ルーム ${this.roomCode} を作成しました（同ブラウザ・CPU対戦対応）`);
+          return;
+        }
 
-        this.peer.on('connection', (conn) => {
-          this.setupHostGuestConnection(conn);
-        });
+        let settled = false;
+        const fallbackToLocal = () => {
+          if (settled) return;
+          settled = true;
+          if (this.peer) {
+            try { this.peer.destroy(); } catch (e) {}
+            this.peer = null;
+          }
+          this.transportMode = 'local';
+          this.activateHostWaitingUI('👑 ホスト待機中（ローカル通信）');
+          appUI.showToast(`ルーム ${this.roomCode} を作成しました（ローカル通信モード）`);
+        };
 
-        this.peer.on('error', (err) => {
-          appUI.showToast(`通信エラー: ${err.type || '接続失敗'}`);
-        });
+        const onWsBlocked = () => {
+          window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+          fallbackToLocal();
+        };
+        window.addEventListener('peerjs-ws-blocked', onWsBlocked, { once: true });
+
+        try {
+          const peerId = `catan_isle_${this.roomCode}`;
+          this.peer = new Peer(peerId, { debug: 0 });
+
+          this.peer.on('open', () => {
+            if (settled) return;
+            settled = true;
+            window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+            this.transportMode = 'peer';
+            this.activateHostWaitingUI('👑 ホスト待機中');
+            appUI.showToast(`ルーム ${this.roomCode} を作成しました！`);
+          });
+
+          this.peer.on('connection', (conn) => {
+            this.setupHostGuestConnection(conn);
+          });
+
+          this.peer.on('error', () => {
+            window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+            fallbackToLocal();
+          });
+        } catch (e) {
+          window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+          fallbackToLocal();
+        }
+      }
+
+      handleHostPacket(msg, replyFn) {
+        if (!msg || !msg.type) return;
+
+        if (msg.type === 'JOIN') {
+          const existingIdx = this.seats.findIndex(s => s.uid === msg.uid);
+          if (existingIdx >= 0) {
+            this.seats[existingIdx].name = msg.name || this.seats[existingIdx].name;
+            if (this.isInMatch && gameController.publicState) {
+              this.syncGameToAll();
+            } else {
+              this.broadcastLobbyState();
+            }
+            return;
+          }
+          if (this.seats.length >= 4 || this.isInMatch) {
+            if (replyFn) replyFn({ type: 'REJECTED', targetUid: msg.uid, reason: '満員または既に対局開始済みです' });
+            return;
+          }
+          const usedColors = new Set(this.seats.map(s => s.palette.id));
+          const pal = (!usedColors.has(msg.palette?.id) && msg.palette)
+            ? msg.palette
+            : (PLAYER_PALETTES.find(p => !usedColors.has(p.id)) || PLAYER_PALETTES[this.seats.length % 4]);
+          const guestUid = msg.uid || ('guest_' + Math.random().toString(36).slice(2, 8));
+          this.seats.push({
+            uid: guestUid,
+            name: msg.name || `開拓者${this.seats.length + 1}`,
+            palette: pal,
+            isCpu: false,
+            isHost: false
+          });
+          this.broadcastLobbyState();
+          appUI.showToast(`${msg.name} がルームに参加しました！`);
+        } else if (msg.type === 'UPDATE_PROFILE') {
+          const seat = this.seats.find(s => s.uid === msg.uid);
+          if (seat) {
+            if (typeof msg.name === 'string' && msg.name.trim()) {
+              seat.name = msg.name.trim().slice(0, 12);
+            }
+            if (msg.paletteId) {
+              const usedByOthers = new Set(this.seats.filter(s => s.uid !== msg.uid).map(s => s.palette.id));
+              const nextPal = PLAYER_PALETTES.find(p => p.id === msg.paletteId);
+              if (nextPal && !usedByOthers.has(nextPal.id)) {
+                seat.palette = nextPal;
+              }
+            }
+            this.broadcastLobbyState();
+          }
+        } else if (msg.type === 'GUEST_ACTION') {
+          gameController.handleRemoteGuestAction(msg.senderUid, msg.action);
+        }
       }
 
       setupHostGuestConnection(conn) {
@@ -1673,43 +2179,14 @@
           }
           if (!msg || !msg.type) return;
 
-          if (msg.type === 'JOIN') {
-            const existingIdx = this.seats.findIndex(s => s.uid === msg.uid);
-            if (existingIdx >= 0) {
-              this.seats[existingIdx].name = msg.name || this.seats[existingIdx].name;
-              this.guestConns.set(msg.uid, conn);
-              if (this.isInMatch && gameController.publicState) {
-                this.syncGameToAll();
-              } else {
-                this.broadcastLobbyState();
-              }
-              return;
-            }
-            if (this.seats.length >= 4 || this.isInMatch) {
-              try { conn.send(JSON.stringify({ type: 'REJECTED', reason: '満員または既に対局開始済みです' })); } catch (e) {}
-              return;
-            }
-            const usedColors = new Set(this.seats.map(s => s.palette.id));
-            const pal = (!usedColors.has(msg.palette?.id) && msg.palette)
-              ? msg.palette
-              : (PLAYER_PALETTES.find(p => !usedColors.has(p.id)) || PLAYER_PALETTES[this.seats.length % 4]);
-            const guestUid = msg.uid || ('guest_' + Math.random().toString(36).slice(2, 8));
-            this.seats.push({
-              uid: guestUid,
-              name: msg.name || `開拓者${this.seats.length + 1}`,
-              palette: pal,
-              isCpu: false,
-              isHost: false
-            });
-            this.guestConns.set(guestUid, conn);
-            this.broadcastLobbyState();
-            appUI.showToast(`${msg.name} がルームに参加しました！`);
-          } else if (msg.type === 'GUEST_ACTION') {
-            if (msg.senderUid) {
-              this.guestConns.set(msg.senderUid, conn);
-            }
-            gameController.handleRemoteGuestAction(msg.senderUid, msg.action);
+          if (msg.type === 'JOIN' && msg.uid) {
+            this.guestConns.set(msg.uid, conn);
+          } else if (msg.type === 'GUEST_ACTION' && msg.senderUid) {
+            this.guestConns.set(msg.senderUid, conn);
           }
+          this.handleHostPacket(msg, (replyObj) => {
+            try { conn.send(JSON.stringify(replyObj)); } catch (e) {}
+          });
         });
 
         conn.on('close', () => {
@@ -1720,10 +2197,6 @@
       }
 
       joinRoom(prefillCode) {
-        if (typeof Peer === 'undefined') {
-          appUI.showToast('通信ライブラリを読み込めませんでした。');
-          return;
-        }
         const rawCode = (prefillCode || document.getElementById('inputJoinRoomCode').value || '').trim().toUpperCase();
         if (!rawCode) {
           appUI.showToast('招待コードを入力してください');
@@ -1734,40 +2207,79 @@
         this.roomCode = rawCode;
 
         const myName = (document.getElementById('inputPlayerName').value || '').trim() || 'プレイヤーA';
-        // 同一ブラウザの別タブでも異なるUIDになるようタブ固有ランダムIDを優先生成
         const guestUid = 'guest_' + Date.now().toString(36).slice(-4) + '_' + Math.random().toString(36).slice(2, 6);
         gameController.localUid = guestUid;
 
-        this.peer = new Peer(undefined, { debug: 0 });
-        this.peer.on('open', () => {
-          const conn = this.peer.connect(`catan_isle_${rawCode}`);
-          this.hostConn = conn;
+        const joinPayload = {
+          type: 'JOIN',
+          uid: guestUid,
+          name: myName,
+          palette: appUI.selectedPalette
+        };
 
-          conn.on('open', () => {
-            if (this.hostConn !== conn) return;
-            conn.send(JSON.stringify({
-              type: 'JOIN',
-              uid: guestUid,
-              name: myName,
-              palette: appUI.selectedPalette
-            }));
-            appUI.showToast(`ルーム ${rawCode} に接続しました`);
+        this.initLocalRoomTransport(rawCode, false);
+
+        const connectViaLocal = () => {
+          this.transportMode = 'local';
+          this.sendToLocalChannel(joinPayload);
+          appUI.showToast(`ローカル通信でルーム ${rawCode} へ参加リクエストを送信しました`);
+        };
+
+        if (typeof Peer === 'undefined' || window.__peerWsBlocked) {
+          connectViaLocal();
+          return;
+        }
+
+        let settled = false;
+        const onWsBlocked = () => {
+          if (settled) return;
+          settled = true;
+          if (this.peer) {
+            try { this.peer.destroy(); } catch (e) {}
+            this.peer = null;
+          }
+          connectViaLocal();
+        };
+        window.addEventListener('peerjs-ws-blocked', onWsBlocked, { once: true });
+
+        try {
+          this.peer = new Peer(undefined, { debug: 0 });
+          this.peer.on('open', () => {
+            if (settled) return;
+            const conn = this.peer.connect(`catan_isle_${rawCode}`);
+            this.hostConn = conn;
+
+            conn.on('open', () => {
+              if (this.hostConn !== conn || settled) return;
+              settled = true;
+              window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+              this.transportMode = 'peer';
+              conn.send(JSON.stringify(joinPayload));
+              appUI.showToast(`ルーム ${rawCode} に接続しました`);
+            });
+
+            conn.on('data', (raw) => {
+              if (this.hostConn !== conn) return;
+              this.handleGuestReceiveData(raw);
+            });
+
+            conn.on('close', () => {
+              if (this.hostConn !== conn) return;
+              appUI.showToast('ホストとの通信が切断されました');
+            });
           });
 
-          conn.on('data', (raw) => {
-            if (this.hostConn !== conn) return;
-            this.handleGuestReceiveData(raw);
+          this.peer.on('error', () => {
+            window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+            if (!settled) {
+              settled = true;
+              connectViaLocal();
+            }
           });
-
-          conn.on('close', () => {
-            if (this.hostConn !== conn) return;
-            appUI.showToast('ホストとの通信が切断されました');
-          });
-        });
-
-        this.peer.on('error', () => {
-          appUI.showToast('ルームが見つからないか接続に失敗しました');
-        });
+        } catch (e) {
+          window.removeEventListener('peerjs-ws-blocked', onWsBlocked);
+          connectViaLocal();
+        }
       }
 
       handleGuestReceiveData(raw) {
@@ -1776,6 +2288,7 @@
           try { msg = JSON.parse(raw); } catch (e) { return; }
         }
         if (!msg || !msg.type) return;
+        if (msg.targetUid && msg.targetUid !== gameController.localUid) return;
 
         if (msg.type === 'REJECTED') {
           appUI.showToast(msg.reason || '入室できませんでした');
@@ -1786,10 +2299,12 @@
           this.seats = msg.seats || [];
           this.starterChoice = msg.starterChoice || 0;
           this.cpuDifficulty = msg.cpuDifficulty || 'normal';
+          this.mapPreset = msg.mapPreset || 'standard';
           document.getElementById('onlineWaitingPanel').classList.remove('hidden');
           document.getElementById('waitingRoomCode').textContent = this.roomCode;
           const diffLabel = CPU_DIFFICULTY_LABELS[this.cpuDifficulty] || '中級';
-          document.getElementById('waitingRoleBadge').textContent = `🌐 ゲスト参加中（補充CPU: ${diffLabel} / 開始待ち）`;
+          const mapLabel = MAP_PRESET_LABELS[this.mapPreset] || 'スタンダード';
+          document.getElementById('waitingRoleBadge').textContent = `🌐 参加中（CPU:${diffLabel} / ${mapLabel}）`;
           document.getElementById('hostStartControls').classList.add('hidden');
           this.renderWaitingRoom();
         } else if (msg.type === 'GAME_SYNC') {
@@ -1808,41 +2323,124 @@
         this.broadcastLobbyState();
       }
 
+      setMapPreset(val) {
+        this.mapPreset = ['standard', 'advanced', 'master'].includes(val) ? val : 'standard';
+        this.broadcastLobbyState();
+      }
+
+      updateMyRoomProfile(newName, newPaletteId) {
+        const myUid = gameController.localUid;
+        const cleanName = typeof newName === 'string' ? newName.trim().slice(0, 12) : null;
+        if (cleanName) {
+          const mainNameInput = document.getElementById('inputPlayerName');
+          if (mainNameInput) mainNameInput.value = cleanName;
+        }
+        if (newPaletteId) {
+          const pal = PLAYER_PALETTES.find(p => p.id === newPaletteId);
+          if (pal) {
+            appUI.selectedPalette = pal;
+            appUI.initLobbyColorPicker();
+          }
+        }
+
+        if (this.isHost) {
+          const mySeat = this.seats.find(s => s.uid === myUid);
+          if (mySeat) {
+            if (cleanName) mySeat.name = cleanName;
+            if (newPaletteId) {
+              const usedByOthers = new Set(this.seats.filter(s => s.uid !== myUid).map(s => s.palette.id));
+              const nextPal = PLAYER_PALETTES.find(p => p.id === newPaletteId);
+              if (nextPal && !usedByOthers.has(nextPal.id)) {
+                mySeat.palette = nextPal;
+              }
+            }
+            this.broadcastLobbyState();
+          }
+        } else {
+          const updateMsg = {
+            type: 'UPDATE_PROFILE',
+            uid: myUid,
+            name: cleanName,
+            paletteId: newPaletteId
+          };
+          if (this.hostConn) {
+            try { this.hostConn.send(JSON.stringify(updateMsg)); } catch (e) {}
+          }
+          if (this.transportMode === 'local') {
+            this.sendToLocalChannel(updateMsg);
+          }
+        }
+      }
+
       broadcastLobbyState() {
         this.renderWaitingRoom();
-        const payload = JSON.stringify({
+        const lobbyObj = {
           type: 'LOBBY_SYNC',
           seats: this.seats,
           starterChoice: this.starterChoice,
-          cpuDifficulty: this.cpuDifficulty
-        });
+          cpuDifficulty: this.cpuDifficulty,
+          mapPreset: this.mapPreset
+        };
+        const payload = JSON.stringify(lobbyObj);
         this.guestConns.forEach(conn => {
           try { conn.send(payload); } catch (e) {}
         });
+        this.sendToLocalChannel(lobbyObj);
       }
 
       renderWaitingRoom() {
         const listEl = document.getElementById('waitingSeatsList');
         const starterSel = document.getElementById('onlineStarterSelect');
         const diffLabel = CPU_DIFFICULTY_LABELS[this.cpuDifficulty] || '中級';
+        const myUid = gameController.localUid;
+        const mySeat = this.seats.find(s => s.uid === myUid);
+
+        // 待機室内の自分の名前・カラー選択同期
+        const waitNameInput = document.getElementById('waitingPlayerNameInput');
+        if (waitNameInput && mySeat && document.activeElement !== waitNameInput) {
+          waitNameInput.value = mySeat.name;
+        }
+        const waitColorRow = document.getElementById('waitingColorPickerRow');
+        if (waitColorRow) {
+          const usedByOthers = new Set(this.seats.filter(s => s.uid !== myUid).map(s => s.palette.id));
+          const activePalId = mySeat?.palette?.id || appUI.selectedPalette.id;
+          waitColorRow.innerHTML = PLAYER_PALETTES.map(p => {
+            const isSelected = p.id === activePalId;
+            const isTaken = usedByOthers.has(p.id);
+            return `
+              <button onclick="onlineManager.updateMyRoomProfile(null, '${p.id}')" ${isTaken ? 'disabled' : ''}
+                class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 flex items-center justify-center transition ${
+                  isSelected
+                    ? 'border-white scale-110 ring-2 ring-amber-300 shadow-lg'
+                    : isTaken
+                      ? 'border-white/20 opacity-25 cursor-not-allowed'
+                      : 'border-white/50 hover:scale-105 opacity-90'
+                }" style="background:${p.hex}" title="${isTaken ? '他のプレイヤーが使用中' : 'この色を選択'}">
+                ${isSelected ? '<span class="text-white text-xs font-black drop-shadow">✓</span>' : ''}
+              </button>
+            `;
+          }).join('');
+        }
+
         const html = [];
         for (let i = 0; i < 4; i++) {
           const seat = this.seats[i];
           if (seat) {
+            const isMeSeat = seat.uid === myUid;
             html.push(`
-              <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-mahogany-900 border border-brass-500/50">
-                <div class="flex items-center gap-2">
-                  <span class="w-3.5 h-3.5 rounded-full border border-white" style="background:${seat.palette.hex}"></span>
-                  <span class="font-bold text-xs sm:text-sm">${seat.name}</span>
+              <div class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-mahogany-900 border ${isMeSeat ? 'border-amber-400' : 'border-brass-500/50'}">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-4 h-4 rounded-full border border-white flex-shrink-0" style="background:${seat.palette.hex}"></span>
+                  <span class="font-extrabold text-sm sm:text-base truncate">${seat.name}</span>
                 </div>
-                <span class="text-[11px] text-amber-300 font-bold">${seat.isHost ? '👑 ホスト' : '参加者'}</span>
+                <span class="text-xs sm:text-sm text-amber-300 font-bold whitespace-nowrap flex-shrink-0">${seat.isHost ? '👑 ホスト' : (isMeSeat ? 'あなた' : '参加者')}</span>
               </div>
             `);
           } else {
             html.push(`
-              <div class="flex items-center justify-between px-3 py-2 rounded-xl bg-mahogany-900/40 border border-dashed border-brass-600/40 text-parchment-300/60">
-                <span class="text-xs">座席 ${i + 1}: 空席（開始時にCPU補充）</span>
-                <span class="text-[10px]">🤖 CPU（${diffLabel}）</span>
+              <div class="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-mahogany-900/40 border border-dashed border-brass-600/40 text-parchment-300/70">
+                <span class="text-xs sm:text-sm">座席 ${i + 1}: 空席（CPU補充）</span>
+                <span class="text-xs font-bold whitespace-nowrap">🤖 ${diffLabel}</span>
               </div>
             `);
           }
@@ -1859,58 +2457,63 @@
 
       startOnlineMatch() {
         if (!this.isHost) return;
-        const diffLabel = CPU_DIFFICULTY_LABELS[this.cpuDifficulty] || '中級';
         const fullSeats = [...this.seats];
-        const cpuNames = [
-          `赤の開拓団(${diffLabel})`,
-          `青の航海士(${diffLabel})`,
-          `緑の森林守(${diffLabel})`,
-          `黄金の錬金術師(${diffLabel})`
-        ];
         while (fullSeats.length < 4) {
           const usedColors = new Set(fullSeats.map(s => s.palette.id));
-          const pal = PLAYER_PALETTES.find(p => !usedColors.has(p.id)) || PLAYER_PALETTES[fullSeats.length % 4];
+          const pal = PLAYER_PALETTES.find(p => !usedColors.has(p.id)) || PLAYER_PALETTES[fullSeats.length % PLAYER_PALETTES.length];
           fullSeats.push({
             uid: `cpu_${fullSeats.length}`,
-            name: cpuNames[fullSeats.length],
+            name: CPU_BASE_NAMES[fullSeats.length % CPU_BASE_NAMES.length],
             palette: pal,
             isCpu: true,
             isHost: false
           });
         }
         this.isInMatch = true;
-        gameController.initMatch(fullSeats, this.starterChoice, true, this.cpuDifficulty);
+        gameController.initMatch(fullSeats, this.starterChoice, true, this.cpuDifficulty, this.mapPreset);
       }
 
       sendActionToHost(action) {
-        if (!this.hostConn) return;
-        try {
-          this.hostConn.send(JSON.stringify({
-            type: 'GUEST_ACTION',
-            senderUid: gameController.localUid,
-            action
-          }));
-        } catch (e) {
-          appUI.showToast('ホストへの送信に失敗しました');
+        const msgObj = {
+          type: 'GUEST_ACTION',
+          senderUid: gameController.localUid,
+          action
+        };
+        if (this.hostConn) {
+          try {
+            this.hostConn.send(JSON.stringify(msgObj));
+            return;
+          } catch (e) {}
         }
+        if (this.transportMode === 'local') {
+          this.sendToLocalChannel(msgObj);
+          return;
+        }
+        appUI.showToast('ホストへの送信に失敗しました');
       }
 
       syncGameToAll() {
         if (!this.isHost || !gameController.publicState) return;
         const st = gameController.publicState;
-        this.guestConns.forEach((conn, guestUid) => {
+        this.seats.forEach(seat => {
+          if (seat.isCpu || seat.isHost) return;
+          const guestUid = seat.uid;
           const privatePayload = {
             hand: secretVault.getHand(guestUid),
             devHand: secretVault.getDevHand(guestUid),
             privateRobberAlert: gameController.privateRobberAlerts[guestUid] || null
           };
-          try {
-            conn.send(JSON.stringify({
-              type: 'GAME_SYNC',
-              publicState: st,
-              privatePayload
-            }));
-          } catch (e) {}
+          const syncObj = {
+            type: 'GAME_SYNC',
+            targetUid: guestUid,
+            publicState: st,
+            privatePayload
+          };
+          const conn = this.guestConns.get(guestUid);
+          if (conn) {
+            try { conn.send(JSON.stringify(syncObj)); } catch (e) {}
+          }
+          this.sendToLocalChannel(syncObj);
         });
       }
     }
@@ -1938,12 +2541,14 @@
         this.lastShownDevCutinId = null;
         this.lastShownStealId = null;
         this.lastShownAwardId = null;
+        this.lastShownBuildEffectId = null;
         this.lastShownVictoryId = null;
+        this.lastShownDiscardAnimId = null;
 
         this.lastOfferDraft = { give: emptyHand(), want: emptyHand() };
         this.tradeDraft = { give: emptyHand(), want: emptyHand() };
         this.maritimeDraft = { giveKey: null, wantKey: null };
-        this.counterDraft = { give: emptyHand(), want: emptyHand() };
+        this.counterDraft = { fixedGive: emptyHand(), want: emptyHand() };
         this.discardDraft = emptyHand();
         this.yopDraft = emptyHand();
         this.activeYopCardId = null;
@@ -1957,22 +2562,22 @@
         const myPal = appUI.selectedPalette;
         this.localUid = 'player_me';
         const cpuDifficulty = document.getElementById('soloCpuDifficultySelect')?.value || 'normal';
-        const diffLabel = CPU_DIFFICULTY_LABELS[cpuDifficulty] || '中級';
+        const mapPreset = document.getElementById('soloMapPresetSelect')?.value || 'standard';
 
         const otherPals = PLAYER_PALETTES.filter(p => p.id !== myPal.id);
         const seats = [
           { uid: this.localUid, name: myName, palette: myPal, isCpu: false },
-          { uid: 'cpu_1', name: `赤の開拓団 (${diffLabel})`, palette: otherPals[0], isCpu: true },
-          { uid: 'cpu_2', name: `青の航海士 (${diffLabel})`, palette: otherPals[1], isCpu: true },
-          { uid: 'cpu_3', name: `緑の森林守 (${diffLabel})`, palette: otherPals[2], isCpu: true }
+          { uid: 'cpu_1', name: CPU_BASE_NAMES[0], palette: otherPals[0], isCpu: true },
+          { uid: 'cpu_2', name: CPU_BASE_NAMES[1], palette: otherPals[1], isCpu: true },
+          { uid: 'cpu_3', name: CPU_BASE_NAMES[2], palette: otherPals[2], isCpu: true }
         ];
 
         const rawStarter = document.getElementById('soloStarterSelect').value;
         const starterIdx = rawStarter === 'random' ? Math.floor(Math.random() * 4) : (parseInt(rawStarter, 10) || 0);
-        this.initMatch(seats, starterIdx, false, cpuDifficulty);
+        this.initMatch(seats, starterIdx, false, cpuDifficulty, mapPreset);
       }
 
-      initMatch(seats, starterIdx, isOnline, cpuDifficulty = 'normal') {
+      initMatch(seats, starterIdx, isOnline, cpuDifficulty = 'normal', mapPreset = 'standard') {
         this.isOnline = isOnline;
         if (this.cpuTimer) clearTimeout(this.cpuTimer);
         analytics.reset();
@@ -1988,9 +2593,11 @@
         this.lastShownDevCutinId = null;
         this.lastShownStealId = null;
         this.lastShownAwardId = null;
+        this.lastShownBuildEffectId = null;
         this.lastShownVictoryId = null;
+        this.lastShownDiscardAnimId = null;
 
-        const board = BoardGenerator.generateBoard();
+        const board = BoardGenerator.generateBoard(mapPreset);
         const turnOrder = seats.map(s => s.uid);
         secretVault.initForPlayers(turnOrder);
 
@@ -1999,6 +2606,7 @@
         const setupSequence = [...cw, ...[...cw].reverse()];
 
         const players = {};
+        const matchStats = {};
         seats.forEach(s => {
           players[s.uid] = {
             uid: s.uid,
@@ -2016,13 +2624,25 @@
             hasLongestRoad: false,
             hasLargestArmy: false
           };
+          matchStats[s.uid] = {
+            totalResourcesGained: 0,
+            expectedResources: 0,
+            gainedByResource: emptyHand(),
+            robberBlockedResources: 0,
+            timesRobbedByOthers: 0,
+            timesRobbedOthers: 0,
+            burstCount: 0,
+            burstDiscardedCount: 0
+          };
         });
 
         const matchId = `m_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
         this.publicState = {
           matchId,
           cpuDifficulty,
+          mapPreset,
           players,
+          matchStats,
           status: 'setup',
           phase: 'INITIAL_SETTLEMENT',
           turnNumber: 1,
@@ -2045,12 +2665,14 @@
           lastDiceEvent: null,
           lastDiceGainEvent: null,
           lastDiscardSummaryEvent: null,
+          lastDiscardAnimEvent: null,
           lastDevCardEvent: null,
           lastStealEvent: null,
           lastAwardEvent: null,
+          lastBuildEvent: null,
           winnerUid: null,
           revealedSecretVps: {},
-          logs: [`🏝️ 開拓決戦が開始されました！（1番手: ${players[setupSequence[0]].name}）`]
+          logs: [`🏝️ 開拓決戦が開始されました！（配置: ${MAP_PRESET_LABELS[mapPreset] || 'スタンダード'} / 1番手: ${players[setupSequence[0]].name}）`]
         };
 
         appUI.showGameScreen();
@@ -2230,6 +2852,11 @@
               if (t && t !== 'desert') {
                 const got = secretVault.grantResource(uid, t, 1);
                 gained[t] += got;
+                if (st.matchStats?.[uid] && got > 0) {
+                  st.matchStats[uid].totalResourcesGained += got;
+                  st.matchStats[uid].expectedResources += got;
+                  st.matchStats[uid].gainedByResource[t] += got;
+                }
               }
             });
             this.addLog(`🏠 ${p.name} が2軒目の初期開拓地を配置（初期資源: ${formatResourceBundle(gained)}）`);
@@ -2237,6 +2864,14 @@
             this.addLog(`🏠 ${p.name} が1軒目の初期開拓地を配置しました。`);
           }
 
+          st.lastBuildEvent = {
+            id: `bld_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            buildType: 'settlement',
+            targetId,
+            playerUid: uid,
+            playerName: p.name,
+            playerColor: p.palette.hex
+          };
           st.phase = 'INITIAL_ROAD';
           this.updateAwardsAndVictory();
           this.pushStateAndRender(950);
@@ -2255,6 +2890,14 @@
             analytics.recordBuild(0, 'road', '初期街道を敷設');
           }
           this.addLog(`🛤️ ${p.name} が初期街道を建設しました。`);
+          st.lastBuildEvent = {
+            id: `bld_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            buildType: 'road',
+            targetId,
+            playerUid: uid,
+            playerName: p.name,
+            playerColor: p.palette.hex
+          };
 
           st.setupStepIndex += 1;
           if (st.setupStepIndex >= st.setupSequence.length) {
@@ -2282,6 +2925,14 @@
           this.roadBuildingRemaining -= 1;
           if (uid === this.localUid) analytics.recordBuild(st.turnNumber, 'road', '発展カードで無料街道を建設');
           this.addLog(`🛤️ ${p.name} が街道建設カードで街道を敷設（残り${this.roadBuildingRemaining}本）`);
+          st.lastBuildEvent = {
+            id: `bld_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            buildType: 'road',
+            targetId,
+            playerUid: uid,
+            playerName: p.name,
+            playerColor: p.palette.hex
+          };
           this.updateAwardsAndVictory();
           this.pushStateAndRender();
           return;
@@ -2295,8 +2946,16 @@
           p.roadsRemaining -= 1;
           if (uid === this.localUid) analytics.recordBuild(st.turnNumber, 'road', '街道を建設');
           this.addLog(`🛤️ ${p.name} が街道を建設しました。`);
+          st.lastBuildEvent = {
+            id: `bld_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            buildType: 'road',
+            targetId,
+            playerUid: uid,
+            playerName: p.name,
+            playerColor: p.palette.hex
+          };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(1050);
+          this.pushStateAndRender(1250);
           return;
         }
 
@@ -2308,8 +2967,16 @@
           p.settlementsRemaining -= 1;
           if (uid === this.localUid) analytics.recordBuild(st.turnNumber, 'settlement', '新しい開拓地を建設');
           this.addLog(`🏠 ${p.name} が新しい開拓地を建設しました！`);
+          st.lastBuildEvent = {
+            id: `bld_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            buildType: 'settlement',
+            targetId,
+            playerUid: uid,
+            playerName: p.name,
+            playerColor: p.palette.hex
+          };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(1150);
+          this.pushStateAndRender(1350);
           return;
         }
 
@@ -2323,8 +2990,16 @@
           p.settlementsRemaining += 1;
           if (uid === this.localUid) analytics.recordBuild(st.turnNumber, 'city', '開拓地を都市へ昇格');
           this.addLog(`🏰 ${p.name} が開拓地を都市へアップグレードしました！`);
+          st.lastBuildEvent = {
+            id: `bld_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            buildType: 'city',
+            targetId,
+            playerUid: uid,
+            playerName: p.name,
+            playerColor: p.palette.hex
+          };
           this.updateAwardsAndVictory();
-          this.pushStateAndRender(1150);
+          this.pushStateAndRender(1350);
           return;
         }
 
@@ -2413,20 +3088,38 @@
             const cnt = totalHandCount(secretVault.getHand(pUid));
             if (cnt >= 8) {
               pending[pUid] = Math.floor(cnt / 2);
+              if (st.matchStats?.[pUid]) {
+                st.matchStats[pUid].burstCount += 1;
+              }
             }
           }
 
           if (Object.keys(pending).length > 0) {
             st.pendingDiscards = pending;
             const discardLogs = [];
+            const animEntries = [];
             for (const [pUid, reqCnt] of Object.entries(pending)) {
               if (st.players[pUid].isCpu) {
                 const dropped = secretVault.smartCpuDiscard(pUid, reqCnt, st.cpuDifficulty || 'normal');
                 delete st.pendingDiscards[pUid];
+                const droppedSum = totalHandCount(dropped);
+                if (st.matchStats?.[pUid]) {
+                  st.matchStats[pUid].burstDiscardedCount += droppedSum;
+                }
+                if (droppedSum > 0) {
+                  animEntries.push({ uid: pUid, dropped });
+                }
                 const txt = `${st.players[pUid].name}: ${formatResourceBundle(dropped)}`;
                 discardLogs.push(txt);
                 this.addLog(`🗑️ バースト破棄 — ${txt}`);
               }
+            }
+            if (animEntries.length > 0) {
+              st.lastDiscardAnimEvent = {
+                id: `discanim_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+                fromDice7: true,
+                entries: animEntries
+              };
             }
             if (discardLogs.length > 0) {
               st.lastDiscardSummaryEvent = {
@@ -2438,15 +3131,34 @@
 
           if (Object.keys(st.pendingDiscards).length > 0) {
             st.phase = 'DISCARD_WAIT';
-            this.pushStateAndRender(2200);
+            this.pushStateAndRender(1800);
           } else {
             st.phase = 'ROBBER_MOVE';
-            this.pushStateAndRender(4250);
+            this.pushStateAndRender(2650);
           }
           return;
         }
 
-        // 7以外: 対応ヘクスから資源産出
+        // 7以外: 全プレイヤーの期待値＆盗賊封鎖損失を記録し、対応ヘクスから資源産出
+        const hByIdAll = Object.fromEntries(st.board.hexes.map(h => [h.id, h]));
+        const vByIdAll = Object.fromEntries(st.board.vertices.map(v => [v.id, v]));
+        Object.entries(st.buildings.settlements).forEach(([vid, b]) => {
+          const mult = b.isCity ? 2 : 1;
+          const ownerStat = st.matchStats?.[b.ownerUid];
+          if (!ownerStat) return;
+          vByIdAll[vid]?.hexIds.forEach(hid => {
+            const hex = hByIdAll[hid];
+            if (!hex || hex.terrain === 'desert' || !hex.number) return;
+            if (hex.id === st.board.robberHexId) {
+              if (hex.number === sum) {
+                ownerStat.robberBlockedResources += mult;
+              }
+            } else {
+              ownerStat.expectedResources += ((NUMBER_PIPS[hex.number] || 0) / 36) * mult;
+            }
+          });
+        });
+
         const matchingHexes = st.board.hexes.filter(h => h.number === sum && h.id !== st.board.robberHexId && h.terrain !== 'desert');
         const hexDeliveries = [];
         const hexIds = [];
@@ -2463,6 +3175,10 @@
               gains[b.ownerUid] = (gains[b.ownerUid] || 0) + actual;
               if (!totalGainsByUid[b.ownerUid]) totalGainsByUid[b.ownerUid] = emptyHand();
               totalGainsByUid[b.ownerUid][hex.terrain] += actual;
+              if (st.matchStats?.[b.ownerUid]) {
+                st.matchStats[b.ownerUid].totalResourcesGained += actual;
+                st.matchStats[b.ownerUid].gainedByResource[hex.terrain] += actual;
+              }
             }
           });
           if (Object.keys(gains).length > 0) {
@@ -2482,12 +3198,12 @@
             hexDeliveries
           };
           st.phase = 'MAIN_ACTIONS';
-          // サイコロカットイン(2.1s) + 明滅(2.45s) + 静止＆飛行(2.85s) が終わるまでCPU待機
-          this.pushStateAndRender(7500);
+          // サイコロカットイン(1.25s) + タイル明滅(1.15s) + スムーズ飛行(1.45s) に合わせたテンポの良い待機
+          this.pushStateAndRender(3950);
         } else {
           this.addLog(`🎲 ${roller.name} が【 ${sum} 】を出しました（産出なし）。`);
           st.phase = 'MAIN_ACTIONS';
-          this.pushStateAndRender(2400);
+          this.pushStateAndRender(1550);
         }
       }
 
@@ -2512,6 +3228,18 @@
         if (!st || !st.pendingDiscards[uid]) return;
         secretVault.spendBundle(uid, discarded);
         delete st.pendingDiscards[uid];
+
+        const droppedSum = totalHandCount(discarded);
+        if (st.matchStats?.[uid]) {
+          st.matchStats[uid].burstDiscardedCount += droppedSum;
+        }
+        if (droppedSum > 0) {
+          st.lastDiscardAnimEvent = {
+            id: `discanim_${Date.now()}_${uid}`,
+            fromDice7: false,
+            entries: [{ uid, dropped: { ...discarded } }]
+          };
+        }
 
         const msg = `${st.players[uid].name}: ${formatResourceBundle(discarded)}`;
         this.addLog(`🗑️ バースト破棄 — ${msg}`);
@@ -2545,6 +3273,15 @@
         const victim = st.players[victimUid];
 
         if (stolenKey) {
+          if (st.matchStats?.[thiefUid]) {
+            st.matchStats[thiefUid].timesRobbedOthers += 1;
+            st.matchStats[thiefUid].totalResourcesGained += 1;
+            st.matchStats[thiefUid].expectedResources += 1;
+            st.matchStats[thiefUid].gainedByResource[stolenKey] += 1;
+          }
+          if (st.matchStats?.[victimUid]) {
+            st.matchStats[victimUid].timesRobbedByOthers += 1;
+          }
           this.addLog(`🦹 ${thief.name} が ${victim.name} から資源を1枚奪いました！`);
           st.lastStealEvent = {
             id: `steal_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
@@ -2640,15 +3377,13 @@
         const surplusKey = RESOURCE_KEYS.find(k => (cpuHand[k] || 0) >= 2 && !(want[k] > 0));
         const neededKey = RESOURCE_KEYS.find(k => (cpuHand[k] || 0) === 0 && (give[k] || 0) === 0);
         const counterProb = diff === 'hard' ? 0.65 : diff === 'easy' ? 0.2 : 0.45;
-        if (surplusKey && neededKey && Math.random() < counterProb) {
-          const cGive = emptyHand();
-          const cWant = emptyHand();
-          cGive[surplusKey] = 1;
-          cWant[neededKey] = 1;
+        if (surplusKey && neededKey && canAfford(cpuHand, want) && Math.random() < counterProb) {
+          const cReceiveByCpu = emptyHand();
+          cReceiveByCpu[neededKey] = 1;
           return {
             status: 'counter',
-            counterGive: cWant,
-            counterWant: cGive
+            counterGive: cReceiveByCpu,
+            counterWant: { ...want }
           };
         }
         return { status: 'rejected' };
@@ -2664,17 +3399,21 @@
       }
 
       submitCounterOffer() {
-        if (totalHandCount(this.counterDraft.give) === 0 || totalHandCount(this.counterDraft.want) === 0) {
-          appUI.showToast('渡す資源と欲しい資源をそれぞれ1枚以上選んでください');
+        const offer = this.publicState?.activeTradeOffer;
+        if (!offer) return;
+        // 元の提案者が欲しいと言っている資源（＝自分が渡す資源）は固定
+        const fixedGiveByMe = { ...offer.want };
+        if (totalHandCount(this.counterDraft.want) === 0) {
+          appUI.showToast('あなたが受け取る資源を1枚以上選んでください');
           return;
         }
-        if (!canAfford(this.myHand, this.counterDraft.give)) {
-          appUI.showToast('手持ち資源が不足しています');
+        if (!canAfford(this.myHand, fixedGiveByMe)) {
+          appUI.showToast('相手が希望している資源を手札に持っていないため逆提案できません');
           return;
         }
-        // 受信者視点の give/want を提案者視点の counterGive/counterWant に変換
+        // 受信者視点の want（受け取るもの）を提案者視点の counterGive（差し出すもの）に変換、counterWant は元の offer.want 固定
         const counterGive = { ...this.counterDraft.want };
-        const counterWant = { ...this.counterDraft.give };
+        const counterWant = fixedGiveByMe;
         appUI.closeModal('incomingTradeModal');
 
         if (this.isOnline && !onlineManager.isHost) {
@@ -2918,12 +3657,24 @@
         } else if (card.type === 'yearOfPlenty') {
           const resObj = extra.resources || emptyHand();
           for (const rk of RESOURCE_KEYS) {
-            if (resObj[rk] > 0) secretVault.grantResource(uid, rk, resObj[rk]);
+            if (resObj[rk] > 0) {
+              const got = secretVault.grantResource(uid, rk, resObj[rk]);
+              if (st.matchStats?.[uid] && got > 0) {
+                st.matchStats[uid].totalResourcesGained += got;
+                st.matchStats[uid].expectedResources += got;
+                st.matchStats[uid].gainedByResource[rk] += got;
+              }
+            }
           }
           this.addLog(`🌾 ${p.name} が【発見】カードを使用し、資源を2枚獲得しました！`);
         } else if (card.type === 'monopoly') {
           const rk = extra.resKey || 'wheat';
           const stolenSum = secretVault.executeMonopoly(uid, rk);
+          if (st.matchStats?.[uid] && stolenSum > 0) {
+            st.matchStats[uid].totalResourcesGained += stolenSum;
+            st.matchStats[uid].expectedResources += stolenSum;
+            st.matchStats[uid].gainedByResource[rk] += stolenSum;
+          }
           this.addLog(`👑 ${p.name} が【独占】カードで「${RESOURCES[rk].name}」を宣言し、合計${stolenSum}枚を独占！`);
         }
 
@@ -3376,7 +4127,7 @@
       constructor() {
         this.selectedPalette = PLAYER_PALETTES[0];
         this.isGameVisible = false;
-        this.boardZoom = 1;
+        this.boardZoom = this.getDefaultBoardZoom();
         this.boardPan = { x: 0, y: 0 };
         this.activeXrayModalId = null;
 
@@ -3384,10 +4135,16 @@
         this.turnBannerAnim = null;
         this.diceCutinAnim = null;
         this.specialAwardAnim = null;
+        this.activeVictoryTab = 'tab1';
 
         this.initLobbyColorPicker();
         this.initBoardPanZoom();
         this.checkInviteUrlParam();
+      }
+
+      getDefaultBoardZoom() {
+        // スマホ幅ではデフォルトから拡大2回分(1.36)に固定し、PC幅では標準(1.0)にする
+        return window.innerWidth < 640 ? 1.36 : 1.0;
       }
 
       checkInviteUrlParam() {
@@ -3400,40 +4157,38 @@
 
       initLobbyColorPicker() {
         const row = document.getElementById('colorPickerRow');
-        row.innerHTML = PLAYER_PALETTES.map(p => `
-          <button onclick="appUI.selectLobbyColor('${p.id}')"
-            class="px-3 py-1.5 rounded-xl border-2 font-bold text-xs flex items-center gap-1.5 transition ${
-              this.selectedPalette.id === p.id
-                ? 'border-mahogany-950 bg-white shadow scale-105'
-                : 'border-transparent bg-white/60 opacity-80'
-            }">
-            <span class="w-3.5 h-3.5 rounded-full border border-black/30" style="background:${p.hex}"></span>
-            <span>${p.name}</span>
-          </button>
-        `).join('');
+        row.innerHTML = PLAYER_PALETTES.map(p => {
+          const isSel = this.selectedPalette.id === p.id;
+          return `
+            <button onclick="appUI.selectLobbyColor('${p.id}')"
+              class="w-8 h-8 sm:w-9 sm:h-9 rounded-full border-2 flex items-center justify-center transition ${
+                isSel
+                  ? 'border-mahogany-950 scale-110 ring-2 ring-amber-500 shadow-md'
+                  : 'border-white/80 opacity-85 hover:opacity-100 hover:scale-105 shadow-sm'
+              }" style="background:${p.hex}" aria-label="シンボルカラー選択">
+              ${isSel ? '<span class="text-white text-xs sm:text-sm font-black drop-shadow">✓</span>' : ''}
+            </button>
+          `;
+        }).join('');
       }
 
       selectLobbyColor(id) {
         this.selectedPalette = PLAYER_PALETTES.find(p => p.id === id) || PLAYER_PALETTES[0];
         this.initLobbyColorPicker();
+        if (!document.getElementById('onlineWaitingPanel').classList.contains('hidden')) {
+          onlineManager.updateMyRoomProfile(null, id);
+        }
       }
 
       initBoardPanZoom() {
-        const svg = document.getElementById('catanBoardSvg');
-        if (!svg) return;
-        svg.addEventListener('wheel', (e) => {
-          e.preventDefault();
-          this.adjustBoardZoom(e.deltaY < 0 ? 0.12 : -0.12);
-        }, { passive: false });
-      }
-
-      adjustBoardZoom(delta) {
-        this.boardZoom = Math.max(0.75, Math.min(2.1, Math.round((this.boardZoom + delta) * 100) / 100));
-        this.applyBoardTransform();
+        this.resetBoardTransform();
+        window.addEventListener('resize', () => {
+          this.resetBoardTransform();
+        });
       }
 
       resetBoardTransform() {
-        this.boardZoom = 1;
+        this.boardZoom = this.getDefaultBoardZoom();
         this.boardPan = { x: 0, y: 0 };
         this.applyBoardTransform();
       }
@@ -3454,6 +4209,7 @@
         document.getElementById('gameScreen').classList.remove('hidden');
         document.getElementById('headerGameActions').classList.remove('hidden');
         document.getElementById('headerGameActions').classList.add('flex');
+        this.resetBoardTransform();
 
         if (gameController.isOnline && onlineManager.roomCode) {
           const rb = document.getElementById('roomBadgeContainer');
@@ -3469,7 +4225,7 @@
       }
 
       confirmBackToLobby() {
-        this.backToLobby();
+        this.openModal('confirmLobbyModal');
       }
 
       backToLobby() {
@@ -3623,12 +4379,28 @@
           }
         }
 
+        // 6B. 街道・開拓地・都市の完成時盤面発光＆全員通知
+        const buildEv = st.lastBuildEvent;
+        if (buildEv && buildEv.id !== gameController.lastShownBuildEffectId) {
+          gameController.lastShownBuildEffectId = buildEv.id;
+          this.triggerBuildCompletionEffect(buildEv);
+        }
+
         // 7. 交渉モーダル自動制御
         this.syncTradeModals();
 
         // 8. 7バースト破棄モーダル自動制御
         if (st.phase === 'DISCARD_WAIT' && st.pendingDiscards?.[gameController.localUid] > 0 && !this.activeXrayModalId) {
           this.openDiscardModal(st.pendingDiscards[gameController.localUid]);
+        }
+
+        // 8A. 手札バースト時に資源が島へ捨てられるアニメーション演出
+        const discAnimEv = st.lastDiscardAnimEvent;
+        if (discAnimEv && discAnimEv.id !== gameController.lastShownDiscardAnimId) {
+          gameController.lastShownDiscardAnimId = discAnimEv.id;
+          const entriesSnapshot = JSON.parse(JSON.stringify(discAnimEv.entries || []));
+          const delayMs = discAnimEv.fromDice7 ? 2650 : 120;
+          setTimeout(() => this.animateDiscardToIsland(entriesSnapshot), delayMs);
         }
 
         // 8B. オンラインゲスト側の盗賊強奪相手選択モーダル制御
@@ -3645,7 +4417,7 @@
           const victoryDelay = awardTriggered
             ? (awardDelay + 3550)
             : (devCardTriggered ? 3150 : 650);
-          setTimeout(() => this.showVictoryModal(st.winnerUid), victoryDelay);
+          setTimeout(() => this.showVictoryModal(st.winnerUid, 'tab1'), victoryDelay);
         }
       }
 
@@ -3779,7 +4551,7 @@
         }
 
         const isSeven = diceEv.sum === 7;
-        const durationMs = isSeven ? 700 : 2100;
+        const durationMs = isSeven ? 550 : 1250;
 
         overlay.innerHTML = `
           <div class="rounded-3xl bg-mahogany-950/95 border-[3px] border-amber-400 px-6 py-5 sm:px-8 sm:py-6 text-center shadow-[0_20px_54px_rgba(0,0,0,0.9)] backdrop-blur-md">
@@ -3870,19 +4642,19 @@
         }
         cardEl.animate([
           { opacity: 0, transform: 'scale(0.82)' },
-          { opacity: 1, transform: 'scale(1.04)', offset: 0.12 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.2 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.85 },
+          { opacity: 1, transform: 'scale(1.04)', offset: 0.14 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.24 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.82 },
           { opacity: 0, transform: 'scale(0.94)' }
         ], {
-          duration: 3000,
+          duration: 2050,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         }).onfinish = finish;
-        setTimeout(finish, 3050);
+        setTimeout(finish, 2100);
       }
 
-      /* 3段階資源獲得演出: ①タイルゆっくり2回明滅 → ②イラストカードがタイル上で1.5s静止 → ③プレイヤーゾーンへ移動 */
+      /* 3段階資源獲得演出: ①タイル素早く2回明滅(1.15s) → ②カード出現＆プレイヤーゾーンへ滑らか飛行(1.45s) */
       runResourceProductionSequence(gainSnapshot) {
         const st = gameController.publicState;
         if (!st) return;
@@ -3915,11 +4687,78 @@
             if (!hex) return;
             const entries = Object.entries(deliv.gains);
             entries.forEach(([uid, amt], idx) => {
-              const offsetX = (idx - (entries.length - 1) / 2) * 26;
+              const offsetX = (idx - (entries.length - 1) / 2) * 24;
               this.spawnHoldAndFlyResourceCard(hex.cx + offsetX, hex.cy, uid, deliv.resKey, amt);
             });
           });
-        }, 2450);
+        }, 1150);
+      }
+
+      /* 街道・開拓地・都市完成時の盤面発光エフェクト＆全員通知バナー */
+      triggerBuildCompletionEffect(buildEv) {
+        const st = gameController.publicState;
+        const fxLayer = document.getElementById('layerBuildEffects');
+        if (!st || !fxLayer) return;
+
+        const board = st.board;
+        const vById = Object.fromEntries(board.vertices.map(v => [v.id, v]));
+        const typeLabelMap = {
+          road: '🛤️ 街道完成',
+          settlement: '🏠 開拓地完成',
+          city: '🏰 都市完成'
+        };
+        const labelText = typeLabelMap[buildEv.buildType] || '🔨 建設完了';
+        const colorHex = buildEv.playerColor || '#fde047';
+
+        fxLayer.innerHTML = '';
+        if (buildEv.buildType === 'road') {
+          const edge = board.edges.find(e => e.id === buildEv.targetId);
+          if (edge) {
+            const a = vById[edge.v1];
+            const b = vById[edge.v2];
+            const mx = (a.x + b.x) / 2;
+            const my = (a.y + b.y) / 2;
+            fxLayer.innerHTML = `
+              <g class="build-flash-road">
+                <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#fef08a" stroke-width="15" stroke-linecap="round"/>
+                <line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${colorHex}" stroke-width="9" stroke-linecap="round"/>
+                <g transform="translate(${mx}, ${my - 16})">
+                  <rect x="-36" y="-11" width="72" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.5"/>
+                  <text x="0" y="1" text-anchor="middle" fill="#fef08a" font-size="9.5" font-weight="900">${labelText}</text>
+                </g>
+              </g>
+            `;
+          }
+        } else {
+          const v = vById[buildEv.targetId];
+          if (v) {
+            fxLayer.innerHTML = `
+              <g transform="translate(${v.x}, ${v.y})" class="build-flash-spot">
+                <circle cx="0" cy="0" r="22" fill="rgba(253, 224, 71, 0.35)" stroke="#fef08a" stroke-width="3"/>
+                <circle cx="0" cy="0" r="14" fill="none" stroke="${colorHex}" stroke-width="3.5"/>
+                <g transform="translate(0, -24)">
+                  <rect x="-40" y="-11" width="80" height="18" rx="9" fill="#170c06" stroke="#fde047" stroke-width="1.5"/>
+                  <text x="0" y="1" text-anchor="middle" fill="#fef08a" font-size="9.5" font-weight="900">${labelText}</text>
+                </g>
+              </g>
+            `;
+          }
+        }
+
+        // 画面上部バナーにも建築通知を表示
+        const banner = document.getElementById('diceGainBanner');
+        const content = document.getElementById('diceGainBannerContent');
+        if (banner && content && !st.lastDiscardSummaryEvent) {
+          content.textContent = `${labelText}！ ${buildEv.playerName} が新たな拠点を築きました`;
+          banner.classList.remove('hidden');
+        }
+
+        setTimeout(() => {
+          if (fxLayer) fxLayer.innerHTML = '';
+          if (banner && !gameController.publicState?.lastDiscardSummaryEvent) {
+            banner.classList.add('hidden');
+          }
+        }, 2350);
       }
 
       getResourceCardIllustrationSvg(resKey) {
@@ -4040,13 +4879,13 @@
         const dy = endY - startY;
 
         const anim = cardEl.animate([
-          { opacity: 0, transform: 'translate(-50%, -40%) scale(0.7)' },
-          { opacity: 1, transform: 'translate(-50%, -68%) scale(1.12)', offset: 0.12 },
-          { opacity: 1, transform: 'translate(-50%, -68%) scale(1.08)', offset: 0.56 },
-          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - 26}px)) scale(1.0)`, offset: 0.8 },
-          { opacity: 0.15, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.75)` }
+          { opacity: 0, transform: 'translate(-50%, -42%) scale(0.75)' },
+          { opacity: 1, transform: 'translate(-50%, -66%) scale(1.1)', offset: 0.16 },
+          { opacity: 1, transform: 'translate(-50%, -66%) scale(1.04)', offset: 0.32 },
+          { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - 22}px)) scale(0.96)`, offset: 0.72 },
+          { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
         ], {
-          duration: 2850,
+          duration: 1450,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
@@ -4057,6 +4896,78 @@
           void zoneEl.offsetWidth;
           zoneEl.classList.add('zone-receive-pop');
         };
+      }
+
+      /* 手札バースト時: 破棄された資源カードがプレイヤーゾーンから島（中央）へ捨てられる飛行演出 */
+      animateDiscardToIsland(entries) {
+        const viewport = document.getElementById('boardViewport');
+        const flyLayer = document.getElementById('flyingResourceLayer');
+        const svg = document.getElementById('catanBoardSvg');
+        const st = gameController.publicState;
+        if (!viewport || !flyLayer || !svg || !st || !entries?.length) return;
+
+        const vpRect = viewport.getBoundingClientRect();
+        const svgRect = svg.getBoundingClientRect();
+        const islandCenterX = (svgRect.left - vpRect.left) + svgRect.width / 2;
+        const islandCenterY = (svgRect.top - vpRect.top) + svgRect.height / 2;
+
+        entries.forEach(entry => {
+          const seatIdx = st.turnOrder.indexOf(entry.uid);
+          const isLocal = entry.uid === gameController.localUid;
+          const zoneEl = document.getElementById(`cornerZone${seatIdx}`);
+          const handEl = document.getElementById('myResourceHandGrid');
+
+          let startX = vpRect.width / 2;
+          let startY = vpRect.height - 24;
+
+          if (isLocal && handEl) {
+            const hRect = handEl.getBoundingClientRect();
+            startX = (hRect.left - vpRect.left) + hRect.width / 2;
+            startY = Math.min(vpRect.height - 14, (hRect.top - vpRect.top) + 6);
+          } else if (zoneEl) {
+            const zRect = zoneEl.getBoundingClientRect();
+            startX = (zRect.left - vpRect.left) + zRect.width / 2;
+            startY = (zRect.top - vpRect.top) + zRect.height / 2;
+          }
+
+          const activeRes = RESOURCE_KEYS.filter(k => (entry.dropped?.[k] || 0) > 0);
+          activeRes.forEach((resKey, idx) => {
+            const amt = entry.dropped[resKey];
+            const resMeta = RESOURCES[resKey];
+            const spreadX = (idx - (activeRes.length - 1) / 2) * 34;
+
+            const cardEl = document.createElement('div');
+            cardEl.className = 'absolute -translate-x-1/2 -translate-y-1/2 p-1 rounded-xl bg-red-950/95 border-2 border-red-400 shadow-[0_8px_22px_rgba(0,0,0,0.9)] flex flex-col items-center';
+            cardEl.style.left = `${startX + spreadX}px`;
+            cardEl.style.top = `${startY}px`;
+            cardEl.innerHTML = `
+              <div class="relative">
+                ${this.getResourceCardIllustrationSvg(resKey)}
+                <span class="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full bg-red-600 border border-white text-white font-black text-[11px] leading-tight shadow">
+                  -${amt}
+                </span>
+              </div>
+              <span class="text-[9px] font-extrabold text-red-200 leading-none mt-0.5">🗑️${resMeta ? resMeta.name : ''}</span>
+            `;
+            flyLayer.appendChild(cardEl);
+
+            const dx = islandCenterX - (startX + spreadX);
+            const dy = islandCenterY - startY;
+
+            const anim = cardEl.animate([
+              { opacity: 0, transform: 'translate(-50%, -50%) scale(0.78)' },
+              { opacity: 1, transform: 'translate(-50%, -62%) scale(1.08)', offset: 0.16 },
+              { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.55}px), calc(-50% + ${dy * 0.55 - 26}px)) scale(0.95) rotate(12deg)`, offset: 0.65 },
+              { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.45) rotate(24deg)` }
+            ], {
+              duration: 1450,
+              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              fill: 'forwards'
+            });
+
+            anim.onfinish = () => cardEl.remove();
+          });
+        });
       }
 
       animatePrivateRobberSteal(direction, otherUid, resKey) {
@@ -4146,6 +5057,55 @@
         }).onfinish = () => pill.remove();
       }
 
+      /* 発展カード購入・使用大型カットイン演出 */
+      showDevCardCutin(actionType, playerName, cardType, playerColor) {
+        const overlay = document.getElementById('devCardCutinOverlay');
+        if (!overlay) return;
+        const meta = DEV_CARD_META[cardType] || { name: '📜 発展カード', desc: '' };
+        const isBuy = actionType === 'buy';
+        const accent = playerColor || '#c084fc';
+
+        overlay.innerHTML = `
+          <div class="w-full max-w-sm rounded-3xl border-[3px] px-6 py-5 text-center shadow-[0_20px_54px_rgba(0,0,0,0.92)] backdrop-blur-md"
+               style="background: linear-gradient(180deg, #2e1065 0%, #1c0f08 60%, #0d0603 100%); border-color:${accent};">
+            <div class="inline-block px-3 py-0.5 rounded-full bg-purple-500/25 border border-purple-300/70 text-purple-200 text-[11px] font-extrabold tracking-widest">
+              ${isBuy ? '📜 DEVELOPMENT CARD ACQUIRED' : '✨ DEVELOPMENT CARD ACTIVATED'}
+            </div>
+            <div class="text-xs font-extrabold text-amber-300 mt-2">${playerName}</div>
+            <h3 class="font-serif font-black text-2xl sm:text-3xl text-white mt-1 drop-shadow">
+              ${meta.name}
+            </h3>
+            <p class="text-xs text-parchment-200 mt-2 leading-relaxed">
+              ${meta.desc}
+            </p>
+          </div>
+        `;
+
+        const cardEl = overlay.firstElementChild;
+        let done = false;
+        const cleanup = () => {
+          if (done) return;
+          done = true;
+          overlay.innerHTML = '';
+        };
+        if (!cardEl || typeof cardEl.animate !== 'function') {
+          setTimeout(cleanup, 2600);
+          return;
+        }
+        cardEl.animate([
+          { opacity: 0, transform: 'scale(0.84) translateY(10px)' },
+          { opacity: 1, transform: 'scale(1.04) translateY(0)', offset: 0.14 },
+          { opacity: 1, transform: 'scale(1) translateY(0)', offset: 0.22 },
+          { opacity: 1, transform: 'scale(1) translateY(0)', offset: 0.84 },
+          { opacity: 0, transform: 'scale(0.94) translateY(-8px)' }
+        ], {
+          duration: 2600,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'forwards'
+        }).onfinish = cleanup;
+        setTimeout(cleanup, 2650);
+      }
+
       /* 最長交易路・最大騎士力獲得大型カットイン（全画面中央・獲得者名付き） */
       showSpecialAwardCutin(awardEv) {
         const overlay = document.getElementById('specialAwardOverlay');
@@ -4184,150 +5144,58 @@
         const subCondition = isRoad
           ? `連続街道 ${winner?.longestRoadLength || 5} 本を達成！（+2 VP）`
           : `騎士カード ${winner?.knightsPlayed || 3} 枚を使用！（+2 VP）`;
+        const takeoverNote = prevHolder
+          ? `<div class="mt-1.5 inline-block px-2.5 py-0.5 rounded-full bg-red-950/90 border border-red-400/60 text-red-200 text-[11px] font-bold">⚡ ${prevHolder.name} から称号を奪取！</div>`
+          : '';
 
+        overlay.classList.add('bg-black/65', 'backdrop-blur-sm');
         overlay.innerHTML = `
-          <div class="relative w-full max-w-lg sm:max-w-xl rounded-3xl border-[3px] px-6 py-6 sm:px-9 sm:py-8 text-center shadow-[0_24px_64px_rgba(0,0,0,0.92),0_0_46px_rgba(250,204,21,0.65)] backdrop-blur-md"
-               style="background: linear-gradient(180deg, #451a03 0%, #1c0f08 55%, #090402 100%); border-color: ${accentHex};">
-            <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-amber-400/25 border border-amber-300/80 text-amber-200 text-xs sm:text-sm font-extrabold tracking-widest uppercase">
-              <span>🏆 SPECIAL BONUS</span><span>•</span><span>${awardBadgeLabel}</span>
+          <div class="arena-spark-box w-full max-w-md rounded-3xl border-[3px] px-6 py-6 text-center shadow-[0_24px_64px_rgba(0,0,0,0.95)]"
+               style="background: linear-gradient(180deg, #3b2316 0%, #1c0f08 58%, #0d0603 100%); border-color:${accentHex};">
+            <div class="inline-block px-3.5 py-1 rounded-full bg-amber-400/20 border border-amber-300 text-amber-200 text-xs font-extrabold tracking-wider">
+              ${awardBadgeLabel}
             </div>
-
-            <div class="my-3">
-              ${emblemSvg}
-            </div>
-
-            <div class="inline-flex items-center justify-center gap-2.5 px-4 py-1.5 rounded-2xl bg-black/55 border-2 mb-2 shadow-lg"
-                 style="border-color: ${accentHex};">
-              <span class="w-4 h-4 rounded-full border-2 border-white shadow" style="background:${accentHex};"></span>
-              <span class="font-serif font-extrabold text-lg sm:text-2xl text-white tracking-wide">${winnerName}</span>
-            </div>
-
-            <h3 class="font-serif font-extrabold text-2xl sm:text-3xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-100 via-amber-300 to-yellow-100 tracking-wide leading-snug">
+            <div class="my-3">${emblemSvg}</div>
+            <h3 class="font-serif font-black text-2xl sm:text-3xl text-amber-200 drop-shadow">
               ${headlineText}
             </h3>
-
-            <div class="mt-3 px-4 py-2.5 rounded-2xl bg-amber-500/20 border border-amber-300/50 text-xs sm:text-sm font-bold text-amber-100">
-              ${prevHolder ? `🔥 ${prevHolder.name} から栄誉の称号を奪取！ • ` : ''}${subCondition}
-            </div>
+            <p class="text-xs sm:text-sm font-extrabold text-parchment-100 mt-1.5">
+              ${subCondition}
+            </p>
+            ${takeoverNote}
           </div>
         `;
 
         const cardEl = overlay.firstElementChild;
-        if (!cardEl || typeof cardEl.animate !== 'function') {
-          setTimeout(() => { overlay.innerHTML = ''; }, 3400);
-          return;
-        }
-
         let done = false;
-        const finishAward = () => {
+        const cleanup = () => {
           if (done) return;
           done = true;
+          overlay.classList.remove('bg-black/65', 'backdrop-blur-sm');
           overlay.innerHTML = '';
-          this.specialAwardAnim = null;
         };
 
+        if (!cardEl || typeof cardEl.animate !== 'function') {
+          setTimeout(cleanup, 3400);
+          return;
+        }
         this.specialAwardAnim = cardEl.animate([
-          { opacity: 0, transform: 'translateY(18px) scale(0.82)' },
-          { opacity: 1, transform: 'translateY(0) scale(1.05)', offset: 0.11 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.18 },
-          { opacity: 1, transform: 'translateY(0) scale(1)', offset: 0.86 },
-          { opacity: 0, transform: 'translateY(-10px) scale(0.95)' }
+          { opacity: 0, transform: 'scale(0.82)' },
+          { opacity: 1, transform: 'scale(1.04)', offset: 0.12 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.2 },
+          { opacity: 1, transform: 'scale(1)', offset: 0.86 },
+          { opacity: 0, transform: 'scale(0.94)' }
         ], {
           duration: 3400,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         });
-
-        this.specialAwardAnim.onfinish = finishAward;
-        setTimeout(finishAward, 3450);
+        this.specialAwardAnim.onfinish = cleanup;
+        setTimeout(cleanup, 3450);
       }
 
-      getDevCardSvgIllustration(cardType) {
-        if (cardType === 'knight') {
-          return `<svg viewBox="0 0 120 96" class="w-28 h-24 sm:w-36 sm:h-28 mx-auto">
-            <circle cx="60" cy="48" r="40" fill="rgba(239,68,68,0.16)" stroke="#fca5a5" stroke-width="1.5"/>
-            <path d="M60 16 L84 26 V48 C84 66 60 80 60 80 C60 80 36 66 36 48 V26 Z" fill="#b91c1c" stroke="#fef08a" stroke-width="2.5"/>
-            <path d="M46 42 H74 M60 28 V66" stroke="#fef08a" stroke-width="4" stroke-linecap="round"/>
-          </svg>`;
-        }
-        if (cardType === 'vp') {
-          return `<svg viewBox="0 0 120 96" class="w-28 h-24 sm:w-36 sm:h-28 mx-auto">
-            <circle cx="60" cy="48" r="40" fill="rgba(250,204,21,0.18)" stroke="#fde047" stroke-width="1.5"/>
-            <polygon points="60,14 86,44 86,80 34,80 34,44" fill="#d97706" stroke="#fef9c3" stroke-width="2.4"/>
-            <rect x="52" y="54" width="16" height="26" fill="#451a03"/>
-            <circle cx="60" cy="36" r="6" fill="#fef08a"/>
-          </svg>`;
-        }
-        if (cardType === 'roadBuilding') {
-          return `<svg viewBox="0 0 120 96" class="w-28 h-24 sm:w-36 sm:h-28 mx-auto">
-            <circle cx="60" cy="48" r="40" fill="rgba(16,185,129,0.16)" stroke="#6ee7b7" stroke-width="1.5"/>
-            <path d="M26 78 L50 24 H70 L94 78 Z" fill="#fef3c7" stroke="#92400e" stroke-width="2.2"/>
-            <line x1="60" y1="30" x2="60" y2="74" stroke="#b45309" stroke-width="4" stroke-dasharray="7 5"/>
-          </svg>`;
-        }
-        if (cardType === 'yearOfPlenty') {
-          return `<svg viewBox="0 0 120 96" class="w-28 h-24 sm:w-36 sm:h-28 mx-auto">
-            <circle cx="60" cy="48" r="40" fill="rgba(245,158,11,0.18)" stroke="#fcd34d" stroke-width="1.5"/>
-            <ellipse cx="60" cy="58" rx="30" ry="18" fill="#d97706" stroke="#fef3c7" stroke-width="2.2"/>
-            <circle cx="48" cy="46" r="9" fill="#22c55e"/>
-            <circle cx="62" cy="42" r="10" fill="#eab308"/>
-            <circle cx="74" cy="48" r="8" fill="#ef4444"/>
-          </svg>`;
-        }
-        return `<svg viewBox="0 0 120 96" class="w-28 h-24 sm:w-36 sm:h-28 mx-auto">
-          <circle cx="60" cy="48" r="40" fill="rgba(168,85,247,0.18)" stroke="#d8b4fe" stroke-width="1.5"/>
-          <path d="M30 68 L36 32 L52 48 L60 24 L68 48 L84 32 L90 68 Z" fill="#f59e0b" stroke="#fef9c3" stroke-width="2.4"/>
-          <rect x="30" y="68" width="60" height="10" rx="3" fill="#92400e"/>
-        </svg>`;
-      }
-
-      showDevCardCutin(mode, playerName, cardType, accentHex) {
-        const overlay = document.getElementById('devCardCutinOverlay');
-        if (!overlay) return;
-        const meta = DEV_CARD_META[cardType] || DEV_CARD_META.knight;
-        const badgeText = mode === 'buy' ? '📜 発展カード獲得（あなた限定表示）' : `⚡ ${playerName} が発展カードを発動！`;
-
-        overlay.innerHTML = `
-          <div class="w-full max-w-md sm:max-w-lg rounded-3xl border-[3px] px-6 py-6 text-center shadow-[0_22px_58px_rgba(0,0,0,0.92)] backdrop-blur-md"
-               style="background: linear-gradient(180deg, #3b0764 0%, #1c0f08 55%, #090402 100%); border-color:${accentHex || '#c084fc'}">
-            <div class="inline-block px-3.5 py-1 rounded-full bg-purple-500/25 border border-purple-300/70 text-purple-200 text-xs font-extrabold">
-              ${badgeText}
-            </div>
-            <div class="my-3">
-              ${this.getDevCardSvgIllustration(cardType)}
-            </div>
-            <h3 class="font-serif font-black text-2xl sm:text-3xl text-amber-300">${meta.name}</h3>
-            <p class="text-xs sm:text-sm text-parchment-200 mt-2 leading-relaxed font-medium">${meta.desc}</p>
-          </div>
-        `;
-
-        const cardEl = overlay.firstElementChild;
-        let done = false;
-        const finish = () => {
-          if (done) return;
-          done = true;
-          overlay.innerHTML = '';
-        };
-        if (!cardEl || typeof cardEl.animate !== 'function') {
-          setTimeout(finish, 3000);
-          return;
-        }
-        cardEl.animate([
-          { opacity: 0, transform: 'scale(0.82) translateY(14px)' },
-          { opacity: 1, transform: 'scale(1.04) translateY(0)', offset: 0.12 },
-          { opacity: 1, transform: 'scale(1) translateY(0)', offset: 0.2 },
-          { opacity: 1, transform: 'scale(1) translateY(0)', offset: 0.85 },
-          { opacity: 0, transform: 'scale(0.94) translateY(-10px)' }
-        ], {
-          duration: 3000,
-          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-          fill: 'forwards'
-        }).onfinish = finish;
-        setTimeout(finish, 3050);
-      }
-
-      /* -------------------- 勝利モーダル描画 -------------------- */
-      showVictoryModal(winnerUid) {
+      /* -------------------- 勝利モーダル描画（4タブ構成・スマホ横幅最適化） -------------------- */
+      showVictoryModal(winnerUid, initialTab = 'tab1') {
         const st = gameController.publicState;
         if (!st) return;
         const winner = st.players[winnerUid];
@@ -4338,17 +5206,13 @@
         const nameEl = document.getElementById('victoryWinnerName');
         const dotEl = document.getElementById('victoryWinnerColorDot');
         const subTagEl = document.getElementById('victoryWinnerSubTag');
-        const subtitleEl = document.getElementById('victorySubtitleText');
         const cardEl = document.getElementById('victoryModalCard');
         const particlesEl = document.getElementById('victoryParticlesLayer');
 
-        if (nameEl) nameEl.textContent = `👑 ${winnerName} の勝利！ 👑`;
+        if (nameEl) nameEl.textContent = `${winnerName} の勝利！`;
         if (dotEl) dotEl.style.background = winnerColor;
         if (subTagEl) {
-          subTagEl.textContent = isMeWinner ? '✨ あなたの完全勝利！おめでとうございます！ ✨' : `🏆 勝者: ${winnerName}`;
-        }
-        if (subtitleEl) {
-          subtitleEl.textContent = `${winnerName} が10勝利点に到達し、群島の開拓王となりました！`;
+          subTagEl.textContent = isMeWinner ? '✨ あなたの完全勝利！10 VP REACHED ✨' : `🏆 CHAMPION • 10 VP VICTORY`;
         }
         if (cardEl) {
           cardEl.style.borderColor = winnerColor;
@@ -4357,17 +5221,50 @@
         if (particlesEl) {
           const confettiColors = ['#fde047', '#f59e0b', '#fbbf24', '#fef08a', '#34d399', '#60a5fa', winnerColor];
           let pHtml = '';
-          for (let i = 0; i < 42; i++) {
+          for (let i = 0; i < 36; i++) {
             const leftPct = Math.round(Math.random() * 98);
             const dur = (2.4 + Math.random() * 1.8).toFixed(2);
             const delay = (Math.random() * 2.2).toFixed(2);
             const col = confettiColors[i % confettiColors.length];
-            const w = i % 3 === 0 ? 10 : 7;
-            const h = i % 2 === 0 ? 14 : 8;
+            const w = i % 3 === 0 ? 9 : 6;
+            const h = i % 2 === 0 ? 12 : 7;
             pHtml += `<span class="victory-confetti-piece rounded-sm" style="left:${leftPct}%; width:${w}px; height:${h}px; background:${col}; box-shadow: 0 0 6px ${col}; --conf-dur:${dur}s; --conf-delay:${delay}s;"></span>`;
           }
           particlesEl.innerHTML = pHtml;
         }
+
+        this.switchVictoryTab(initialTab);
+        this.openModal('victoryModal');
+
+        if (cardEl && typeof cardEl.animate === 'function') {
+          cardEl.animate([
+            { opacity: 0, transform: 'scale(0.84) translateY(16px)' },
+            { opacity: 1, transform: 'scale(1.02) translateY(0)', offset: 0.65 },
+            { opacity: 1, transform: 'scale(1) translateY(0)' }
+          ], {
+            duration: 460,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards'
+          });
+        }
+      }
+
+      switchVictoryTab(tabId) {
+        this.activeVictoryTab = tabId;
+        ['tab1', 'tab2', 'tab3', 'tab4'].forEach(t => {
+          const btn = document.getElementById(`victoryTabBtn_${t}`);
+          if (!btn) return;
+          btn.className = t === tabId
+            ? 'py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition bg-amber-400 text-mahogany-950 shadow'
+            : 'py-2 px-1 rounded-xl font-extrabold text-[11px] sm:text-xs whitespace-nowrap transition text-parchment-200 hover:bg-white/10';
+        });
+        this.renderVictoryTabContent(tabId);
+      }
+
+      renderVictoryTabContent(tabId) {
+        const panel = document.getElementById('victoryTabPanel');
+        const st = gameController.publicState;
+        if (!panel || !st) return;
 
         const rankedUids = [...st.turnOrder].sort((a, b) => {
           const vpA = (st.players[a]?.publicVP || 0) + (st.revealedSecretVps?.[a] ?? (a === gameController.localUid ? secretVault.getSecretVpCount(a) : 0));
@@ -4375,49 +5272,163 @@
           return vpB - vpA;
         });
 
-        const breakdownEl = document.getElementById('victoryScoreBreakdown');
-        breakdownEl.innerHTML = rankedUids.map((uid, idx) => {
+        const renderPlayerCell = (uid, idx) => {
           const p = st.players[uid];
-          const secVp = st.revealedSecretVps?.[uid] ?? (uid === gameController.localUid ? secretVault.getSecretVpCount(uid) : 0);
-          const total = p.publicVP + secVp;
-          const isChamp = uid === winnerUid;
-          const rankBadge = idx === 0 ? '👑 1位' : `${idx + 1}位`;
-          const awards = [];
-          if (p.hasLongestRoad) awards.push('🛤️最長交易路');
-          if (p.hasLargestArmy) awards.push('⚔️最大騎士力');
-
+          const isChamp = uid === st.winnerUid;
+          const rankIcon = idx === 0 ? '👑' : `${idx + 1}`;
           return `
-            <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl border ${
-              isChamp
-                ? 'bg-amber-500/20 border-amber-300/80 text-white shadow'
-                : 'bg-mahogany-900/70 border-brass-600/30 text-parchment-200'
-            }">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="px-2 py-0.5 rounded-lg text-[11px] font-extrabold ${isChamp ? 'bg-amber-400 text-mahogany-950' : 'bg-mahogany-800 text-parchment-300'}">${rankBadge}</span>
-                <span class="w-3.5 h-3.5 rounded-full flex-shrink-0 border border-white/80" style="background:${p.palette.hex}"></span>
-                <span class="font-bold truncate">${p.name}</span>
-                ${awards.length > 0 ? `<span class="hidden sm:inline text-[10px] text-amber-300 font-bold">(${awards.join('・')})</span>` : ''}
+            <div class="flex items-center gap-1 min-w-0">
+              <span class="w-4 text-center font-black text-[10px] sm:text-xs ${isChamp ? 'text-amber-300' : 'text-parchment-300/80'} flex-shrink-0">${rankIcon}</span>
+              <span class="w-2.5 h-2.5 rounded-full border border-white/80 flex-shrink-0" style="background:${p.palette.hex}"></span>
+              <span class="font-extrabold text-[11px] sm:text-xs text-white truncate">${p.name}</span>
+            </div>
+          `;
+        };
+
+        // 1タブ目: 4人それぞれの最終得点，交易路長，騎士力，勝利点カードの点
+        if (tabId === 'tab1') {
+          const headerHtml = `
+            <div class="grid grid-cols-[1.55fr_0.75fr_0.75fr_0.75fr_0.75fr] items-center gap-1 px-2 py-1.5 rounded-xl bg-black/55 border border-brass-500/35 text-[10px] sm:text-xs font-extrabold text-amber-300 whitespace-nowrap">
+              <div class="text-left">開拓者</div>
+              <div class="text-center">🏆得点</div>
+              <div class="text-center">🛤️道長</div>
+              <div class="text-center">⚔️騎士</div>
+              <div class="text-center">🏛️VP札</div>
+            </div>
+          `;
+
+          const rowsHtml = rankedUids.map((uid, idx) => {
+            const p = st.players[uid];
+            const secVp = st.revealedSecretVps?.[uid] ?? (uid === gameController.localUid ? secretVault.getSecretVpCount(uid) : 0);
+            const totalVp = p.publicVP + secVp;
+            const isChamp = uid === st.winnerUid;
+
+            return `
+              <div class="grid grid-cols-[1.55fr_0.75fr_0.75fr_0.75fr_0.75fr] items-center gap-1 px-2 py-2.5 rounded-xl border whitespace-nowrap ${
+                isChamp ? 'bg-amber-500/20 border-amber-300/80 shadow' : 'bg-mahogany-900/75 border-brass-600/30'
+              }">
+                ${renderPlayerCell(uid, idx)}
+                <div class="text-center font-serif font-black text-xs sm:text-sm ${isChamp ? 'text-amber-300' : 'text-white'}">${totalVp}<span class="text-[9px] ml-0.5">pt</span></div>
+                <div class="text-center font-bold text-[11px] sm:text-xs text-parchment-100">${p.longestRoadLength}${p.hasLongestRoad ? '<span class="text-amber-300 ml-0.5" title="最長交易路+2VP">★</span>' : ''}</div>
+                <div class="text-center font-bold text-[11px] sm:text-xs text-parchment-100">${p.knightsPlayed}${p.hasLargestArmy ? '<span class="text-purple-300 ml-0.5" title="最大騎士力+2VP">★</span>' : ''}</div>
+                <div class="text-center font-bold text-[11px] sm:text-xs text-amber-200">+${secVp}</div>
               </div>
-              <div class="text-right flex-shrink-0">
-                <span class="font-serif font-extrabold text-base sm:text-lg ${isChamp ? 'text-amber-300' : 'text-parchment-100'}">${total} VP</span>
-                <span class="text-[10px] sm:text-xs text-parchment-300/80 ml-1">(公開${p.publicVP}+秘匿${secVp})</span>
+            `;
+          }).join('');
+
+          panel.innerHTML = `
+            <div class="space-y-1.5">
+              ${headerHtml}
+              ${rowsHtml}
+              <div class="text-[10px] text-parchment-300/80 text-right pt-0.5 whitespace-nowrap">
+                ★ = 最長交易路 / 最大騎士力 (+2VP保持)
               </div>
             </div>
           `;
-        }).join('');
+          return;
+        }
 
-        this.openModal('victoryModal');
+        // 2タブ目（資源）: 4人それぞれの総資源獲得量，資源期待値，期待値に対する資源獲得量(%)：正負あり
+        if (tabId === 'tab2') {
+          const stats = st.matchStats || {};
+          const headerHtml = `
+            <div class="grid grid-cols-[1.5fr_0.8fr_0.85fr_0.85fr] items-center gap-1 px-2 py-1.5 rounded-xl bg-black/55 border border-brass-500/35 text-[10px] sm:text-xs font-extrabold text-amber-300 whitespace-nowrap">
+              <div class="text-left">開拓者</div>
+              <div class="text-center">📦獲得</div>
+              <div class="text-center">🎲期待値</div>
+              <div class="text-center">📈収支%</div>
+            </div>
+          `;
 
-        if (cardEl && typeof cardEl.animate === 'function') {
-          cardEl.animate([
-            { opacity: 0, transform: 'scale(0.8) translateY(20px)' },
-            { opacity: 1, transform: 'scale(1.03) translateY(0)', offset: 0.65 },
-            { opacity: 1, transform: 'scale(1) translateY(0)' }
-          ], {
-            duration: 520,
-            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            fill: 'forwards'
-          });
+          const rowsHtml = rankedUids.map((uid, idx) => {
+            const s = stats[uid] || {};
+            const gained = s.totalResourcesGained || 0;
+            const expVal = s.expectedResources || 0;
+            const pct = expVal > 0 ? Math.round(((gained - expVal) / expVal) * 100) : 0;
+            const pctText = pct > 0 ? `+${pct}%` : `${pct}%`;
+            const pctColor = pct > 0 ? 'text-emerald-300' : pct < 0 ? 'text-rose-400' : 'text-parchment-200';
+            const isChamp = uid === st.winnerUid;
+
+            return `
+              <div class="grid grid-cols-[1.5fr_0.8fr_0.85fr_0.85fr] items-center gap-1 px-2 py-2.5 rounded-xl border whitespace-nowrap ${
+                isChamp ? 'bg-amber-500/20 border-amber-300/80 shadow' : 'bg-mahogany-900/75 border-brass-600/30'
+              }">
+                ${renderPlayerCell(uid, idx)}
+                <div class="text-center font-extrabold text-xs sm:text-sm text-white">${gained}<span class="text-[9px] text-parchment-300 ml-0.5">枚</span></div>
+                <div class="text-center font-mono font-bold text-[11px] sm:text-xs text-parchment-200">${expVal.toFixed(1)}</div>
+                <div class="text-center font-mono font-black text-xs sm:text-sm ${pctColor}">${pctText}</div>
+              </div>
+            `;
+          }).join('');
+
+          const myGainedByRes = stats[gameController.localUid]?.gainedByResource || emptyHand();
+          panel.innerHTML = `
+            <div class="space-y-2">
+              ${headerHtml}
+              <div class="space-y-1.5">${rowsHtml}</div>
+              <div class="rounded-xl bg-black/45 border border-brass-600/30 px-2.5 py-2 flex items-center justify-between gap-1 whitespace-nowrap">
+                <span class="text-[10px] font-bold text-amber-300">あなた内訳:</span>
+                ${RESOURCE_KEYS.map(k => `<span class="text-[11px] font-extrabold text-parchment-100">${RESOURCES[k].emoji}${myGainedByRes[k] || 0}</span>`).join('')}
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // 3タブ目（盗賊）: 盗賊封鎖で取れなかった資源量，奪われた回数，奪った回数，バースト回数，バースト破棄量
+        if (tabId === 'tab3') {
+          const stats = st.matchStats || {};
+          const headerHtml = `
+            <div class="grid grid-cols-[1.35fr_0.68fr_0.64fr_0.64fr_0.64fr_0.68fr] items-center gap-0.5 px-2 py-1.5 rounded-xl bg-black/55 border border-brass-500/35 text-[10px] sm:text-xs font-extrabold text-amber-300 whitespace-nowrap">
+              <div class="text-left">開拓者</div>
+              <div class="text-center" title="盗賊封鎖で取れなかった資源量">🚫封鎖</div>
+              <div class="text-center" title="盗賊を置かれて奪われた回数">😢被奪</div>
+              <div class="text-center" title="盗賊で奪った回数">🦹強奪</div>
+              <div class="text-center" title="7バースト回数">💥回数</div>
+              <div class="text-center" title="7バースト破棄枚数">🗑️破棄</div>
+            </div>
+          `;
+
+          const rowsHtml = rankedUids.map((uid, idx) => {
+            const s = stats[uid] || {};
+            const blocked = s.robberBlockedResources || 0;
+            const robbedBy = s.timesRobbedByOthers || 0;
+            const robbedOthers = s.timesRobbedOthers || 0;
+            const burstCnt = s.burstCount || 0;
+            const burstDrop = s.burstDiscardedCount || 0;
+            const isChamp = uid === st.winnerUid;
+
+            return `
+              <div class="grid grid-cols-[1.35fr_0.68fr_0.64fr_0.64fr_0.64fr_0.68fr] items-center gap-0.5 px-2 py-2.5 rounded-xl border whitespace-nowrap ${
+                isChamp ? 'bg-amber-500/20 border-amber-300/80 shadow' : 'bg-mahogany-900/75 border-brass-600/30'
+              }">
+                ${renderPlayerCell(uid, idx)}
+                <div class="text-center font-extrabold text-[11px] sm:text-xs text-rose-300">${blocked}</div>
+                <div class="text-center font-bold text-[11px] sm:text-xs text-parchment-100">${robbedBy}</div>
+                <div class="text-center font-bold text-[11px] sm:text-xs text-emerald-300">${robbedOthers}</div>
+                <div class="text-center font-bold text-[11px] sm:text-xs text-amber-200">${burstCnt}</div>
+                <div class="text-center font-extrabold text-[11px] sm:text-xs text-red-400">${burstDrop}</div>
+              </div>
+            `;
+          }).join('');
+
+          panel.innerHTML = `
+            <div class="space-y-1.5">
+              ${headerHtml}
+              ${rowsHtml}
+              <div class="flex flex-wrap items-center justify-between gap-1 text-[9.5px] sm:text-[10px] text-parchment-300/85 pt-0.5 whitespace-nowrap">
+                <span>🚫封鎖=盗賊喪失資源</span>
+                <span>😢被奪/🦹強奪=盗賊回数</span>
+                <span>💥/🗑️=7バースト回数・破棄枚</span>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // 4タブ目: 1〜3タブ目の内容＋初期配置・プレイ戦略を踏まえたAI分析＆アドバイス
+        if (tabId === 'tab4') {
+          panel.innerHTML = analytics.generatePostMatchAiAnalysis(st, gameController.localUid);
         }
       }
 
@@ -4465,17 +5476,21 @@
           const isTurn = st.currentTurnUid === uid;
           const isMe = uid === gameController.localUid;
           const secVp = isMe ? gameController.myDevHand.filter(c => c.type === 'vp').length : 0;
+          const diffTag = p.isCpu
+            ? `<span class="px-1.5 py-0.2 rounded bg-sky-900/15 border border-sky-800/30 text-sky-950 text-[10px] font-extrabold">🤖 ${CPU_DIFFICULTY_LABELS[st.cpuDifficulty] || '中級'}</span>`
+            : '';
 
           return `
             <div class="rounded-xl px-2.5 py-2 border ${
               isTurn ? 'bg-amber-900/20 border-amber-700' : 'bg-white/65 border-brass-600/30'
             }">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between gap-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
                   <span class="w-3 h-3 rounded-full border border-black/30 flex-shrink-0" style="background:${p.palette.hex}"></span>
                   <span class="font-extrabold text-xs text-mahogany-950 truncate">${p.name}</span>
+                  ${diffTag}
                 </div>
-                <span class="font-serif font-black text-xs text-amber-950">${p.publicVP}${secVp > 0 ? `+${secVp}` : ''} VP</span>
+                <span class="font-serif font-black text-xs text-amber-950 flex-shrink-0">${p.publicVP}${secVp > 0 ? `+${secVp}` : ''} VP</span>
               </div>
               <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-mahogany-800 font-bold mt-1">
                 <span>🃏資源:${p.handCount}</span>
@@ -4701,7 +5716,16 @@
           const pts = this.getHexPolygonPoints(hex.cx, hex.cy, hex.radius - 1.2);
           const isHot = hex.number === 6 || hex.number === 8;
           const pips = NUMBER_PIPS[hex.number] || 0;
-          const dotsStr = '•'.repeat(pips);
+          // 5個のpipでも数字円の枠内に綺麗に収まるよう狭い間隔のSVG小円で描画
+          let pipsSvg = '';
+          if (pips > 0) {
+            const spacing = 3.6;
+            const startX = hex.cx - ((pips - 1) * spacing) / 2;
+            const dotColor = isHot ? '#dc2626' : '#57534e';
+            for (let d = 0; d < pips; d++) {
+              pipsSvg += `<circle cx="${(startX + d * spacing).toFixed(1)}" cy="${hex.cy + 17.5}" r="1.2" fill="${dotColor}" />`;
+            }
+          }
 
           return `
             <g filter="url(#tileShadow)">
@@ -4710,7 +5734,7 @@
               ${hex.number > 0 ? `
                 <circle cx="${hex.cx}" cy="${hex.cy + 8}" r="14.5" fill="#fbf6ea" stroke="#78350f" stroke-width="1.6" />
                 <text x="${hex.cx}" y="${hex.cy + 11.5}" text-anchor="middle" fill="${isHot ? '#dc2626' : '#1c1917'}" font-size="12.5" font-weight="900">${hex.number}</text>
-                <text x="${hex.cx}" y="${hex.cy + 19}" text-anchor="middle" fill="${isHot ? '#dc2626' : '#57534e'}" font-size="7.5" letter-spacing="0.5">${dotsStr}</text>
+                ${pipsSvg}
               ` : ''}
             </g>
           `;
@@ -5091,7 +6115,7 @@
             } else if (resp.status === 'counter') {
               statusHtml = `
                 <div class="text-xs font-extrabold text-purple-900">🔄 別条件を逆提案</div>
-                <div class="text-xs text-mahogany-900"> ${formatResourceBundle(resp.counterGive)} を渡す ⇄ ${formatResourceBundle(resp.counterWant)} を得る</div>
+                <div class="text-[11px] text-mahogany-900">あなた渡す: ${formatResourceBundle(resp.counterGive)} ⇄ あなた得る: ${formatResourceBundle(resp.counterWant)}</div>
               `;
               const canAcceptCounter = canAfford(gameController.myHand, resp.counterGive);
               actionBtn = `<button onclick="gameController.acceptTradePartner('${rUid}')" ${canAcceptCounter ? '' : 'disabled'} class="brass-btn px-3 py-1.5 rounded-xl font-extrabold text-xs">🤝 この条件で成立</button>`;
@@ -5144,32 +6168,40 @@
         const el = document.getElementById('counterOfferEditor');
         el.classList.toggle('hidden');
         if (!el.classList.contains('hidden')) {
-          gameController.counterDraft = { give: emptyHand(), want: emptyHand() };
+          const offer = gameController.publicState?.activeTradeOffer;
+          gameController.counterDraft = {
+            fixedGive: offer ? { ...offer.want } : emptyHand(),
+            want: emptyHand()
+          };
           this.renderCounterOfferGrids();
         }
       }
 
-      adjustCounterDraft(side, resKey, delta) {
-        const target = gameController.counterDraft[side];
-        const maxVal = side === 'give' ? (gameController.myHand[resKey] || 0) : 9;
-        target[resKey] = Math.max(0, Math.min(maxVal, (target[resKey] || 0) + delta));
+      adjustCounterDraft(resKey, delta) {
+        const target = gameController.counterDraft.want;
+        target[resKey] = Math.max(0, Math.min(9, (target[resKey] || 0) + delta));
         this.renderCounterOfferGrids();
       }
 
       renderCounterOfferGrids() {
-        const hand = gameController.myHand;
-        const { give, want } = gameController.counterDraft;
-        document.getElementById('counterGiveGrid').innerHTML = RESOURCE_KEYS.map(k => `
-          <div class="rounded-lg bg-white p-1 text-center border border-brass-600/30">
-            <div class="text-sm">${RESOURCES[k].emoji}</div>
-            <div class="text-[9px]">所持:${hand[k] || 0}</div>
-            <div class="font-black text-xs">${give[k] || 0}</div>
-            <div class="flex justify-center gap-1">
-              <button onclick="appUI.adjustCounterDraft('give','${k}',-1)" class="w-5 h-5 rounded bg-black/10 text-xs font-bold">－</button>
-              <button onclick="appUI.adjustCounterDraft('give','${k}',1)" class="w-5 h-5 rounded bg-mahogany-900 text-amber-300 text-xs font-bold">＋</button>
-            </div>
-          </div>
-        `).join('');
+        const offer = gameController.publicState?.activeTradeOffer;
+        const fixedGive = offer ? offer.want : gameController.counterDraft.fixedGive;
+        const { want } = gameController.counterDraft;
+        const canAffordFixed = canAfford(gameController.myHand, fixedGive);
+
+        const fixedBox = document.getElementById('counterFixedGiveBox');
+        if (fixedBox) {
+          fixedBox.innerHTML = `
+            <div class="text-[11px] font-bold text-mahogany-800">🔒 あなたが渡す資源（元の希望通り固定）:</div>
+            <div class="text-xs sm:text-sm font-extrabold text-red-900 mt-0.5">${formatResourceBundle(fixedGive)}</div>
+            ${!canAffordFixed ? '<div class="text-[10px] text-red-700 font-extrabold mt-0.5">※ 該当資源を所持していないため逆提案できません</div>' : ''}
+          `;
+        }
+
+        const submitBtn = document.getElementById('btnSubmitCounterOffer');
+        if (submitBtn) {
+          submitBtn.disabled = !canAffordFixed || totalHandCount(want) === 0;
+        }
 
         document.getElementById('counterWantGrid').innerHTML = RESOURCE_KEYS.map(k => `
           <div class="rounded-lg bg-white p-1 text-center border border-sky-600/30">
@@ -5177,8 +6209,8 @@
             <div class="text-[9px]">${RESOURCES[k].name}</div>
             <div class="font-black text-xs">${want[k] || 0}</div>
             <div class="flex justify-center gap-1">
-              <button onclick="appUI.adjustCounterDraft('want','${k}',-1)" class="w-5 h-5 rounded bg-black/10 text-xs font-bold">－</button>
-              <button onclick="appUI.adjustCounterDraft('want','${k}',1)" class="w-5 h-5 rounded bg-sky-900 text-white text-xs font-bold">＋</button>
+              <button onclick="appUI.adjustCounterDraft('${k}',-1)" class="w-5 h-5 rounded bg-black/10 text-xs font-bold">－</button>
+              <button onclick="appUI.adjustCounterDraft('${k}',1)" class="w-5 h-5 rounded bg-sky-900 text-white text-xs font-bold">＋</button>
             </div>
           </div>
         `).join('');
@@ -5300,6 +6332,10 @@
       openAnalyticsModal() {
         const st = gameController.publicState;
         if (!st) return;
+        if (st.status === 'finished' && st.winnerUid) {
+          this.showVictoryModal(st.winnerUid, 'tab4');
+          return;
+        }
         document.getElementById('analyticsReportContent').innerHTML = analytics.generateReport(st, gameController.localUid);
         this.openModal('analyticsModal');
       }
