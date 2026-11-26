@@ -109,6 +109,12 @@
 
     /* Edge等で外部Tailwind CDNがブロックされた場合でもレイアウト・非表示制御を維持するフォールバックCSS */
     .hidden { display: none !important; }
+    .invite-copy-label-mobile { display: inline !important; }
+    .invite-copy-label-desktop { display: none !important; }
+    @media (min-width: 640px) {
+      .invite-copy-label-mobile { display: none !important; }
+      .invite-copy-label-desktop { display: inline !important; }
+    }
     .flex { display: flex; }
     .inline-flex { display: inline-flex; }
     .grid { display: grid; }
@@ -568,8 +574,8 @@
               <span id="waitingRoomCode" class="font-mono font-black text-lg sm:text-2xl text-amber-300 tracking-wider">------</span>
             </div>
             <button onclick="appUI.copyInviteLink()" class="px-2 py-1.5 sm:px-3 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400 text-amber-200 text-[11px] sm:text-sm font-extrabold whitespace-nowrap flex-shrink-0">
-              <span class="sm:hidden">🔗 コピー</span>
-              <span class="hidden sm:inline">🔗 招待リンクをコピー</span>
+              <span class="invite-copy-label-mobile">🔗 コピー</span>
+              <span class="invite-copy-label-desktop">🔗 招待リンクをコピー</span>
             </button>
           </div>
         </div>
