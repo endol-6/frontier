@@ -393,7 +393,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v6.5
+              v7.0
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -557,8 +557,8 @@
       <div id="onlineWaitingPanel" class="hidden mt-4 rounded-2xl bg-mahogany-950 text-parchment-100 p-4 sm:p-5 border-2 border-amber-400 space-y-3">
         <div class="space-y-2 border-b border-brass-600/40 pb-3">
           <div class="flex items-center justify-between gap-2">
-            <div class="text-sm sm:text-base text-amber-300 font-extrabold">🏰 オンライン対戦ルーム待機室</div>
-            <span id="waitingRoleBadge" class="px-2.5 py-0.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs sm:text-sm font-bold whitespace-nowrap">
+            <div class="h-5 sm:h-6 flex items-center text-sm sm:text-base text-amber-300 font-extrabold">🏰 オンライン対戦ルーム</div>
+            <span id="waitingRoleBadge" class="h-5 sm:h-6 flex items-center px-2.5 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs sm:text-sm font-bold whitespace-nowrap">
               ホスト待機中
             </span>
           </div>
@@ -567,8 +567,9 @@
               <span class="text-sm sm:text-base text-parchment-300 font-bold">ルームID:</span>
               <span id="waitingRoomCode" class="font-mono font-black text-lg sm:text-2xl text-amber-300 tracking-wider">------</span>
             </div>
-            <button onclick="appUI.copyInviteLink()" class="px-3 py-1.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400 text-amber-200 text-xs sm:text-sm font-extrabold whitespace-nowrap flex-shrink-0">
-              🔗 招待リンクをコピー
+            <button onclick="appUI.copyInviteLink()" class="px-2 py-1.5 sm:px-3 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 border border-amber-400 text-amber-200 text-[11px] sm:text-sm font-extrabold whitespace-nowrap flex-shrink-0">
+              <span class="sm:hidden">🔗 コピー</span>
+              <span class="hidden sm:inline">🔗 招待リンクをコピー</span>
             </button>
           </div>
         </div>
@@ -4119,6 +4120,7 @@
         this.matchStartAnim = null;
         this.turnBannerAnim = null;
         this.diceCutinAnim = null;
+        this.diceAnimFrame = null;
         this.diceTimers = [];
         this.specialAwardAnim = null;
         this.activeVictoryTab = 'tab1';
@@ -4702,6 +4704,10 @@
       }
 
       clearDiceCutinTimers() {
+        if (this.diceAnimFrame) {
+          cancelAnimationFrame(this.diceAnimFrame);
+          this.diceAnimFrame = null;
+        }
         if (this.diceTimers && this.diceTimers.length > 0) {
           this.diceTimers.forEach(id => clearTimeout(id));
           this.diceTimers = [];
@@ -4720,145 +4726,75 @@
         }
 
         this.clearDiceCutinTimers();
-
         const isSeven = diceEv.sum === 7;
-        // 0〜1300ms: 1回転(360°)しながら徐々に減速して着地
-        // 1300〜2900ms: 確定した出目で1.6秒間ピタッと完全静止
-        // 2900〜3300ms: ウィンドウ全体が滑らかにフェードアウト（計3300ms）
-        const rollPhaseMs = 1300;
-        const durationMs = 3300;
-        let done = false;
-
-        const pickDifferentFace = (prev) => {
-          let n = Math.floor(Math.random() * 6) + 1;
-          if (n === prev) n = (n % 6) + 1;
-          return n;
-        };
-
-        let curFace1 = pickDifferentFace(diceEv.d1);
-        let curFace2 = pickDifferentFace(diceEv.d2);
-
         overlay.innerHTML = `
-          <div class="rounded-3xl bg-mahogany-950/95 border-[3px] border-amber-400 px-6 py-5 sm:px-8 sm:py-6 text-center shadow-[0_20px_54px_rgba(0,0,0,0.9)] backdrop-blur-md">
-            <div class="text-xs font-extrabold text-amber-300 mb-2">🎲 ${diceEv.rollerName} のダイスロール</div>
-            <div class="flex items-center justify-center gap-4 my-2">
-              <div id="cutinDie1" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg will-change-transform">
-                ${this.buildDicePipsHtml(curFace1)}
+          <div id="diceCutinCard" class="rounded-3xl bg-mahogany-950/95 border-2 ${isSeven ? 'border-red-500' : 'border-amber-400'} px-6 py-5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] text-center space-y-3 transition-opacity duration-350" style="opacity:1;">
+            <div class="text-xs font-extrabold tracking-widest ${isSeven ? 'text-red-400' : 'text-amber-300'}">🎲 ${diceEv.rollerName} のダイスロール</div>
+            <div class="flex items-center justify-center gap-4">
+              <div id="cutinDie1" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white border-2 border-mahogany-950 shadow-xl p-2.5 grid grid-cols-3 grid-rows-3 place-items-center">
+                ${this.buildDicePipsHtml(1)}
               </div>
-              <span class="text-2xl font-black text-amber-300">＋</span>
-              <div id="cutinDie2" class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white border-2 border-mahogany-900 p-2 grid grid-cols-3 grid-rows-3 place-items-center shadow-lg will-change-transform">
-                ${this.buildDicePipsHtml(curFace2)}
+              <div id="cutinDie2" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white border-2 border-mahogany-950 shadow-xl p-2.5 grid grid-cols-3 grid-rows-3 place-items-center">
+                ${this.buildDicePipsHtml(6)}
               </div>
             </div>
-            <div id="cutinDiceSumLabel" class="mt-2 font-serif font-black text-2xl sm:text-3xl text-amber-200/85">
-              ダイス回転中...
+            <div id="cutinDiceSumLabel" class="font-serif font-black text-xl sm:text-2xl ${isSeven ? 'text-red-400' : 'text-amber-200'} opacity-0 transition-opacity duration-200">
+              合計 【 ${diceEv.sum} 】${isSeven ? ' — 盗賊発生！' : ''}
             </div>
           </div>
         `;
 
-        const d1El = document.getElementById('cutinDie1');
-        const d2El = document.getElementById('cutinDie2');
+        const cDie1 = document.getElementById('cutinDie1');
+        const cDie2 = document.getElementById('cutinDie2');
+        const sumLabel = document.getElementById('cutinDiceSumLabel');
+        const card = document.getElementById('diceCutinCard');
 
-        if (d1El && typeof d1El.animate === 'function') {
-          d1El.animate([
-            { transform: 'translateX(-18px) translateY(-16px) rotate(-360deg) scale(0.84)', offset: 0 },
-            { transform: 'translateX(-8px) translateY(5px) rotate(-135deg) scale(1.06)', offset: 0.35 },
-            { transform: 'translateX(-2px) translateY(-3px) rotate(-36deg) scale(1.02)', offset: 0.68 },
-            { transform: 'translateX(0px) translateY(0px) rotate(-6deg) scale(1.0)', offset: 0.88 },
-            { transform: 'translateX(0px) translateY(0px) rotate(0deg) scale(1.0)', offset: 1.0 }
-          ], {
-            duration: rollPhaseMs,
-            easing: 'ease-out',
-            fill: 'forwards'
-          });
-        }
-        if (d2El && typeof d2El.animate === 'function') {
-          d2El.animate([
-            { transform: 'translateX(18px) translateY(-16px) rotate(360deg) scale(0.84)', offset: 0 },
-            { transform: 'translateX(8px) translateY(5px) rotate(135deg) scale(1.06)', offset: 0.35 },
-            { transform: 'translateX(2px) translateY(-3px) rotate(36deg) scale(1.02)', offset: 0.68 },
-            { transform: 'translateX(0px) translateY(0px) rotate(6deg) scale(1.0)', offset: 0.88 },
-            { transform: 'translateX(0px) translateY(0px) rotate(0deg) scale(1.0)', offset: 1.0 }
-          ], {
-            duration: rollPhaseMs,
-            easing: 'ease-out',
-            fill: 'forwards'
-          });
-        }
+        const spinDuration = 1500;
+        const holdDuration = 1600;
+        const startTime = performance.now();
+        let lastFaceChange = 0;
 
-        const faceChangeTimes = [110, 240, 410, 630, 920];
-        faceChangeTimes.forEach(ms => {
-          const tId = setTimeout(() => {
-            if (done) return;
-            curFace1 = pickDifferentFace(curFace1);
-            curFace2 = pickDifferentFace(curFace2);
-            const el1 = document.getElementById('cutinDie1');
-            const el2 = document.getElementById('cutinDie2');
-            if (el1) el1.innerHTML = this.buildDicePipsHtml(curFace1);
-            if (el2) el2.innerHTML = this.buildDicePipsHtml(curFace2);
-          }, ms);
-          this.diceTimers.push(tId);
-        });
+        const step = (now) => {
+          const elapsed = now - startTime;
+          const t = Math.min(1, elapsed / spinDuration);
+          const eased = 1 - Math.pow(1 - t, 3);
+          const angle = eased * 360;
 
-        const settleTimer = setTimeout(() => {
-          if (done) return;
-          const el1 = document.getElementById('cutinDie1');
-          const el2 = document.getElementById('cutinDie2');
-          const sumEl = document.getElementById('cutinDiceSumLabel');
-          if (el1) {
-            el1.innerHTML = this.buildDicePipsHtml(diceEv.d1);
-            if (typeof el1.animate === 'function') {
-              el1.animate([
-                { transform: 'scale(1.12)' },
-                { transform: 'scale(1)' }
-              ], { duration: 150, easing: 'ease-out', fill: 'forwards' });
+          if (t < 1) {
+            const minInterval = 60 + eased * 210;
+            if (now - lastFaceChange >= minInterval) {
+              lastFaceChange = now;
+              if (cDie1) cDie1.innerHTML = this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1);
+              if (cDie2) cDie2.innerHTML = this.buildDicePipsHtml(Math.floor(Math.random() * 6) + 1);
             }
-          }
-          if (el2) {
-            el2.innerHTML = this.buildDicePipsHtml(diceEv.d2);
-            if (typeof el2.animate === 'function') {
-              el2.animate([
-                { transform: 'scale(1.12)' },
-                { transform: 'scale(1)' }
-              ], { duration: 150, easing: 'ease-out', fill: 'forwards' });
+            if (cDie1) cDie1.style.transform = `rotate(${angle.toFixed(1)}deg)`;
+            if (cDie2) cDie2.style.transform = `rotate(${(-angle).toFixed(1)}deg)`;
+            this.diceAnimFrame = requestAnimationFrame(step);
+          } else {
+            this.diceAnimFrame = null;
+            if (cDie1) {
+              cDie1.style.transform = 'rotate(0deg)';
+              cDie1.innerHTML = this.buildDicePipsHtml(diceEv.d1);
             }
-          }
-          if (sumEl) {
-            sumEl.className = `mt-2 font-serif font-black text-3xl sm:text-4xl ${isSeven ? 'text-red-400' : 'text-amber-300'}`;
-            sumEl.textContent = `合計 【 ${diceEv.sum} 】`;
-          }
-        }, rollPhaseMs);
-        this.diceTimers.push(settleTimer);
+            if (cDie2) {
+              cDie2.style.transform = 'rotate(0deg)';
+              cDie2.innerHTML = this.buildDicePipsHtml(diceEv.d2);
+            }
+            if (sumLabel) sumLabel.classList.remove('opacity-0');
 
-        const cardEl = overlay.firstElementChild;
-        const finish = () => {
-          if (done) return;
-          done = true;
-          this.clearDiceCutinTimers();
-          overlay.innerHTML = '';
-          if (onComplete) onComplete();
+            const t1 = setTimeout(() => {
+              if (card) card.style.opacity = '0';
+              const t2 = setTimeout(() => {
+                overlay.innerHTML = '';
+                if (typeof onComplete === 'function') onComplete();
+              }, 350);
+              this.diceTimers.push(t2);
+            }, holdDuration);
+            this.diceTimers.push(t1);
+          }
         };
 
-        if (!cardEl || typeof cardEl.animate !== 'function') {
-          const fallbackTimer = setTimeout(finish, durationMs);
-          this.diceTimers.push(fallbackTimer);
-          return;
-        }
-
-        this.diceCutinAnim = cardEl.animate([
-          { opacity: 0, transform: 'scale(0.9)' },
-          { opacity: 1, transform: 'scale(1)', offset: 0.08 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.39 },
-          { opacity: 1, transform: 'scale(1)', offset: 0.88 },
-          { opacity: 0, transform: 'scale(0.96)' }
-        ], {
-          duration: durationMs,
-          easing: 'ease-out',
-          fill: 'forwards'
-        });
-        this.diceCutinAnim.onfinish = finish;
-        const hardStopTimer = setTimeout(finish, durationMs + 50);
-        this.diceTimers.push(hardStopTimer);
+        this.diceAnimFrame = requestAnimationFrame(step);
       }
 
       showRobber7Cutin(rollerName, onComplete) {
@@ -5844,8 +5780,8 @@
       buildDicePipsHtml(val) {
         const maps = {
           1: [4],
-          2: [0, 8],
-          3: [0, 4, 8],
+          2: [2, 6],
+          3: [2, 4, 6],
           4: [0, 2, 6, 8],
           5: [0, 2, 4, 6, 8],
           6: [0, 2, 3, 5, 6, 8]
