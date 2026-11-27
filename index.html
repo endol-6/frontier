@@ -399,7 +399,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v8.2
+              v8.3
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -771,9 +771,14 @@
 
       <!-- 自分の所持資源ドック -->
       <div class="rounded-2xl bg-mahogany-950/95 border border-brass-500/60 p-2.5 sm:p-3 shadow-xl">
-        <div class="flex items-center justify-between mb-1.5">
-          <span class="text-xs font-extrabold text-amber-300">🎒 あなたの所持資源（合計 <span id="myTotalCardsCount">0</span> 枚）</span>
-          <span id="myHarborRatesHint" class="text-[11px] text-parchment-300 text-right leading-tight flex-shrink-0">銀行交換 4:1</span>
+        <div class="flex items-center mb-0.5">
+          <span class="text-[11px] sm:text-xs font-extrabold text-amber-300 whitespace-nowrap">🎒 あなたの所持資源（合計 <span id="myTotalCardsCount">0</span> 枚）</span>
+        </div>
+        <div class="flex justify-end mb-1.5">
+          <div class="flex flex-col items-start leading-tight">
+            <span id="myHarborRatesLabel" class="hidden text-[10px] sm:text-[11px] font-bold text-parchment-300 whitespace-nowrap">港レート</span>
+            <span id="myHarborRatesHint" class="text-[11px] text-parchment-300 whitespace-nowrap">銀行交換 4:1</span>
+          </div>
         </div>
         <div id="myResourceHandGrid" class="grid grid-cols-5 gap-1.5 sm:gap-2"></div>
 
@@ -825,7 +830,7 @@
     <div class="parchment-panel rounded-3xl max-w-lg w-full p-4 sm:p-6 space-y-4 my-auto">
             <div class="flex flex-col gap-1.5 border-b border-brass-600/30 pb-2.5">
         <div class="flex items-center justify-between gap-2">
-          <h3 class="font-serif font-extrabold text-sm sm:text-lg text-mahogany-950 whitespace-nowrap">⚖️ 交易・プレイヤー交渉</h3>
+          <h3 class="font-serif font-extrabold text-lg sm:text-lg text-mahogany-950 whitespace-nowrap">⚖️ 交易・プレイヤー交渉</h3>
           <button onclick="appUI.closeModal('tradeModal')" class="w-8 h-8 rounded-full bg-mahogany-900/15 font-bold text-mahogany-950 flex-shrink-0">✕</button>
         </div>
         <button onclick="appUI.enterXrayMode('tradeModal', '盤面の港レートや不足資源を確認中')" class="self-end px-2.5 py-1 rounded-xl bg-sky-800 text-white text-xs font-bold whitespace-nowrap">
@@ -6034,10 +6039,12 @@
 
         const rates = gameController.getPlayerTradeRates(gameController.localUid);
         const specialRates = RESOURCE_KEYS.filter(k => rates[k] < 4).map(k => `${RESOURCES[k].emoji}${rates[k]}:1`);
+        const harborRatesLabel = document.getElementById('myHarborRatesLabel');
         const harborRatesEl = document.getElementById('myHarborRatesHint');
-        harborRatesEl.innerHTML = specialRates.length > 0
-          ? `<span class="block">港レート</span><span class="block">${specialRates.join(' ')}</span>`
-          : '銀行交換 4:1';
+        harborRatesLabel?.classList.toggle('hidden', specialRates.length <= 1);
+        harborRatesEl.textContent = specialRates.length === 1
+          ? `港レート ${specialRates[0]}`
+          : specialRates.length > 1 ? specialRates.join(' ') : '銀行交換 4:1';
 
         const grid = document.getElementById('myResourceHandGrid');
         grid.innerHTML = RESOURCE_KEYS.map(k => {
