@@ -399,7 +399,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v8.0
+              v8.1
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -453,7 +453,7 @@
     <div class="rounded-2xl bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 border-2 border-yellow-100 px-3 py-2.5 shadow-[0_12px_36px_rgba(0,0,0,0.8)] flex items-center justify-between gap-3">
       <div class="min-w-0 text-mahogany-950">
         <div class="font-extrabold text-xs sm:text-sm">&#127942; &#23550;&#23616;&#32066;&#20102;&#65281;&#12522;&#12470;&#12523;&#12488;&#12434;&#12356;&#12388;&#12391;&#12418;&#30906;&#35469;</div>
-        <div class="text-[10px] sm:text-xs">&#30424;&#38754;&#12434;&#35211;&#12394;&#12364;&#12425;&#12289;&#25126;&#27841;&#12392;AI&#20998;&#26512;&#12434;&#35211;&#30452;&#12379;&#12414;&#12377;</div>
+        <div class="text-[10px] sm:text-xs">ゲーム画面を見ながら、戦況とAI分析を見直せます</div>
       </div>
       <button onclick="appUI.openAnalyticsModal()" class="brass-btn px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex-shrink-0 shadow-lg">
         &#129302; AI&#20998;&#26512;&#12434;&#35211;&#12427
@@ -492,7 +492,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-extrabold text-mahogany-900 mb-1">あなたの開拓者名</label>
-          <input id="inputPlayerName" type="text" maxlength="12" value="プレイヤーA"
+          <input id="inputPlayerName" type="text" maxlength="8" value="プレイヤーA"
             class="w-full px-3.5 py-2.5 rounded-xl bg-white/90 border-2 border-brass-600/50 text-mahogany-950 font-bold text-sm focus:outline-none focus:border-amber-600"
             placeholder="名前を入力..." />
         </div>
@@ -596,7 +596,7 @@
           <div class="text-xs sm:text-sm font-extrabold text-amber-300">🎨 あなたの名前・シンボルカラー変更</div>
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div class="flex items-center gap-2 flex-1 min-w-0">
-              <input id="waitingPlayerNameInput" type="text" maxlength="12"
+              <input id="waitingPlayerNameInput" type="text" maxlength="8"
                 onchange="onlineManager.updateMyRoomProfile(this.value, null)"
                 onblur="onlineManager.updateMyRoomProfile(this.value, null)"
                 class="flex-1 min-w-0 px-3 py-1.5 rounded-xl bg-mahogany-950 border border-brass-500/70 text-parchment-100 font-bold text-sm focus:outline-none focus:border-amber-400"
@@ -659,10 +659,10 @@
       <div id="boardViewport" class="ocean-viewport relative w-full h-[58vh] min-h-[410px] sm:h-[64vh] sm:min-h-[480px] rounded-3xl border-2 border-brass-500/70 overflow-hidden shadow-2xl">
 
         <!-- 四隅プレイヤーゾーン (0:左上, 1:右上, 2:右下, 3:左下 — 時計回り) -->
-        <div id="cornerZone0" class="absolute top-2 left-2 z-20 w-[116px] sm:w-[168px] pointer-events-none"></div>
-        <div id="cornerZone1" class="absolute top-2 right-2 z-20 w-[116px] sm:w-[168px] pointer-events-none"></div>
-        <div id="cornerZone2" class="absolute bottom-2 right-2 z-20 w-[116px] sm:w-[168px] pointer-events-none"></div>
-        <div id="cornerZone3" class="absolute bottom-2 left-2 z-20 w-[116px] sm:w-[168px] pointer-events-none"></div>
+        <div id="cornerZone0" class="absolute top-2 left-2 z-20 w-[148px] sm:w-[168px] pointer-events-none"></div>
+        <div id="cornerZone1" class="absolute top-2 right-2 z-20 w-[148px] sm:w-[168px] pointer-events-none"></div>
+        <div id="cornerZone2" class="absolute bottom-2 right-2 z-20 w-[148px] sm:w-[168px] pointer-events-none"></div>
+        <div id="cornerZone3" class="absolute bottom-2 left-2 z-20 w-[148px] sm:w-[168px] pointer-events-none"></div>
 
         <!-- 7バースト破棄・建築通知バナー -->
         <div id="diceGainBanner" class="hidden absolute top-14 sm:top-3 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-md pointer-events-none">
@@ -862,14 +862,14 @@
       <div id="maritimeTradeSection" class="hidden space-y-3">
         <div class="rounded-2xl bg-white/75 p-3 border border-brass-600/30 space-y-2">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-xs font-extrabold text-mahogany-950">1. 支払う資源と口数を選択（港レート自動適用）</span>
-            <span id="maritimeGiveUnitsBadge" class="px-2 py-0.5 rounded-full bg-amber-900/15 text-amber-950 text-[11px] font-extrabold">計 0 口分</span>
+            <span class="text-xs font-extrabold text-mahogany-950">1. 支払う資源と数を選択</span>
+            <span id="maritimeGiveUnitsBadge" class="px-2 py-0.5 rounded-full bg-amber-900/15 text-amber-950 text-[11px] font-extrabold">計 0 口</span>
           </div>
           <div id="maritimeGiveGrid" class="grid grid-cols-5 gap-1.5"></div>
         </div>
         <div class="rounded-2xl bg-white/75 p-3 border border-brass-600/30 space-y-2">
           <div class="flex items-center justify-between gap-2">
-            <span class="text-xs font-extrabold text-mahogany-950">2. 受け取る資源を選択（複数種類・複数枚OK）</span>
+            <span class="text-xs font-extrabold text-mahogany-950">2. 受け取る資源を選択（複数選択OK）</span>
             <span id="maritimeWantProgressBadge" class="px-2 py-0.5 rounded-full bg-sky-900/15 text-sky-950 text-[11px] font-extrabold">0 / 0 枚</span>
           </div>
           <div id="maritimeWantGrid" class="grid grid-cols-5 gap-1.5"></div>
@@ -906,9 +906,9 @@
   <!-- ==================== モーダル2C: 交渉の受信＆逆提案（受信者側） ==================== -->
   <div id="incomingTradeModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 overflow-y-auto">
     <div class="parchment-panel rounded-3xl max-w-lg w-full p-4 sm:p-6 space-y-4 my-auto">
-      <div class="flex items-center justify-between border-b border-brass-600/30 pb-2.5">
-        <h3 class="font-serif font-extrabold text-lg text-mahogany-950">📨 資源交換の提案が届きました</h3>
-        <button onclick="appUI.enterXrayMode('incomingTradeModal', '交換判断のために盤面を確認中')" class="px-2.5 py-1 rounded-xl bg-sky-800 text-white text-xs font-bold">
+      <div class="flex items-center justify-between gap-2 border-b border-brass-600/30 pb-2.5">
+        <h3 class="font-serif font-extrabold text-sm sm:text-lg text-mahogany-950 leading-tight whitespace-nowrap" style="white-space:nowrap">📨 資源交換が届きました</h3>
+        <button onclick="appUI.enterXrayMode('incomingTradeModal', '交換判断のために盤面を確認中')" class="px-1.5 py-1 rounded-xl bg-sky-800 text-white text-[10px] sm:text-xs font-bold whitespace-nowrap flex-shrink-0" style="white-space:nowrap">
           👁️ マップ透視
         </button>
       </div>
@@ -934,7 +934,7 @@
         <button id="btnAcceptIncomingTrade" onclick="gameController.respondToIncomingTrade('accept')" class="py-2.5 px-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white font-extrabold text-xs sm:text-sm">
           ✅ 許可する
         </button>
-        <button onclick="appUI.toggleCounterOfferEditor()" class="py-2.5 px-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-mahogany-950 font-extrabold text-xs sm:text-sm">
+        <button onclick="appUI.toggleCounterOfferEditor()" class="py-2.5 px-0.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-mahogany-950 font-extrabold text-[9px] sm:text-xs whitespace-nowrap" style="white-space:nowrap">
           🔄 別条件を提案
         </button>
         <button onclick="gameController.respondToIncomingTrade('reject')" class="py-2.5 px-2 rounded-xl bg-red-800 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm">
@@ -1726,7 +1726,7 @@
             <div class="font-extrabold text-mahogany-950">📊 現在の戦況サマリー（ターン ${st.turnNumber}）</div>
             <div class="grid grid-cols-3 gap-2 pt-1 text-center">
               <div class="rounded-xl bg-white/85 p-2 border border-brass-600/30">
-                <div class="text-[10px] text-mahogany-800 font-bold">現在VP（秘匿込）</div>
+                <div class="text-[10px] text-mahogany-800 font-bold">現在VP</div>
                 <div class="font-serif font-black text-base text-amber-900">${currentVp} / 10 VP</div>
               </div>
               <div class="rounded-xl bg-white/85 p-2 border border-brass-600/30">
@@ -1806,7 +1806,7 @@
         return `
           <div class="space-y-2.5 text-parchment-100">
             <div class="rounded-xl bg-amber-500/15 border border-amber-400/50 p-3">
-              <div class="text-xs font-extrabold text-amber-300 mb-1">🤖 AI総括レポート（基盤期待値: ${profile.totalPips} pips / 網羅 ${profile.coveredTypes.length}種）</div>
+              <div class="text-xs font-extrabold text-amber-300 mb-1">🤖 AI総括レポート：基盤期待値 ${profile.totalPips} pips/網羅${profile.coveredTypes.length}種</div>
               <ul class="list-disc pl-4 space-y-1 text-[11px] sm:text-xs text-parchment-100 leading-relaxed">
                 ${highlights.map(h => `<li>${h}</li>`).join('')}
               </ul>
@@ -1995,7 +1995,7 @@
           } else if (msg.type === 'PROFILE_UPDATE' && msg.uid) {
             const idx = this.seats.findIndex(s => s && s.uid === msg.uid);
             if (idx !== -1) {
-              if (msg.name) this.seats[idx].name = msg.name;
+              if (msg.name) this.seats[idx].name = Array.from(String(msg.name).trim()).slice(0, 8).join('');
               if (msg.palette) this.seats[idx].palette = msg.palette;
               this.syncRoomLobby();
             }
@@ -2021,7 +2021,7 @@
             const lossEvent = msg.robberLossEvent;
             if (lossEvent && lossEvent.id !== gameController.lastShownPrivateRobberLossId) {
               gameController.lastShownPrivateRobberLossId = lossEvent.id;
-              requestAnimationFrame(() => appUI.animatePrivateRobberSteal('loss', lossEvent.thiefUid, lossEvent.resKey));
+              requestAnimationFrame(() => appUI.animatePrivateRobberSteal(lossEvent.direction || 'loss', lossEvent.otherUid || lossEvent.thiefUid, lossEvent.resKey));
             }
           }
         }
@@ -2044,7 +2044,7 @@
         let updatedPalette = null;
 
         if (newName !== null && newName.trim()) {
-          updatedName = newName.trim().slice(0, 12);
+          updatedName = Array.from(newName.trim()).slice(0, 8).join('');
           const mainInput = document.getElementById('inputPlayerName');
           if (mainInput) mainInput.value = updatedName;
         }
@@ -2227,6 +2227,7 @@
         this.lastShownDevCutinId = null;
         this.lastShownRobberMoveId = null;
         this.lastShownStealId = null;
+        this.lastShownTradeTransferId = null;
         this.lastShownAwardId = null;
         this.lastShownDiscardAnimId = null;
         this.lastShownVictoryId = null;
@@ -2336,6 +2337,7 @@
           lastDevCardEvent: null,
           lastRobberMoveEvent: null,
           lastStealEvent: null,
+          lastTradeTransferEvent: null,
           lastAwardEvent: null,
           lastDiscardAnimEvent: null,
           revealedSecretVps: null,
@@ -2943,8 +2945,13 @@
           thiefUid,
           victimUid
         };
-        if (this.isOnline && onlineManager.isHost && victimUid !== this.localUid) {
-          this.privateRobberLossEvents[victimUid] = { id: st.lastStealEvent.id, thiefUid, resKey: stolenKey };
+        if (this.isOnline && onlineManager.isHost) {
+          if (victimUid !== this.localUid && !st.players[victimUid]?.isCpu) {
+            this.privateRobberLossEvents[victimUid] = { id: st.lastStealEvent.id, direction: 'loss', otherUid: thiefUid, thiefUid, resKey: stolenKey };
+          }
+          if (thiefUid !== this.localUid && !st.players[thiefUid]?.isCpu) {
+            this.privateRobberLossEvents[thiefUid] = { id: st.lastStealEvent.id, direction: 'gain', otherUid: victimUid, thiefUid, resKey: stolenKey };
+          }
         }
         this.addLog(`🦹 ${st.players[thiefUid].name} が ${st.players[victimUid].name} から資源を1枚奪いました！`);
 
@@ -3252,6 +3259,11 @@
           if (achievableKey) {
             const altWant = emptyHand();
             altWant[achievableKey] = 1;
+            const repeatsOriginalOffer = RESOURCE_KEYS.every(k => (altWant[k] || 0) === (offer.give[k] || 0));
+            if (repeatsOriginalOffer) {
+              this.applyTradeResponse(cpuUid, helpsCpu && keepsReserve ? 'accept' : 'reject');
+              return;
+            }
             this.applyTradeResponse(cpuUid, 'counter', { ...offer.want }, altWant);
             return;
           }
@@ -3362,6 +3374,14 @@
           if (st.players[proposerUid]?.isCpu) this.scheduleCpuTurnIfNeeded(700);
           return;
         }
+
+        st.lastTradeTransferEvent = {
+          id: `tradefx_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          transfers: [
+            { fromUid: proposerUid, toUid: responderUid, resources: { ...propGives } },
+            { fromUid: responderUid, toUid: proposerUid, resources: { ...respGives } }
+          ]
+        };
 
         for (const k of RESOURCE_KEYS) {
           const gAmt = propGives[k] || 0;
@@ -4236,7 +4256,7 @@
       }
 
       getDefaultBoardZoom() {
-        return window.innerWidth < 640 ? 1.36 : 1.0;
+        return window.innerWidth < 640 ? 1.22 : 1.0;
       }
 
       checkInviteUrlParam() {
@@ -4322,6 +4342,7 @@
 
       backToLobby() {
         this.isGameVisible = false;
+        document.getElementById('finishedAnalyticsBar')?.classList.add('hidden');
         if (gameController.cpuTimer) clearTimeout(gameController.cpuTimer);
         onlineManager.cleanup();
         document.getElementById('gameScreen').classList.add('hidden');
@@ -4481,6 +4502,12 @@
           }
         }
 
+        const tradeTransferEv = st.lastTradeTransferEvent;
+        if (tradeTransferEv && tradeTransferEv.id !== gameController.lastShownTradeTransferId) {
+          gameController.lastShownTradeTransferId = tradeTransferEv.id;
+          this.animateTradeResourceTransfers(tradeTransferEv);
+        }
+
         // 6. 最長交易路・最大騎士力獲得大型カットイン
         let awardTriggered = false;
         let awardDelay = 0;
@@ -4608,12 +4635,15 @@
               if (rInfo.status === 'counter') {
                 return `
                   <div class="rounded-xl bg-amber-50 border-2 border-amber-500 p-2.5 space-y-1.5">
-                    <div class="flex items-center justify-between gap-2">
-                      <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full" style="background:${p.palette.hex}"></span>
-                        <span class="font-extrabold text-xs text-mahogany-950">${p.name} からの逆提案</span>
+                    <div class="flex items-center gap-2">
+                      <div class="flex-1 min-w-0 flex flex-col items-center justify-center text-center leading-tight">
+                        <div class="flex items-center justify-center gap-1.5 min-w-0 max-w-full">
+                          <span class="w-3 h-3 rounded-full flex-shrink-0" style="background:${p.palette.hex}"></span>
+                          <span class="font-extrabold text-xs text-mahogany-950 truncate">${p.name}から</span>
+                        </div>
+                        <span class="font-extrabold text-xs text-mahogany-950">逆提案！</span>
                       </div>
-                      <button onclick="gameController.finalizeDomesticTrade('${uid}', '${rUid}')" class="brass-btn px-3 py-1 rounded-xl font-extrabold text-xs">
+                      <button onclick="gameController.finalizeDomesticTrade('${uid}', '${rUid}')" class="brass-btn min-w-[118px] whitespace-nowrap px-2 py-1.5 rounded-xl font-extrabold text-[11px] flex-shrink-0">
                         🤝 この条件で成立
                       </button>
                     </div>
@@ -4660,8 +4690,7 @@
               const totalCnt = totalHandCount(myHand);
               myHandBox.innerHTML = `
                 <div class="flex items-center justify-between text-[11px]">
-                  <span class="font-extrabold text-amber-300">🎒 あなたの現在の所持資源</span>
-                  <span class="font-bold text-parchment-200">合計 ${totalCnt} 枚</span>
+                  <span class="font-extrabold text-amber-300">🎒 あなたの現在の所持資源<br>合計 ${totalCnt} 枚</span>
                 </div>
                 <div class="grid grid-cols-5 gap-1.5">
                   ${RESOURCE_KEYS.map(k => {
@@ -5288,6 +5317,61 @@
         };
       }
 
+      animateTradeResourceTransfers(tradeEv) {
+        const viewport = document.getElementById('boardViewport');
+        const flyLayer = document.getElementById('flyingResourceLayer');
+        const st = gameController.publicState;
+        if (!viewport || !flyLayer || !st || !tradeEv?.transfers) return;
+        const vpRect = viewport.getBoundingClientRect();
+        let sequence = 0;
+
+        tradeEv.transfers.forEach(transfer => {
+          const fromIdx = st.turnOrder.indexOf(transfer.fromUid);
+          const toIdx = st.turnOrder.indexOf(transfer.toUid);
+          const fromZone = document.getElementById(`cornerZone${fromIdx}`);
+          const toZone = document.getElementById(`cornerZone${toIdx}`);
+          const fromName = fromZone?.querySelector('.corner-player-name');
+          const toName = toZone?.querySelector('.corner-player-name');
+          if (!fromName || !toName) return;
+          const fromRect = fromName.getBoundingClientRect();
+          const toRect = toName.getBoundingClientRect();
+          const startX = fromRect.left - vpRect.left + fromRect.width / 2;
+          const startY = fromRect.top - vpRect.top + fromRect.height / 2;
+          const endX = toRect.left - vpRect.left + toRect.width / 2;
+          const endY = toRect.top - vpRect.top + toRect.height / 2;
+
+          RESOURCE_KEYS.forEach(resKey => {
+            const count = Math.min(transfer.resources?.[resKey] || 0, 9);
+            for (let cardIdx = 0; cardIdx < count; cardIdx++) {
+              const cardEl = document.createElement('div');
+              const resMeta = RESOURCES[resKey];
+              cardEl.className = 'absolute -translate-x-1/2 -translate-y-1/2 p-1 rounded-xl bg-parchment-100 border-2 border-amber-400 shadow-[0_8px_22px_rgba(0,0,0,0.9)] flex flex-col items-center';
+              cardEl.style.left = `${startX}px`;
+              cardEl.style.top = `${startY}px`;
+              cardEl.innerHTML = `<div>${this.getResourceCardIllustrationSvg(resKey)}</div><span class="text-[9px] font-extrabold text-mahogany-950 leading-none mt-0.5">${resMeta.name}</span>`;
+              flyLayer.appendChild(cardEl);
+              const dx = endX - startX;
+              const dy = endY - startY;
+              const anim = cardEl.animate([
+                { opacity: 0, transform: 'translate(-50%, -42%) scale(0.72)' },
+                { opacity: 1, transform: 'translate(-50%, -68%) scale(1.1)', offset: 0.10 },
+                { opacity: 1, transform: 'translate(-50%, -68%) scale(1.06)', offset: 0.42 },
+                { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.95)`, offset: 0.78 },
+                { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
+              ], { duration: 2200, delay: sequence * 95, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
+              sequence++;
+              anim.onfinish = () => {
+                cardEl.remove();
+                [fromZone, toZone].forEach(zone => {
+                  zone.classList.remove('zone-receive-pop');
+                  void zone.offsetWidth;
+                  zone.classList.add('zone-receive-pop');
+                });
+              };
+            }
+          });
+        });
+      }
       /* 手札バースト時: 破棄された資源カードがプレイヤーゾーンから島（中央）へ捨てられる飛行演出 */
       animateDiscardToIsland(entries) {
         const viewport = document.getElementById('boardViewport');
@@ -5364,56 +5448,60 @@
         const viewport = document.getElementById('boardViewport');
         const flyLayer = document.getElementById('flyingResourceLayer');
         const st = gameController.publicState;
-        if (!viewport || !flyLayer || !st) return;
+        if (!viewport || !flyLayer || !st || !RESOURCES[resKey]) return;
 
         const otherIdx = st.turnOrder.indexOf(otherUid);
-        const zoneEl = document.getElementById(`cornerZone${otherIdx}`);
-        const handEl = document.getElementById('myResourceHandGrid');
-        if (!zoneEl || !handEl) return;
+        const localIdx = st.turnOrder.indexOf(gameController.localUid);
+        const otherZone = document.getElementById(`cornerZone${otherIdx}`);
+        const localZone = document.getElementById(`cornerZone${localIdx}`);
+        const otherName = otherZone?.querySelector('.corner-player-name');
+        const localName = localZone?.querySelector('.corner-player-name');
+        if (!otherName || !localName) return;
 
         const vpRect = viewport.getBoundingClientRect();
-        const zoneRect = zoneEl.getBoundingClientRect();
-        const handRect = handEl.getBoundingClientRect();
+        const fromEl = direction === 'gain' ? otherName : localName;
+        const toEl = direction === 'gain' ? localName : otherName;
+        const fromRect = fromEl.getBoundingClientRect();
+        const toRect = toEl.getBoundingClientRect();
+        const startX = fromRect.left - vpRect.left + fromRect.width / 2;
+        const startY = fromRect.top - vpRect.top + fromRect.height / 2;
+        const endX = toRect.left - vpRect.left + toRect.width / 2;
+        const endY = toRect.top - vpRect.top + toRect.height / 2;
 
-        const zoneX = (zoneRect.left - vpRect.left) + zoneRect.width / 2;
-        const zoneY = (zoneRect.top - vpRect.top) + zoneRect.height / 2;
-        const handX = (handRect.left - vpRect.left) + handRect.width / 2;
-        const handY = Math.min(vpRect.height - 16, (handRect.top - vpRect.top) + 10);
+        const cardEl = document.createElement('div');
+        cardEl.className = 'absolute -translate-x-1/2 -translate-y-1/2 p-1 rounded-xl bg-parchment-100 border-2 border-amber-400 shadow-[0_8px_22px_rgba(0,0,0,0.9)] flex flex-col items-center';
+        cardEl.style.left = `${startX}px`;
+        cardEl.style.top = `${startY}px`;
+        cardEl.innerHTML = `<div>${this.getResourceCardIllustrationSvg(resKey)}</div><span class="text-[9px] font-extrabold text-mahogany-950 leading-none mt-0.5">${RESOURCES[resKey].name}</span>`;
+        flyLayer.appendChild(cardEl);
 
-        const fromX = direction === 'gain' ? zoneX : handX;
-        const fromY = direction === 'gain' ? zoneY : handY;
-        const toX = direction === 'gain' ? handX : zoneX;
-        const toY = direction === 'gain' ? handY : zoneY;
-
-        const res = RESOURCES[resKey];
-        const pill = document.createElement('div');
-        pill.className = `absolute -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl border-2 font-extrabold text-xs shadow-2xl whitespace-nowrap ${
-          direction === 'gain'
-            ? 'bg-emerald-950/95 border-emerald-400 text-emerald-200'
-            : 'bg-red-950/95 border-red-400 text-red-200'
-        }`;
-        pill.style.left = `${fromX}px`;
-        pill.style.top = `${fromY}px`;
-        pill.textContent = `${res.emoji} ${res.name} ${direction === 'gain' ? '+1' : '-1'}`;
-        flyLayer.appendChild(pill);
-
-        const stealKeyframes = direction === 'loss'
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const robbedKeyframes = direction === 'loss'
           ? [
-              { opacity: 0, transform: 'translate(-50%, calc(-50% + 12px)) scale(0.75)' },
-              { opacity: 1, transform: 'translate(-50%, -70%) scale(1.15)', offset: 0.10 },
-              { opacity: 1, transform: 'translate(-50%, -70%) scale(1.15)', offset: 0.56 },
-              { opacity: 0.2, transform: `translate(calc(-50% + ${toX - fromX}px), calc(-50% + ${toY - fromY}px)) scale(0.85)` }
+              { opacity: 0, transform: 'translate(-50%, -42%) scale(0.72)' },
+              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.1)', offset: 0.10 },
+              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.06)', offset: 0.67 },
+              { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.95)`, offset: 0.82 },
+              { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
             ]
           : [
-              { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' },
-              { opacity: 1, transform: 'translate(-50%, -50%) scale(1.1)', offset: 0.15 },
-              { opacity: 0.2, transform: `translate(calc(-50% + ${toX - fromX}px), calc(-50% + ${toY - fromY}px)) scale(0.85)` }
+              { opacity: 0, transform: 'translate(-50%, -42%) scale(0.72)' },
+              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.1)', offset: 0.10 },
+              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.06)', offset: 0.35 },
+              { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.95)`, offset: 0.78 },
+              { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
             ];
-        pill.animate(stealKeyframes, {
-          duration: direction === 'loss' ? 4400 : 1900,
+        cardEl.animate(robbedKeyframes, {
+          duration: direction === 'loss' ? 3600 : 2350,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
-        }).onfinish = () => pill.remove();
+        }).onfinish = () => {
+          cardEl.remove();
+          toEl.classList.remove('zone-receive-pop');
+          void toEl.offsetWidth;
+          toEl.classList.add('zone-receive-pop');
+        };
       }
 
       animateObserverRobberFlight(victimUid, thiefUid) {
@@ -5424,8 +5512,10 @@
 
         const vIdx = st.turnOrder.indexOf(victimUid);
         const tIdx = st.turnOrder.indexOf(thiefUid);
-        const vEl = document.getElementById(`cornerZone${vIdx}`);
-        const tEl = document.getElementById(`cornerZone${tIdx}`);
+        const vZone = document.getElementById(`cornerZone${vIdx}`);
+        const tZone = document.getElementById(`cornerZone${tIdx}`);
+        const vEl = vZone?.querySelector('.corner-player-name');
+        const tEl = tZone?.querySelector('.corner-player-name');
         if (!vEl || !tEl) return;
 
         const vpRect = viewport.getBoundingClientRect();
@@ -5441,7 +5531,7 @@
         pill.className = 'absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-mahogany-950/95 border-2 border-amber-400 text-amber-200 font-extrabold text-xs shadow-xl whitespace-nowrap';
         pill.style.left = `${fromX}px`;
         pill.style.top = `${fromY}px`;
-        pill.textContent = '🃏 資源 ×1';
+        pill.textContent = '\u2754';
         flyLayer.appendChild(pill);
 
         pill.animate([
@@ -5812,9 +5902,9 @@
               ${headerHtml}
               ${rowsHtml}
               <div class="flex flex-wrap items-center justify-between gap-1 text-[9.5px] sm:text-[10px] text-parchment-300/85 pt-0.5 whitespace-nowrap">
-                <span>🚫封鎖=盗賊喪失資源</span>
-                <span>😢被奪/🦹強奪=盗賊回数</span>
-                <span>💥/🗑️=7バースト回数・破棄枚</span>
+                <span>🚫封鎖：盗賊で取れなかった資源</span>
+                <span>😢被奪/🦹強奪：盗賊で奪われた/奪った回数</span>
+                <span>💥/🗑️=7バースト回数・破棄枚数</span>
               </div>
             </div>
           `;
@@ -5846,9 +5936,8 @@
               <div class="flex items-center justify-between gap-1">
                 <div class="flex items-center gap-1.5 min-w-0">
                   <span class="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-white" style="background:${p.palette.hex}"></span>
-                  <span class="font-extrabold text-[11px] sm:text-xs text-parchment-100 truncate">${p.name}</span>
+                  <span class="corner-player-name font-extrabold text-[11px] sm:text-xs text-parchment-100 truncate">${p.name}</span>
                 </div>
-                ${isTurn ? '<span class="text-[9px] px-1 rounded bg-amber-400 text-mahogany-950 font-black flex-shrink-0">番</span>' : ''}
               </div>
               <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-parchment-200 mt-0.5 font-bold">
                 <span class="text-amber-300">🏆 ${p.publicVP + secVp}VP</span>
@@ -5940,7 +6029,7 @@
 
         const rates = gameController.getPlayerTradeRates(gameController.localUid);
         const specialRates = RESOURCE_KEYS.filter(k => rates[k] < 4).map(k => `${RESOURCES[k].emoji}${rates[k]}:1`);
-        document.getElementById('myHarborRatesHint').textContent = specialRates.length > 0 ? `港レート: ${specialRates.join(' ')}` : '銀行交換 4:1';
+        document.getElementById('myHarborRatesHint').textContent = specialRates.length > 0 ? `港レート<br>${specialRates.join(' ')}` : '銀行交換 4:1';
 
         const grid = document.getElementById('myResourceHandGrid');
         grid.innerHTML = RESOURCE_KEYS.map(k => {
