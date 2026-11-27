@@ -399,7 +399,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v8.1
+              v8.2
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -773,7 +773,7 @@
       <div class="rounded-2xl bg-mahogany-950/95 border border-brass-500/60 p-2.5 sm:p-3 shadow-xl">
         <div class="flex items-center justify-between mb-1.5">
           <span class="text-xs font-extrabold text-amber-300">🎒 あなたの所持資源（合計 <span id="myTotalCardsCount">0</span> 枚）</span>
-          <span id="myHarborRatesHint" class="text-[11px] text-parchment-300">銀行交換 4:1</span>
+          <span id="myHarborRatesHint" class="text-[11px] text-parchment-300 text-right leading-tight flex-shrink-0">銀行交換 4:1</span>
         </div>
         <div id="myResourceHandGrid" class="grid grid-cols-5 gap-1.5 sm:gap-2"></div>
 
@@ -823,14 +823,14 @@
   <!-- ==================== モーダル2: 交易・交渉 ==================== -->
   <div id="tradeModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 overflow-y-auto">
     <div class="parchment-panel rounded-3xl max-w-lg w-full p-4 sm:p-6 space-y-4 my-auto">
-      <div class="flex items-center justify-between border-b border-brass-600/30 pb-2.5">
-        <h3 class="font-serif font-extrabold text-lg text-mahogany-950">⚖️ 交易・プレイヤー交渉</h3>
-        <div class="flex items-center gap-1.5">
-          <button onclick="appUI.enterXrayMode('tradeModal', '盤面の港レートや不足資源を確認中')" class="px-2.5 py-1 rounded-xl bg-sky-800 text-white text-xs font-bold">
-            👁️ マップ透視
-          </button>
-          <button onclick="appUI.closeModal('tradeModal')" class="w-8 h-8 rounded-full bg-mahogany-900/15 font-bold text-mahogany-950">✕</button>
+            <div class="flex flex-col gap-1.5 border-b border-brass-600/30 pb-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="font-serif font-extrabold text-sm sm:text-lg text-mahogany-950 whitespace-nowrap">⚖️ 交易・プレイヤー交渉</h3>
+          <button onclick="appUI.closeModal('tradeModal')" class="w-8 h-8 rounded-full bg-mahogany-900/15 font-bold text-mahogany-950 flex-shrink-0">✕</button>
         </div>
+        <button onclick="appUI.enterXrayMode('tradeModal', '盤面の港レートや不足資源を確認中')" class="self-end px-2.5 py-1 rounded-xl bg-sky-800 text-white text-xs font-bold whitespace-nowrap">
+          👁️ マップ透視
+        </button>
       </div>
 
       <!-- タブ切替 -->
@@ -934,8 +934,8 @@
         <button id="btnAcceptIncomingTrade" onclick="gameController.respondToIncomingTrade('accept')" class="py-2.5 px-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 disabled:opacity-40 text-white font-extrabold text-xs sm:text-sm">
           ✅ 許可する
         </button>
-        <button onclick="appUI.toggleCounterOfferEditor()" class="py-2.5 px-0.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-mahogany-950 font-extrabold text-[9px] sm:text-xs whitespace-nowrap" style="white-space:nowrap">
-          🔄 別条件を提案
+        <button onclick="appUI.toggleCounterOfferEditor()" class="py-2.5 px-0.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-mahogany-950 font-extrabold text-xs sm:text-xs whitespace-nowrap" style="white-space:nowrap">
+          🔄 別条件
         </button>
         <button onclick="gameController.respondToIncomingTrade('reject')" class="py-2.5 px-2 rounded-xl bg-red-800 hover:bg-red-700 text-white font-extrabold text-xs sm:text-sm">
           ❌ 拒否する
@@ -5477,30 +5477,35 @@
 
         const dx = endX - startX;
         const dy = endY - startY;
-        const robbedKeyframes = direction === 'loss'
-          ? [
-              { opacity: 0, transform: 'translate(-50%, -42%) scale(0.72)' },
-              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.1)', offset: 0.10 },
-              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.06)', offset: 0.67 },
-              { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.95)`, offset: 0.82 },
-              { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
-            ]
-          : [
-              { opacity: 0, transform: 'translate(-50%, -42%) scale(0.72)' },
-              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.1)', offset: 0.10 },
-              { opacity: 1, transform: 'translate(-50%, -68%) scale(1.06)', offset: 0.35 },
-              { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.95)`, offset: 0.78 },
-              { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
-            ];
-        cardEl.animate(robbedKeyframes, {
-          duration: direction === 'loss' ? 3600 : 2350,
+        const raisedTransform = 'translate(-50%, -68%) scale(1.08)';
+        const rise = cardEl.animate([
+          { opacity: 0, transform: 'translate(-50%, -42%) scale(0.72)' },
+          { opacity: 1, transform: raisedTransform }
+        ], {
+          duration: 450,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
-        }).onfinish = () => {
-          cardEl.remove();
-          toEl.classList.remove('zone-receive-pop');
-          void toEl.offsetWidth;
-          toEl.classList.add('zone-receive-pop');
+        });
+
+        rise.onfinish = () => {
+          // 浮き上がった資源を、移動開始前に必ず2秒間その場で見せる。
+          setTimeout(() => {
+            const travel = cardEl.animate([
+              { opacity: 1, transform: raisedTransform },
+              { opacity: 1, transform: `translate(calc(-50% + ${dx * 0.58}px), calc(-50% + ${dy * 0.58 - 22}px)) scale(0.95)`, offset: 0.68 },
+              { opacity: 0, transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.68)` }
+            ], {
+              duration: 1350,
+              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              fill: 'forwards'
+            });
+            travel.onfinish = () => {
+              cardEl.remove();
+              toEl.classList.remove('zone-receive-pop');
+              void toEl.offsetWidth;
+              toEl.classList.add('zone-receive-pop');
+            };
+          }, 2000);
         };
       }
 
@@ -6029,7 +6034,10 @@
 
         const rates = gameController.getPlayerTradeRates(gameController.localUid);
         const specialRates = RESOURCE_KEYS.filter(k => rates[k] < 4).map(k => `${RESOURCES[k].emoji}${rates[k]}:1`);
-        document.getElementById('myHarborRatesHint').textContent = specialRates.length > 0 ? `港レート<br>${specialRates.join(' ')}` : '銀行交換 4:1';
+        const harborRatesEl = document.getElementById('myHarborRatesHint');
+        harborRatesEl.innerHTML = specialRates.length > 0
+          ? `<span class="block">港レート</span><span class="block">${specialRates.join(' ')}</span>`
+          : '銀行交換 4:1';
 
         const grid = document.getElementById('myResourceHandGrid');
         grid.innerHTML = RESOURCE_KEYS.map(k => {
@@ -6671,7 +6679,7 @@
               <div class="text-base leading-none">${RESOURCES[k].emoji}</div>
               <div class="text-[10px] font-extrabold text-amber-900 mt-0.5">${rate}:1</div>
               <div class="text-[9.5px] font-bold text-mahogany-800">所持:${owned}</div>
-              <div class="font-black text-xs text-mahogany-950 my-0.5">${payCards}枚<span class="text-[9px] font-bold">(${units}口)</span></div>
+              <div class="font-black text-xs text-mahogany-950 my-0.5">${payCards}枚<br><span class="text-[9px] font-bold whitespace-nowrap">(${units}口)</span></div>
               <div class="flex justify-center gap-1">
                 <button onclick="appUI.adjustMaritimeGiveUnit('${k}',-1)" ${units > 0 ? '' : 'disabled'} class="w-6 h-6 rounded bg-mahogany-900/15 disabled:opacity-35 font-bold text-xs">－</button>
                 <button onclick="appUI.adjustMaritimeGiveUnit('${k}',1)" ${canAdd ? '' : 'disabled'} class="w-6 h-6 rounded bg-mahogany-900 disabled:opacity-35 text-amber-300 font-bold text-xs">＋</button>
