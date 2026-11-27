@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -399,7 +399,7 @@
               開拓者たちの島
             </h1>
             <span id="buildVersionBadge" class="px-1.5 py-0.5 rounded bg-emerald-950/95 border border-emerald-500/60 text-emerald-300 font-mono text-[10px] sm:text-[11px] font-bold flex-shrink-0">
-              v7.0
+              v8.0
             </span>
           </div>
           <p class="hidden sm:block text-xs text-brass-400 tracking-widest">PIONEERS OF THE ISLE • 10 VP VICTORY</p>
@@ -449,6 +449,17 @@
     </div>
   </div>
 
+  <div id="finishedAnalyticsBar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-lg">
+    <div class="rounded-2xl bg-gradient-to-r from-amber-300 via-yellow-200 to-amber-400 border-2 border-yellow-100 px-3 py-2.5 shadow-[0_12px_36px_rgba(0,0,0,0.8)] flex items-center justify-between gap-3">
+      <div class="min-w-0 text-mahogany-950">
+        <div class="font-extrabold text-xs sm:text-sm">&#127942; &#23550;&#23616;&#32066;&#20102;&#65281;&#12522;&#12470;&#12523;&#12488;&#12434;&#12356;&#12388;&#12391;&#12418;&#30906;&#35469;</div>
+        <div class="text-[10px] sm:text-xs">&#30424;&#38754;&#12434;&#35211;&#12394;&#12364;&#12425;&#12289;&#25126;&#27841;&#12392;AI&#20998;&#26512;&#12434;&#35211;&#30452;&#12379;&#12414;&#12377;</div>
+      </div>
+      <button onclick="appUI.openAnalyticsModal()" class="brass-btn px-3.5 py-2.5 rounded-xl font-extrabold text-xs sm:text-sm flex-shrink-0 shadow-lg">
+        &#129302; AI&#20998;&#26512;&#12434;&#35211;&#12427
+      </button>
+    </div>
+  </div>
   <!-- ==================== 画面1: ロビー / 対戦設定 ==================== -->
   <main id="lobbyScreen" class="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-7 space-y-5">
     <!-- ゲームタイトルバナー -->
@@ -516,17 +527,17 @@
               <div>
                 <label class="block text-xs font-extrabold text-mahogany-900 mb-1">🤖 CPUの強さ</label>
                 <select id="soloCpuDifficultySelect" class="w-full px-2.5 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
-                  <option value="easy">初級（のんびり開拓）</option>
-                  <option value="normal" selected>中級（標準戦術）</option>
-                  <option value="hard">上級（戦略マスター）</option>
+                  <option value="easy">初級</option>
+                  <option value="normal" selected>中級</option>
+                  <option value="hard">上級</option>
                 </select>
               </div>
               <div>
                 <label class="block text-xs font-extrabold text-mahogany-900 mb-1">🗺️ マップ配置</label>
                 <select id="soloMapPresetSelect" class="w-full px-2.5 py-2 rounded-xl bg-white border border-brass-600/60 text-mahogany-950 font-bold text-xs">
-                  <option value="standard" selected>スタンダード（公式配置）</option>
-                  <option value="advanced">ベテラン（砂漠外周）</option>
-                  <option value="master">マスター（砂漠内周）</option>
+                  <option value="standard" selected>標準（砂漠：外周）</option>
+                  <option value="advanced">上級（砂漠：中心）</option>
+                  <option value="master">最上級（砂漠：内周）</option>
                 </select>
               </div>
             </div>
@@ -615,18 +626,18 @@
               <label class="text-xs sm:text-sm font-bold text-amber-300 whitespace-nowrap">🤖 CPU:</label>
               <select id="onlineCpuDifficultySelect" onchange="onlineManager.setCpuDifficulty(this.value)"
                 class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs sm:text-sm font-bold">
-                <option value="easy">初級（のんびり開拓）</option>
-                <option value="normal" selected>中級（標準戦術）</option>
-                <option value="hard">上級（戦略マスター）</option>
+                <option value="easy">初級</option>
+                <option value="normal" selected>中級</option>
+                <option value="hard">上級</option>
               </select>
             </div>
             <div class="flex items-center gap-1.5">
               <label class="text-xs sm:text-sm font-bold text-amber-300 whitespace-nowrap">🗺️ 配置:</label>
               <select id="onlineMapPresetSelect" onchange="onlineManager.setMapPreset(this.value)"
                 class="flex-1 min-w-0 px-2.5 py-1.5 rounded-xl bg-mahogany-900 border border-brass-500 text-parchment-100 text-xs sm:text-sm font-bold">
-                <option value="standard" selected>スタンダード（公式）</option>
-                <option value="advanced">上級（砂漠外周）</option>
-                <option value="master">マスター（砂漠内周）</option>
+                <option value="standard" selected>標準（砂漠：外周）</option>
+                <option value="advanced">上級（砂漠：中心）</option>
+                <option value="master">最上級（砂漠：内周）</option>
               </select>
             </div>
           </div>
@@ -1153,9 +1164,9 @@
     };
 
     const MAP_PRESET_LABELS = {
-      standard: 'スタンダード',
+      standard: '標準',
       advanced: '上級',
-      master: 'マスター'
+      master: '最上級'
     };
 
     const TERRAIN_INFO = {
@@ -1294,41 +1305,21 @@
           'ore', 'ore', 'ore'
         ];
 
+        const resourceTiles = shuffleArray(resourcePool18);
+        let desertCoord;
         if (mapPreset === 'standard') {
-          const standardFixedMap = {
-            '0,-2': 'desert',
-            '-1,-1': 'wood',   '-2,0': 'brick',  '-2,1': 'sheep',
-            '-2,2': 'wheat',   '-1,2': 'ore',    '0,2': 'wood',
-            '1,1': 'sheep',    '2,0': 'brick',   '2,-1': 'wheat',
-            '2,-2': 'ore',     '1,-2': 'sheep',
-            '0,-1': 'wheat',   '-1,0': 'ore',    '-1,1': 'wood',
-            '0,1': 'brick',    '1,0': 'sheep',   '1,-1': 'wheat',
-            '0,0': 'wood'
-          };
-          axialCoords.forEach(c => {
-            const k = `${c.q},${c.r}`;
-            terrainMap[k] = standardFixedMap[k] || 'wood';
-          });
-        } else if (mapPreset === 'master') {
-          const inner7Keys = [...innerRing, { q: 0, r: 0 }].map(c => `${c.q},${c.r}`);
-          const desertKey = inner7Keys[Math.floor(Math.random() * inner7Keys.length)];
-          const shuffled18 = shuffleArray(resourcePool18);
-          let idx = 0;
-          axialCoords.forEach(c => {
-            const k = `${c.q},${c.r}`;
-            terrainMap[k] = (k === desertKey) ? 'desert' : shuffled18[idx++];
-          });
+          desertCoord = outerRing[Math.floor(Math.random() * outerRing.length)];
+        } else if (mapPreset === 'advanced') {
+          desertCoord = { q: 0, r: 0 };
         } else {
-          const outer12Keys = outerRing.map(c => `${c.q},${c.r}`);
-          const desertKey = outer12Keys[Math.floor(Math.random() * outer12Keys.length)];
-          const shuffled18 = shuffleArray(resourcePool18);
-          let idx = 0;
-          axialCoords.forEach(c => {
-            const k = `${c.q},${c.r}`;
-            terrainMap[k] = (k === desertKey) ? 'desert' : shuffled18[idx++];
-          });
+          desertCoord = innerRing[Math.floor(Math.random() * innerRing.length)];
         }
-
+        const desertKey = `${desertCoord.q},${desertCoord.r}`;
+        let resourceIdx = 0;
+        axialCoords.forEach(c => {
+          const key = `${c.q},${c.r}`;
+          terrainMap[key] = key === desertKey ? 'desert' : resourceTiles[resourceIdx++];
+        });
         const numberMap = {};
         let numIdx = 0;
         for (const c of spiralCoords) {
@@ -1698,19 +1689,36 @@
           strategyFocus = '⚖️ <strong>バランス複合開拓型</strong>：偏りが少ない安定した資源基盤です。港レートやプレイヤー間交渉を活用して不足パーツを補いましょう。';
         }
 
+        const gained = myStats.totalResourcesGained || 0;
+        const expected = myStats.expectedResources || 0;
+        const delta = gained - expected;
+        const deltaPct = expected > 0 ? Math.round(delta / expected * 100) : null;
+        const deltaColor = delta > 0 ? 'text-emerald-800' : delta < 0 ? 'text-rose-800' : 'text-mahogany-950';
+        const deltaText = delta > 0 ? `+${delta}枚` : `${delta}枚`;
         const advices = [];
-        if (profile.missingTypes.length > 0) {
-          const missNames = profile.missingTypes.map(k => `${RESOURCES[k].emoji}${RESOURCES[k].name}`).join('・');
-          advices.push(`未確保の資源（${missNames}）があります。該当資源の2:1港または3:1港への接続、もしくは余剰資源での交渉を優先してください。`);
+        const roadLen = me.longestRoadLength || 0;
+        const knightCount = me.knightsPlayed || 0;
+        if (!me.hasLongestRoad && roadLen >= 3) advices.push(`最長交易路まであと${Math.max(1, 5 - roadLen)}本です。既存街道の先端から伸ばし、5本到達の+2VPを狙いましょう。`);
+        else if (!me.hasLongestRoad && profile.resPips.wood + profile.resPips.brick >= 6) advices.push('木材・レンガの産出を活かし、開拓地候補へ向かう街道をつなげましょう。交易路4本以上なら最長交易路+2VPが狙えます。');
+        if (!me.hasLargestArmy && knightCount >= 1) advices.push(`騎士を${knightCount}枚使用済みです。小麦・鉱石を活用して発展カードを買い、騎士3枚で最大騎士力+2VPを狙いましょう。`);
+        else if (!me.hasLargestArmy && profile.resPips.wheat + profile.resPips.ore >= 6) advices.push('小麦・鉱石の産出が強みです。発展カードを購入し、騎士3枚による最大騎士力+2VPを勝ち筋に加えましょう。');
+        const candidates = st.board.vertices.map(v => {
+          if (st.buildings.settlements[v.id]) return null;
+          const adjacent = st.board.edges.filter(e => e.v1 === v.id || e.v2 === v.id).map(e => e.v1 === v.id ? e.v2 : e.v1);
+          if (adjacent.some(id => st.buildings.settlements[id])) return null;
+          const hexes = (v.hexIds || []).map(id => st.board.hexes.find(h => h.id === id)).filter(h => h && h.terrain !== 'desert');
+          const pips = hexes.reduce((n, h) => n + (NUMBER_PIPS[h.number] || 0), 0);
+          return { hexes, pips, score: pips + hexes.reduce((n, h) => n + (profile.resPips[h.terrain] === 0 ? (NUMBER_PIPS[h.number] || 0) * 2 : 0), 0) };
+        }).filter(Boolean).sort((a, b) => b.score - a.score);
+        const site = candidates[0];
+        if (site?.pips) {
+          const hex = [...site.hexes].sort((a, b) => (NUMBER_PIPS[b.number] || 0) - (NUMBER_PIPS[a.number] || 0))[0];
+          advices.push(`開拓地候補は${RESOURCES[hex.terrain].name}の${hex.number}番に接する地点です（周辺合計${site.pips} pips）。`);
         }
-        if ((myStats.burstCount || 0) >= 1) {
-          advices.push(`7バーストを ${myStats.burstCount} 回経験しています。手札が7枚を超えそうなターンは街道・発展カード購入で手札を7枚以下に調整すると安全です。`);
-        }
-        if (maxOpponentVp >= 8 && currentVp < maxOpponentVp) {
-          advices.push(`トップの開拓者が ${maxOpponentVp}VP に迫っています。盗賊はトップの主力タイル（6・8番）へ優先配置して独走を食い止めましょう。`);
-        }
+        const harbor = st.board.harbors?.find(h => h.type === '3:1') || st.board.harbors?.find(h => profile.resPips[h.type] > 0);
+        if (harbor) advices.push(`港の候補は${harbor.type === '3:1' ? '3:1港' : `${RESOURCES[harbor.type]?.name || ''} 2:1港`}です。海岸へ街道を伸ばし、余剰資源を不足資源に交換しましょう。`);
         if (advices.length === 0) {
-          advices.push('非常に安定した開拓ペースです。手札7枚以下を意識しつつ、都市化と特別賞（最長交易路・最大騎士力）で10VPへ一気に駆け抜けましょう。');
+          advices.push('不足資源を補える港と高確率タイルを優先し、最長交易路または最大騎士力のどちらかを明確な勝ち筋にしましょう。');
         }
 
         return `
@@ -1732,6 +1740,15 @@
             </div>
           </div>
 
+          <div class="rounded-2xl bg-amber-100 border-2 border-amber-500 p-3.5 space-y-2">
+            <div class="font-extrabold text-mahogany-950">🎲 資源獲得の期待値との差</div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="rounded-xl bg-white/90 p-2"><div class="text-[10px]">実際に獲得</div><b>${gained}枚</b></div>
+              <div class="rounded-xl bg-white/90 p-2"><div class="text-[10px]">期待値</div><b>${expected.toFixed(1)}枚</b></div>
+              <div class="rounded-xl bg-white/90 p-2"><div class="text-[10px]">期待値との差</div><b class="${deltaColor}">${deltaText}<br>${deltaPct === null ? '—' : `${deltaPct > 0 ? '+' : ''}${deltaPct}%`}</b></div>
+            </div>
+            <p class="text-[10px] text-mahogany-800">ダイスによる産出の累計です（初期資源・交易・盗賊は含みません）。</p>
+          </div>
           <div class="rounded-2xl bg-white/85 border border-brass-600/35 p-3.5 space-y-1.5">
             <div class="font-extrabold text-mahogany-950">🧭 AI戦術診断</div>
             <p class="text-mahogany-900 leading-relaxed">${strategyFocus}</p>
@@ -1941,8 +1958,8 @@
         this.broadcastToAll({ type: 'PUBLIC_STATE', state: publicState });
       }
 
-      sendPrivateState(targetUid, hand, devHand) {
-        const msg = { type: 'PRIVATE_STATE', targetUid, hand, devHand };
+      sendPrivateState(targetUid, hand, devHand, robberLossEvent = null) {
+        const msg = { type: 'PRIVATE_STATE', targetUid, hand, devHand, robberLossEvent };
         const conn = this.connections[targetUid];
         if (conn && conn.open) {
           try { conn.send(msg); } catch (e) {}
@@ -2001,6 +2018,11 @@
             gameController.myHand = msg.hand || emptyHand();
             gameController.myDevHand = msg.devHand || [];
             appUI.renderResourceHand();
+            const lossEvent = msg.robberLossEvent;
+            if (lossEvent && lossEvent.id !== gameController.lastShownPrivateRobberLossId) {
+              gameController.lastShownPrivateRobberLossId = lossEvent.id;
+              requestAnimationFrame(() => appUI.animatePrivateRobberSteal('loss', lossEvent.thiefUid, lossEvent.resKey));
+            }
           }
         }
       }
@@ -2177,6 +2199,9 @@
         this.localUid = `user_${Math.random().toString(36).slice(2, 9)}`;
         this.isOnline = false;
         this.publicState = null;
+        this.privateRobberLossEvents = {};
+        this.lastShownPrivateRobberLossId = null;
+        this.cpuStrategicPlans = {};
         this.myHand = emptyHand();
         this.myDevHand = [];
 
@@ -2353,7 +2378,9 @@
             onlineManager.broadcastState(st);
             st.turnOrder.forEach(uid => {
               if (uid !== this.localUid && !st.players[uid]?.isCpu) {
-                onlineManager.sendPrivateState(uid, secretVault.getHand(uid), secretVault.getDevHand(uid));
+                const lossEvent = this.privateRobberLossEvents?.[uid] || null;
+                onlineManager.sendPrivateState(uid, secretVault.getHand(uid), secretVault.getDevHand(uid), lossEvent);
+                if (lossEvent) delete this.privateRobberLossEvents[uid];
               }
             });
           }
@@ -2741,7 +2768,7 @@
                 st.matchStats[pUid].burstCount += 1;
               }
               if (st.players[pUid].isCpu) {
-                const dropped = secretVault.smartCpuDiscard(pUid, req, st.cpuDifficulty);
+                const dropped = secretVault.smartCpuDiscard(pUid, req, this.normalizeCpuDifficulty(st.cpuDifficulty));
                 if (st.matchStats?.[pUid]) {
                   st.matchStats[pUid].burstDiscardedCount += req;
                 }
@@ -2916,6 +2943,9 @@
           thiefUid,
           victimUid
         };
+        if (this.isOnline && onlineManager.isHost && victimUid !== this.localUid) {
+          this.privateRobberLossEvents[victimUid] = { id: st.lastStealEvent.id, thiefUid, resKey: stolenKey };
+        }
         this.addLog(`🦹 ${st.players[thiefUid].name} が ${st.players[victimUid].name} から資源を1枚奪いました！`);
 
         if (thiefUid === this.localUid) {
@@ -3174,7 +3204,7 @@
         const st = this.publicState;
         if (!st || !offer) return;
         const cpuHand = secretVault.getHand(cpuUid);
-        const diff = st.cpuDifficulty || 'normal';
+        const diff = this.normalizeCpuDifficulty(st.cpuDifficulty || 'normal');
 
         if (!canAfford(cpuHand, offer.want)) {
           this.applyTradeResponse(cpuUid, 'reject');
@@ -3185,7 +3215,7 @@
         const { goalCost, missingKeys: goalMissingKeys } = this.getCpuNextGoalMissingInfo(cpuUid);
 
         // 手札が少ない資源（0枚または1枚以下）
-        const scarceKeys = RESOURCE_KEYS.filter(k => (cpuHand[k] || 0) <= (diff === 'hard' ? 0 : 1));
+        const scarceKeys = RESOURCE_KEYS.filter(k => (cpuHand[k] || 0) <= (diff === 'normal' ? 1 : 0));
         // 欲しい資源リスト（次の行動に必要な不足資源を最優先し、手薄な資源も統合）
         const neededKeys = Array.from(new Set([...goalMissingKeys, ...scarceKeys]));
 
@@ -3204,13 +3234,11 @@
           return true;
         });
 
-        const keepsReserve = diff === 'hard'
+        const keepsReserve = diff !== 'normal'
           ? (helpsNextGoal ? keepsGoalProgress : RESOURCE_KEYS.every(k => ((cpuHand[k] || 0) - (offer.want[k] || 0)) >= 1))
           : keepsGoalProgress;
 
-        const acceptProb = helpsNextGoal
-          ? (diff === 'easy' ? 0.68 : 0.85)
-          : (diff === 'easy' ? 0.55 : 0.72);
+        const acceptProb = diff === 'expert' ? (helpsNextGoal ? 0.95 : 0.84) : (helpsNextGoal ? 0.85 : 0.72);
 
         if (helpsCpu && keepsReserve && Math.random() < acceptProb) {
           this.applyTradeResponse(cpuUid, 'accept');
@@ -3218,7 +3246,7 @@
         }
 
         // 中級・上級で欲しい資源（次の行動の不足資源など）があれば逆提案を試みる
-        if (diff !== 'easy' && neededKeys.length > 0 && Math.random() < 0.52) {
+        if (diff !== 'easy' && neededKeys.length > 0 && Math.random() < (diff === 'expert' ? 0.68 : 0.52)) {
           const proposerHand = secretVault.getHand(offer.proposerUid);
           const achievableKey = neededKeys.find(k => (proposerHand[k] || 0) >= 1 && (offer.want[k] || 0) === 0);
           if (achievableKey) {
@@ -3295,7 +3323,7 @@
         }
 
         const cpuHand = secretVault.getHand(proposerUid);
-        const validCounter = entries.find(([, r]) => r.status === 'counter' && canAfford(cpuHand, r.counterGive));
+        const validCounter = entries.find(([, r]) => r.status === 'counter' && canAfford(cpuHand, r.counterWant));
         if (validCounter) {
           this.finalizeDomesticTrade(proposerUid, validCounter[0]);
           return;
@@ -3303,6 +3331,7 @@
 
         this.addLog(`💬 ${st.players[proposerUid].name} の交換提案は見送りとなりました。`);
         st.activeTradeOffer = null;
+        this.pushStateAndRender();
         this.scheduleCpuTurnIfNeeded(700);
       }
 
@@ -3327,8 +3356,10 @@
 
         if (!canAfford(pHand, propGives) || !canAfford(rHand, respGives)) {
           appUI.showToast('資源枚数が不足しているため取引を成立できませんでした');
+          this.addLog('逆提案の資源が不足していたため、交渉は不成立となりました。');
           st.activeTradeOffer = null;
           this.pushStateAndRender();
+          if (st.players[proposerUid]?.isCpu) this.scheduleCpuTurnIfNeeded(700);
           return;
         }
 
@@ -3640,6 +3671,58 @@
       }
 
       /* -------------------- CPU思考AIエンジン（初級・中級・上級） -------------------- */
+      normalizeCpuDifficulty(selected) {
+        if (selected === 'easy') return 'normal';
+        if (selected === 'normal') return 'hard';
+        return 'expert';
+      }
+      buildCpuStrategicPlan(uid) {
+        const st = this.publicState;
+        const player = st.players[uid];
+        const hand = secretVault.getHand(uid);
+        const plans = [];
+        const missingCount = cost => RESOURCE_KEYS.reduce((sum, key) => sum + Math.max(0, (cost[key] || 0) - (hand[key] || 0)), 0);
+        const progress = cost => {
+          const total = totalHandCount(cost) || 1;
+          const held = RESOURCE_KEYS.reduce((sum, key) => sum + Math.min(cost[key] || 0, hand[key] || 0), 0);
+          return held / total;
+        };
+        const towns = Object.entries(st.buildings.settlements).filter(([, b]) => b.ownerUid === uid && !b.isCity);
+        if (towns.length && player.citiesRemaining > 0) {
+          const bestTown = [...towns].sort((a, b) => this.scoreVertexForCpu(uid, b[0], 'expert') - this.scoreVertexForCpu(uid, a[0], 'expert'))[0];
+          plans.push({ goal: 'city', cost: BUILD_COSTS.city, targetId: bestTown[0], score: 8 + progress(BUILD_COSTS.city) * 3 - missingCount(BUILD_COSTS.city) * 0.6 + this.scoreVertexForCpu(uid, bestTown[0], 'expert') * 0.08 });
+        }
+        const sites = this.getValidSettlementVertices(uid, false);
+        if (sites.length && player.settlementsRemaining > 0) {
+          sites.sort((a, b) => this.scoreVertexForCpu(uid, b, 'expert') - this.scoreVertexForCpu(uid, a, 'expert'));
+          plans.push({ goal: 'settlement', cost: BUILD_COSTS.settlement, targetId: sites[0], score: 7.5 + progress(BUILD_COSTS.settlement) * 3 - missingCount(BUILD_COSTS.settlement) * 0.6 + this.scoreVertexForCpu(uid, sites[0], 'expert') * 0.1 });
+        }
+        if (secretVault.devDeck.length && player.devCardCount < 5) {
+          const cost = BUILD_COSTS.devCard;
+          plans.push({ goal: 'development', cost, score: 5.8 + progress(cost) * 3 - missingCount(cost) * 0.6 + Math.min(player.knightsPlayed || 0, 2) * 0.8 });
+        }
+        const roadLen = player.longestRoadLength || 0;
+        if (player.roadsRemaining > 0 && roadLen < 5) {
+          const cost = BUILD_COSTS.road;
+          plans.push({ goal: 'road', cost, score: 4.8 + progress(cost) * 3 - missingCount(cost) * 0.6 + roadLen * 0.9 + (player.hasLongestRoad ? -5 : 0) });
+        }
+        const bestPlan = plans.sort((a, b) => b.score - a.score)[0] || null;
+        const cached = this.cpuStrategicPlans?.[uid];
+        const cachedValid = cached && cached.matchId === st.matchId && st.turnNumber - cached.createdTurn < 3 && (
+          (cached.goal === 'city' && st.buildings.settlements[cached.targetId]?.ownerUid === uid && !st.buildings.settlements[cached.targetId]?.isCity) ||
+          (cached.goal === 'settlement' && this.getValidSettlementVertices(uid, false).includes(cached.targetId)) ||
+          (cached.goal === 'development' && secretVault.devDeck.length > 0) ||
+          (cached.goal === 'road' && player.roadsRemaining > 0 && (player.longestRoadLength || 0) < 5)
+        );
+        if (cachedValid) return cached;
+        if (bestPlan) {
+          bestPlan.matchId = st.matchId;
+          bestPlan.createdTurn = st.turnNumber;
+          this.cpuStrategicPlans = this.cpuStrategicPlans || {};
+          this.cpuStrategicPlans[uid] = bestPlan;
+        }
+        return bestPlan;
+      }
       scheduleCpuTurnIfNeeded(delayMs = 950) {
         if (this.cpuTimer) clearTimeout(this.cpuTimer);
         const st = this.publicState;
@@ -3685,12 +3768,12 @@
 
         let newTypeBonus = 0;
         localTypes.forEach(t => {
-          if (!ownedTypes.has(t)) newTypeBonus += (difficulty === 'hard' ? 4.5 : 3.0);
+          if (!ownedTypes.has(t)) newTypeBonus += (difficulty === 'expert' ? 5.5 : difficulty === 'hard' ? 4.5 : 3.0);
         });
-        const harborBonus = v.harbor ? (difficulty === 'hard' ? 2.5 : 1.5) : 0;
+        const harborBonus = v.harbor ? (difficulty === 'expert' ? 3.5 : difficulty === 'hard' ? 2.5 : 1.5) : 0;
         const jitter = difficulty === 'hard' ? Math.random() * 0.8 : Math.random() * 1.8;
 
-        return pipSum * (difficulty === 'hard' ? 3.0 : 2.5) + newTypeBonus + harborBonus + jitter;
+        return pipSum * (difficulty === 'expert' ? 3.6 : difficulty === 'hard' ? 3.0 : 2.5) + newTypeBonus + harborBonus + jitter;
       }
 
       // 公開情報のみから「将来の得点力期待値」を算出（秘匿VPは一切参照しない）
@@ -3787,7 +3870,7 @@
           score += roadLenGain * nearLongestBonus;
         }
 
-        return score + Math.random() * (difficulty === 'hard' ? 0.6 : 1.4);
+        return score + Math.random() * (difficulty === 'expert' ? 0.2 : difficulty === 'hard' ? 0.6 : 1.4);
       }
 
       chooseBestRobberHexForCpu(uid, difficulty) {
@@ -3832,7 +3915,9 @@
               const isPrimaryFutureThreat = b.ownerUid === primaryTargetUid;
               let leaderBonus = 0;
               if (isTopLeader) {
-                if (difficulty === 'hard') {
+                if (difficulty === 'expert') {
+                  leaderBonus = isPrimaryFutureThreat ? 9 : 6;
+                } else if (difficulty === 'hard') {
                   leaderBonus = isPrimaryFutureThreat ? 6.5 : 4.2;
                 } else if (difficulty === 'normal') {
                   leaderBonus = isPrimaryFutureThreat ? 3.2 : 2.2;
@@ -3857,19 +3942,21 @@
         return bestHex.id;
       }
 
-      tryCpuProposeDomesticTrade(uid, difficulty) {
+      tryCpuProposeDomesticTrade(uid, difficulty, strategicPlan = null) {
         const st = this.publicState;
         if (difficulty === 'easy' || st.cpuTradeAttemptedThisTurn) return false;
         st.cpuTradeAttemptedThisTurn = true;
 
         const hand = secretVault.getHand(uid);
         // 目標（都市 > 開拓地 > 発展カード > 街道）にあと1枚足りない資源を探す
-        const goals = [
-          { cost: BUILD_COSTS.city },
-          { cost: BUILD_COSTS.settlement },
-          { cost: BUILD_COSTS.devCard },
-          { cost: BUILD_COSTS.road }
-        ];
+        const goals = strategicPlan
+          ? [{ cost: strategicPlan.cost }]
+          : [
+              { cost: BUILD_COSTS.city },
+              { cost: BUILD_COSTS.settlement },
+              { cost: BUILD_COSTS.devCard },
+              { cost: BUILD_COSTS.road }
+            ];
 
         for (const g of goals) {
           const missing = [];
@@ -3907,7 +3994,7 @@
         const player = st.players[uid];
         if (!player || !player.isCpu) return;
 
-        const diff = st.cpuDifficulty || 'normal';
+        const diff = this.normalizeCpuDifficulty(st.cpuDifficulty || 'normal');
 
         // 1. 初期配置フェーズ
         if (st.status === 'setup') {
@@ -3965,7 +4052,7 @@
           if (playableKnight && !st.devCardPlayedThisTurn && diff !== 'easy') {
             const robberHex = st.board.hexes.find(h => h.id === st.board.robberHexId);
             const blocksMe = (robberHex?.vertexIds || []).some(vid => st.buildings.settlements[vid]?.ownerUid === uid);
-            const closeToArmy = diff === 'hard' && player.knightsPlayed >= 2 && !player.hasLargestArmy;
+            const closeToArmy = diff !== 'normal' && player.knightsPlayed >= 2 && !player.hasLargestArmy;
             if (blocksMe || closeToArmy) {
               this.executePlayDevCard(uid, playableKnight.id, {});
               this.scheduleCpuTurnIfNeeded(1450);
@@ -3979,9 +4066,10 @@
         // 5. メインアクションフェーズ
         if (st.phase === 'MAIN_ACTIONS') {
           const hand = secretVault.getHand(uid);
+          const strategicPlan = diff === 'expert' ? this.buildCpuStrategicPlan(uid) : null;
 
           // 5-A. 都市化（最も高確率の開拓地を優先）
-          if (canAfford(hand, BUILD_COSTS.city) && player.citiesRemaining > 0) {
+          if ((!strategicPlan || strategicPlan.goal === 'city') && canAfford(hand, BUILD_COSTS.city) && player.citiesRemaining > 0) {
             const myTowns = Object.entries(st.buildings.settlements)
               .filter(([, b]) => b.ownerUid === uid && !b.isCity)
               .map(([vid]) => vid);
@@ -3989,27 +4077,27 @@
               if (diff !== 'easy') {
                 myTowns.sort((a, b) => this.scoreVertexForCpu(uid, b, diff) - this.scoreVertexForCpu(uid, a, diff));
               }
-              this.executeBuildAction(uid, 'CITY', myTowns[0]);
+              this.executeBuildAction(uid, 'CITY', strategicPlan?.goal === 'city' ? strategicPlan.targetId : myTowns[0]);
               this.scheduleCpuTurnIfNeeded(1450);
               return;
             }
           }
 
           // 5-B. 開拓地建設
-          if (canAfford(hand, BUILD_COSTS.settlement) && player.settlementsRemaining > 0) {
+          if ((!strategicPlan || strategicPlan.goal === 'settlement') && canAfford(hand, BUILD_COSTS.settlement) && player.settlementsRemaining > 0) {
             const validTowns = this.getValidSettlementVertices(uid, false);
             if (validTowns.length > 0) {
               if (diff !== 'easy') {
                 validTowns.sort((a, b) => this.scoreVertexForCpu(uid, b, diff) - this.scoreVertexForCpu(uid, a, diff));
               }
-              this.executeBuildAction(uid, 'SETTLEMENT', validTowns[0]);
+              this.executeBuildAction(uid, 'SETTLEMENT', strategicPlan?.goal === 'settlement' ? strategicPlan.targetId : validTowns[0]);
               this.scheduleCpuTurnIfNeeded(1450);
               return;
             }
           }
 
           // 5-C. 中級・上級: 目標建設にあと1枚足りない場合は交渉を提案
-          if (this.tryCpuProposeDomesticTrade(uid, diff)) {
+          if (this.tryCpuProposeDomesticTrade(uid, diff, strategicPlan)) {
             return;
           }
 
@@ -4053,17 +4141,28 @@
             }
           }
 
+          if (strategicPlan?.goal === 'development' && canAfford(hand, BUILD_COSTS.devCard) && secretVault.devDeck.length > 0) {
+            this.executeBuyDevCard(uid);
+            this.scheduleCpuTurnIfNeeded(1250);
+            return;
+          }
           // 5-E. 港・銀行交易（中級・上級のみ）
           if (diff !== 'easy') {
             const rates = this.getPlayerTradeRates(uid);
-            const reserveMargin = diff === 'hard' ? 0 : 1;
+            const reserveMargin = diff === 'normal' ? 1 : 0;
             const giveKey = RESOURCE_KEYS.find(k => (hand[k] || 0) >= (rates[k] || 4) + reserveMargin);
             if (giveKey) {
               const wantCandidates = RESOURCE_KEYS
                 .filter(k => k !== giveKey && (secretVault.bank[k] || 0) > 0)
-                .sort((a, b) => (hand[a] || 0) - (hand[b] || 0));
-              if (wantCandidates.length > 0 && (hand[wantCandidates[0]] || 0) <= 1) {
-                this.applyMaritimeTrade(uid, giveKey, wantCandidates[0], rates[giveKey] || 4);
+                .sort((a, b) => {
+                  const needA = strategicPlan ? Math.max(0, (strategicPlan.cost[a] || 0) - (hand[a] || 0)) : 0;
+                  const needB = strategicPlan ? Math.max(0, (strategicPlan.cost[b] || 0) - (hand[b] || 0)) : 0;
+                  if (needA !== needB) return needB - needA;
+                  return (hand[a] || 0) - (hand[b] || 0);
+                });
+              const targetKey = wantCandidates.find(k => strategicPlan && (hand[k] || 0) < (strategicPlan.cost[k] || 0)) || wantCandidates[0];
+              if (targetKey && (strategicPlan ? (hand[targetKey] || 0) < (strategicPlan.cost[targetKey] || 0) : (hand[targetKey] || 0) <= 1)) {
+                this.applyMaritimeTrade(uid, giveKey, targetKey, rates[giveKey] || 4);
                 this.pushStateAndRender();
                 this.scheduleCpuTurnIfNeeded(1150);
                 return;
@@ -4073,9 +4172,9 @@
 
           // 5-F. 街道建設（最大15本まで建設可能・行き止まり回避）
           const builtRoadsCount = 15 - player.roadsRemaining;
-          const maxRoadsGoal = diff === 'hard' ? 15 : diff === 'normal' ? 13 : 8;
-          const roadProb = diff === 'hard' ? 0.90 : diff === 'normal' ? 0.82 : 0.45;
-          if (canAfford(hand, BUILD_COSTS.road) && player.roadsRemaining > 0 && builtRoadsCount < maxRoadsGoal && Math.random() < roadProb) {
+          const maxRoadsGoal = diff === 'normal' ? 13 : 15;
+          const roadProb = diff === 'expert' ? 0.98 : diff === 'hard' ? 0.90 : 0.82;
+          if ((!strategicPlan || strategicPlan.goal === 'road') && canAfford(hand, BUILD_COSTS.road) && player.roadsRemaining > 0 && builtRoadsCount < maxRoadsGoal && Math.random() < roadProb) {
             const validRoads = this.getValidRoadEdges(uid, false);
             if (validRoads.length > 0) {
               let pick = null;
@@ -4099,8 +4198,8 @@
           }
 
           // 5-G. 発展カード購入
-          const devProb = diff === 'hard' ? 0.85 : diff === 'normal' ? 0.75 : 0.35;
-          if (canAfford(hand, BUILD_COSTS.devCard) && secretVault.devDeck.length > 0 && Math.random() < devProb) {
+          const devProb = diff === 'expert' ? 0.95 : diff === 'hard' ? 0.85 : 0.75;
+          if ((!strategicPlan || strategicPlan.goal === 'development') && canAfford(hand, BUILD_COSTS.devCard) && secretVault.devDeck.length > 0 && Math.random() < devProb) {
             this.executeBuyDevCard(uid);
             this.scheduleCpuTurnIfNeeded(1250);
             return;
@@ -4461,6 +4560,19 @@
             summaryBox.innerHTML = `
               <div>📤 あなたの提示: <span class="text-red-900">${formatResourceBundle(offer.give)}</span></div>
               <div class="mt-0.5">📥 あなたの希望: <span class="text-sky-900">${formatResourceBundle(offer.want)}</span></div>
+              <div class="mt-2 rounded-xl bg-mahogany-950/95 border border-brass-500/60 p-2.5 space-y-1.5">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-extrabold text-amber-300">&#127890; &#12354;&#12394;&#12383;&#12398;&#29694;&#22312;&#12398;&#25152;&#25345;&#36039;&#28304;</span>
+                  <span class="font-bold text-parchment-200">&#21512;&#35336; ${totalHandCount(gameController.myHand)} &#26522;</span>
+                </div>
+                <div class="grid grid-cols-5 gap-1.5">
+                  ${RESOURCE_KEYS.map(k => {
+                    const cnt = gameController.myHand?.[k] || 0;
+                    return `<div class="rounded-xl px-1 py-1.5 text-center border ${cnt > 0 ? 'bg-mahogany-900 border-brass-500/50' : 'bg-mahogany-950/60 border-brass-600/20 opacity-55'}"><div class="text-sm leading-none">${RESOURCES[k].emoji}</div><div class="text-[9.5px] font-bold text-parchment-200 mt-0.5">${RESOURCES[k].name}</div><div class="font-serif font-black text-xs sm:text-sm text-amber-300">${cnt}</div></div>`;
+                  }).join('')}
+                </div>
+              </div>
+
             `;
           }
 
@@ -5285,12 +5397,20 @@
         pill.textContent = `${res.emoji} ${res.name} ${direction === 'gain' ? '+1' : '-1'}`;
         flyLayer.appendChild(pill);
 
-        pill.animate([
-          { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' },
-          { opacity: 1, transform: 'translate(-50%, -50%) scale(1.1)', offset: 0.15 },
-          { opacity: 0.2, transform: `translate(calc(-50% + ${toX - fromX}px), calc(-50% + ${toY - fromY}px)) scale(0.85)` }
-        ], {
-          duration: 1900,
+        const stealKeyframes = direction === 'loss'
+          ? [
+              { opacity: 0, transform: 'translate(-50%, calc(-50% + 12px)) scale(0.75)' },
+              { opacity: 1, transform: 'translate(-50%, -70%) scale(1.15)', offset: 0.10 },
+              { opacity: 1, transform: 'translate(-50%, -70%) scale(1.15)', offset: 0.56 },
+              { opacity: 0.2, transform: `translate(calc(-50% + ${toX - fromX}px), calc(-50% + ${toY - fromY}px)) scale(0.85)` }
+            ]
+          : [
+              { opacity: 0, transform: 'translate(-50%, -50%) scale(0.8)' },
+              { opacity: 1, transform: 'translate(-50%, -50%) scale(1.1)', offset: 0.15 },
+              { opacity: 0.2, transform: `translate(calc(-50% + ${toX - fromX}px), calc(-50% + ${toY - fromY}px)) scale(0.85)` }
+            ];
+        pill.animate(stealKeyframes, {
+          duration: direction === 'loss' ? 4400 : 1900,
           easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
           fill: 'forwards'
         }).onfinish = () => pill.remove();
@@ -5942,6 +6062,9 @@
 
         const phaseBadge = document.getElementById('phaseBadge');
         const guidance = document.getElementById('guidanceText');
+
+        const finishedAnalyticsBar = document.getElementById('finishedAnalyticsBar');
+        if (finishedAnalyticsBar) finishedAnalyticsBar.classList.toggle('hidden', st.status !== 'finished');
 
         if (st.status === 'finished') {
           phaseBadge.textContent = '対局終了';
